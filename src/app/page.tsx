@@ -7,6 +7,8 @@ import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SkeletonList } from "@/components/SkeletonList";
+import { useToast } from "@/components/Toast";
 import type { Category, Item } from "@/db";
 
 type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
@@ -24,6 +26,8 @@ export default function Page() {
     reorderItems,
   } = useItems();
 
+  const { toast } = useToast();
+
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
@@ -39,6 +43,8 @@ export default function Page() {
     return Array.from(catSet) as Category[];
   }, [items]);
 
+  const isFiltered = selectedCategory !== null || selectedTags.length > 0;
+
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       if (selectedCategory && item.category !== selectedCategory) return false;
@@ -50,9 +56,34 @@ export default function Page() {
 
   const handleAdd = useCallback(
     async (data: EnrichedData) => {
+      // Duplicate detection
+      const duplicate = items.find(
+        (i) => i.url.replace(/\/$/, "") === data.url.replace(/\/$/, "")
+      );
+      if (duplicate) {
+        toast(`Already saved: "${duplicate.title}"`, "warning");
+        return;
+      }
       await addItem(data);
+      toast("Added to your list");
     },
-    [addItem]
+    [addItem, items, toast]
+  );
+
+  const handleMarkDone = useCallback(
+    async (id: string) => {
+      await markDone(id);
+      toast("Marked as done");
+    },
+    [markDone, toast]
+  );
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      await deleteItem(id);
+      toast("Removed", "error");
+    },
+    [deleteItem, toast]
   );
 
   const handleUpdateTags = useCallback(
@@ -97,15 +128,16 @@ export default function Page() {
       />
 
       {isLoading ? (
-        <div className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">Loading...</div>
+        <SkeletonList />
       ) : (
         <ItemList
           items={filteredItems}
-          onMarkDone={markDone}
+          filtered={isFiltered}
+          onMarkDone={handleMarkDone}
           onUnmarkDone={unmarkDone}
           onUpdateTags={handleUpdateTags}
           onUpdateNotes={handleUpdateNotes}
-          onDelete={deleteItem}
+          onDelete={handleDelete}
           onReorder={reorderItems}
         />
       )}

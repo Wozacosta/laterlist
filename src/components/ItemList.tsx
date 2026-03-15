@@ -18,9 +18,11 @@ import {
 } from "@dnd-kit/sortable";
 import type { Item } from "@/db";
 import { ItemRow } from "./ItemRow";
+import { EmptyState } from "./EmptyState";
 
 interface ItemListProps {
   items: Item[];
+  filtered: boolean;
   onMarkDone: (id: string) => void;
   onUnmarkDone: (id: string) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
@@ -31,6 +33,7 @@ interface ItemListProps {
 
 export const ItemList = memo(function ItemList({
   items,
+  filtered,
   onMarkDone,
   onUnmarkDone,
   onUpdateTags,
@@ -65,11 +68,7 @@ export const ItemList = memo(function ItemList({
   );
 
   if (items.length === 0) {
-    return (
-      <p className="py-8 text-center text-sm text-gray-400">
-        No items yet. Paste a URL above to get started.
-      </p>
-    );
+    return <EmptyState filtered={filtered} />;
   }
 
   return (
