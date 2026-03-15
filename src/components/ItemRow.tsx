@@ -83,7 +83,6 @@ export const ItemRow = memo(function ItemRow({
 
   const handleRowClick = useCallback(
     (e: React.MouseEvent) => {
-      // Don't toggle expanded when clicking controls
       const target = e.target as HTMLElement;
       if (
         target.closest("button") ||
@@ -101,7 +100,7 @@ export const ItemRow = memo(function ItemRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group rounded-lg border border-gray-200 transition-colors hover:bg-gray-50 ${
+      className={`group rounded-lg border border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900 ${
         item.status === "done" ? "opacity-50" : ""
       }`}
     >
@@ -112,7 +111,7 @@ export const ItemRow = memo(function ItemRow({
         {/* Drag handle */}
         <button
           type="button"
-          className="shrink-0 cursor-grab text-gray-300 hover:text-gray-500 active:cursor-grabbing touch-none"
+          className="shrink-0 cursor-grab text-gray-300 hover:text-gray-500 active:cursor-grabbing touch-none dark:text-gray-700 dark:hover:text-gray-400"
           style={{ touchAction: "none" }}
           aria-label="Reorder item"
           {...attributes}
@@ -122,7 +121,7 @@ export const ItemRow = memo(function ItemRow({
         </button>
 
         {/* Thumbnail */}
-        <div className="shrink-0 h-12 w-12 overflow-hidden rounded bg-gray-100">
+        <div className="shrink-0 h-12 w-12 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
           {item.thumbnail ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -131,7 +130,7 @@ export const ItemRow = memo(function ItemRow({
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="h-full w-full flex items-center justify-center text-gray-300 text-xs">
+            <div className="h-full w-full flex items-center justify-center text-gray-300 text-xs dark:text-gray-600">
               {item.category[0].toUpperCase()}
             </div>
           )}
@@ -140,9 +139,15 @@ export const ItemRow = memo(function ItemRow({
         {/* Main content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2 flex-wrap">
-            <span className="text-sm font-medium text-gray-900 truncate min-w-0 flex-1">
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate min-w-0 flex-1 hover:underline"
+            >
               {item.title}
-            </span>
+            </a>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <TagChips
@@ -154,7 +159,7 @@ export const ItemRow = memo(function ItemRow({
         </div>
 
         {/* Meta */}
-        <div className="shrink-0 flex flex-col items-end gap-1 text-xs text-gray-400">
+        <div className="shrink-0 flex flex-col items-end gap-1 text-xs text-gray-400 dark:text-gray-600">
           <span>{formatDuration(item.duration, item.category)}</span>
           <span>{formatDate(item.addedAt)}</span>
         </div>
@@ -175,22 +180,22 @@ export const ItemRow = memo(function ItemRow({
             e.stopPropagation();
             onDelete(item.id);
           }}
-          className="shrink-0 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-lg leading-none"
+          className="shrink-0 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-lg leading-none dark:text-gray-700 dark:hover:text-red-400"
           aria-label="Delete item"
         >
           ×
         </button>
       </div>
 
-      {/* Notes (expanded) — inside the same card border */}
+      {/* Notes (expanded) */}
       {expanded && (
-        <div className="border-t border-gray-100 px-3 pb-3 pt-2">
+        <div className="border-t border-gray-100 px-3 pb-3 pt-2 dark:border-gray-800">
           <textarea
             defaultValue={item.notes ?? ""}
             onBlur={handleNotesBlur}
             rows={3}
             placeholder="Add a note..."
-            className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none bg-transparent"
+            className="w-full rounded border border-gray-200 bg-transparent px-2 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none dark:border-gray-700 dark:text-gray-300 dark:placeholder-gray-600"
           />
         </div>
       )}

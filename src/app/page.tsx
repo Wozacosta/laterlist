@@ -77,7 +77,7 @@ export default function Page() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">laterlist</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">laterlist</h1>
         <CloudSyncButton />
       </div>
 
@@ -93,7 +93,7 @@ export default function Page() {
       />
 
       {isLoading ? (
-        <div className="py-8 text-center text-sm text-gray-400">Loading...</div>
+        <div className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">Loading...</div>
       ) : (
         <ItemList
           items={filteredItems}
@@ -107,7 +107,7 @@ export default function Page() {
       )}
 
       {archivedItems.length > 0 && (
-        <p className="mt-4 text-center text-xs text-gray-400">
+        <p className="mt-4 text-center text-xs text-gray-400 dark:text-gray-600">
           {archivedItems.length} archived item{archivedItems.length !== 1 ? "s" : ""}
         </p>
       )}

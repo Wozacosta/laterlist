@@ -51,14 +51,14 @@ export const TagChips = memo(function TagChips({
       {tags.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-0.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
+          className="inline-flex items-center gap-0.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300"
         >
           {tag}
           {editable && (
             <button
               type="button"
               onClick={() => onRemove(tag)}
-              className="ml-0.5 text-gray-400 hover:text-gray-700 leading-none"
+              className="ml-0.5 text-gray-400 hover:text-gray-700 leading-none dark:hover:text-gray-200"
               aria-label={`Remove tag ${tag}`}
             >
               ×
@@ -70,7 +70,7 @@ export const TagChips = memo(function TagChips({
         <button
           type="button"
           onClick={handleAddClick}
-          className="rounded-full border border-dashed border-gray-300 px-2 py-0.5 text-xs text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
+          className="rounded-full border border-dashed border-gray-300 px-2 py-0.5 text-xs text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors dark:border-gray-600 dark:text-gray-500 dark:hover:border-gray-500 dark:hover:text-gray-400"
           aria-label="Add tag"
         >
           +
@@ -84,7 +84,7 @@ export const TagChips = memo(function TagChips({
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={commitTag}
-          className="w-20 rounded border border-gray-300 px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-20 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
           placeholder="tag..."
         />
       )}

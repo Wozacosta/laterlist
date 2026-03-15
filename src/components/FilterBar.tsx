@@ -29,7 +29,7 @@ export const FilterBar = memo(function FilterBar({
         className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
           selectedCategory === null
             ? "bg-blue-600 text-white"
-            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
         }`}
       >
         All
@@ -42,16 +42,16 @@ export const FilterBar = memo(function FilterBar({
           className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
             selectedCategory === cat
               ? "bg-blue-600 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
           }`}
         >
           {cat}
         </button>
       ))}
 
-      {/* Tag pills (only show if tags exist) */}
+      {/* Tag pills */}
       {allTags.length > 0 && (
-        <span className="mx-1 self-center text-gray-300">|</span>
+        <span className="mx-1 self-center text-gray-300 dark:text-gray-700">|</span>
       )}
       {allTags.map((tag) => (
         <button
@@ -61,7 +61,7 @@ export const FilterBar = memo(function FilterBar({
           className={`rounded-full px-3 py-1 text-xs transition-colors ${
             selectedTags.includes(tag)
               ? "bg-indigo-600 text-white"
-              : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
           }`}
         >
           #{tag}
