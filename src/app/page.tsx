@@ -8,6 +8,7 @@ import { ItemList } from "@/components/ItemList";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SkeletonList } from "@/components/SkeletonList";
+import { DataManager } from "@/components/DataManager";
 import { useToast } from "@/components/Toast";
 import type { Category, Item } from "@/db";
 
@@ -111,6 +112,7 @@ export default function Page() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">laterlist</h1>
         <div className="flex items-center gap-2">
+          <DataManager />
           <ThemeToggle />
           <CloudSyncButton />
         </div>
