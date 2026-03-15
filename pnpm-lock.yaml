@@ -26,6 +26,9 @@ importers:
       dexie:
         specifier: ^4.3.0
         version: 4.3.0
+      dexie-cloud-addon:
+        specifier: ^4.3.9
+        version: 4.3.9(dexie@4.3.0)
       dexie-react-hooks:
         specifier: ^4.2.0
         version: 4.2.0(@types/react@19.2.14)(dexie@4.3.0)(react@19.2.3)
@@ -1051,6 +1054,15 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
+  dexie-cloud-addon@4.3.9:
+    resolution: {integrity: sha512-172JUI+wy+Ia5zn1csODSpVSrGCye1bgqyorb07NmGNZoZ2db/Y2LL7oAPM/k/+gnzMd6PJHtNL9uLD5yf9QIA==}
+    engines: {node: '>=14'}
+    peerDependencies:
+      dexie: ^4.3.0
+
+  dexie-cloud-common@1.0.57:
+    resolution: {integrity: sha512-zNvDYYeyG6uIHe6eQBDldQFys8YP4UPH8B0S2xth+VZflyjCP87KlJCZsGydDEq7MHbnM4xGuyqfPvyA0tgULQ==}
+
   dexie-react-hooks@4.2.0:
     resolution: {integrity: sha512-u7KqTX9JpBQK8+tEyA9X0yMGXlSCsbm5AU64N6gjvGk/IutYDpLBInMYEAEC83s3qhIvryFS+W+sqLZUBEvePQ==}
     peerDependencies:
@@ -1140,6 +1152,9 @@ packages:
     resolution: {integrity: sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==}
     engines: {node: '>=8'}
 
+  isomorphic.js@0.2.5:
+    resolution: {integrity: sha512-PIeMbHqMt4DnUP3MA/Flc0HElYjMXArsw1qwJZcm9sqR8mq3l8NYizFMty0pWwE/tzIGH3EKK5+jes5mAr85yw==}
+
   jiti@2.6.1:
     resolution: {integrity: sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==}
     hasBin: true
@@ -1161,6 +1176,11 @@ packages:
   json5@2.2.3:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
     engines: {node: '>=6'}
+    hasBin: true
+
+  lib0@0.2.117:
+    resolution: {integrity: sha512-DeXj9X5xDCjgKLU/7RR+/HQEVzuuEUiwldwOGsHK/sfAfELGWEyTcf0x+uOvCvK3O2zPmZePXWL85vtia6GyZw==}
+    engines: {node: '>=16'}
     hasBin: true
 
   lightningcss-android-arm64@1.31.1:
@@ -1340,6 +1360,9 @@ packages:
     resolution: {integrity: sha512-2oMpl67a3zCH9H79LeMcbDhXW/UmWG/y2zuqnF2jQq5uq9TbM9TVyXvA4+t+ne2IIkBdrLpAaRQAvo7YI/Yyeg==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
+
+  rxjs@7.8.2:
+    resolution: {integrity: sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==}
 
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
@@ -1538,8 +1561,25 @@ packages:
       utf-8-validate:
         optional: true
 
+  y-dexie@4.2.2:
+    resolution: {integrity: sha512-nbUbIc8iL3Fpyyu13HkzU0djU4dUxI/SyySvTKQYd6wfSaodoiVKbf5ZqW7RAlXHg5nrtVLhjR7E7RZohrZ7lg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      dexie: '>=4.2.0-alpha.1 <5.0.0'
+      yjs: ^13.6.27
+
+  y-protocols@1.0.7:
+    resolution: {integrity: sha512-YSVsLoXxO67J6eE/nV4AtFtT3QEotZf5sK5BHxFBXso7VDUT3Tx07IfA6hsu5Q5OmBdMkQVmFZ9QOA7fikWvnw==}
+    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
+    peerDependencies:
+      yjs: ^13.0.0
+
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
+
+  yjs@13.6.30:
+    resolution: {integrity: sha512-vv/9h42eCMC81ZHDFswuu/MKzkl/vyq1BhaNGfHyOonwlG4CJbQF4oiBBJPvfdeCt/PlVDWh7Nov9D34YY09uQ==}
+    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
@@ -2307,6 +2347,19 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
+  dexie-cloud-addon@4.3.9(dexie@4.3.0):
+    dependencies:
+      dexie: 4.3.0
+      dexie-cloud-common: 1.0.57
+      rxjs: 7.8.2
+      y-dexie: 4.2.2(dexie@4.3.0)(yjs@13.6.30)
+      y-protocols: 1.0.7(yjs@13.6.30)
+      yjs: 13.6.30
+
+  dexie-cloud-common@1.0.57:
+    dependencies:
+      lib0: 0.2.117
+
   dexie-react-hooks@4.2.0(@types/react@19.2.14)(dexie@4.3.0)(react@19.2.3):
     dependencies:
       '@types/react': 19.2.14
@@ -2400,6 +2453,8 @@ snapshots:
 
   indent-string@4.0.0: {}
 
+  isomorphic.js@0.2.5: {}
+
   jiti@2.6.1: {}
 
   js-tokens@4.0.0: {}
@@ -2411,6 +2466,10 @@ snapshots:
   json-schema@0.4.0: {}
 
   json5@2.2.3: {}
+
+  lib0@0.2.117:
+    dependencies:
+      isomorphic.js: 0.2.5
 
   lightningcss-android-arm64@1.31.1:
     optional: true
@@ -2580,6 +2639,10 @@ snapshots:
       '@rollup/rollup-win32-x64-gnu': 4.59.0
       '@rollup/rollup-win32-x64-msvc': 4.59.0
       fsevents: 2.3.3
+
+  rxjs@7.8.2:
+    dependencies:
+      tslib: 2.8.1
 
   scheduler@0.27.0: {}
 
@@ -2769,6 +2832,20 @@ snapshots:
 
   ws@8.19.0: {}
 
+  y-dexie@4.2.2(dexie@4.3.0)(yjs@13.6.30):
+    dependencies:
+      dexie: 4.3.0
+      yjs: 13.6.30
+
+  y-protocols@1.0.7(yjs@13.6.30):
+    dependencies:
+      lib0: 0.2.117
+      yjs: 13.6.30
+
   yallist@3.1.1: {}
+
+  yjs@13.6.30:
+    dependencies:
+      lib0: 0.2.117
 
   zod@3.25.76: {}

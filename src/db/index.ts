@@ -1,4 +1,5 @@
-import Dexie, { type Table } from "dexie";
+import Dexie from "dexie";
+import dexieCloud, { type DexieCloudTable } from "dexie-cloud-addon";
 
 export type Category =
   | "video"
@@ -24,14 +25,20 @@ export interface Item {
   notes?: string;
 }
 
-const db = new Dexie("LaterlistDB") as Dexie & {
-  items: Table<Item, string>;
+const db = new Dexie("LaterlistDB", { addons: [dexieCloud] }) as Dexie & {
+  items: DexieCloudTable<Item, "id">;
 };
 
-// Note: we use plain "id" (not "@id") for fake-indexeddb test compatibility.
-// UUIDs are generated manually in useItems.addItem() with "itm" + crypto.randomUUID().
+// Plain "id" key (not "@id") — cloud addon works with manually-generated UUIDs,
+// and this avoids a fake-indexeddb v6 incompatibility in tests.
 db.version(1).stores({
   items: "id, url, category, status, sortOrder, addedAt",
+});
+
+db.cloud.configure({
+  databaseUrl: process.env.NEXT_PUBLIC_DEXIE_CLOUD_URL || "",
+  requireAuth: false,
+  tryUseServiceWorker: false,
 });
 
 export { db };

@@ -17,6 +17,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "ai": "^6.0.0",
     "dexie": "^4.3.0",
+    "dexie-cloud-addon": "^4.3.9",
     "dexie-react-hooks": "^4.2.0",
     "next": "16.1.6",
     "react": "19.2.3",
