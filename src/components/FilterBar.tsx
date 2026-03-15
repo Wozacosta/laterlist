@@ -1,7 +1,9 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { Category } from "@/db";
+
+const TAGS_PREVIEW = 8;
 
 interface FilterBarProps {
   categories: Category[];
@@ -20,6 +22,15 @@ export const FilterBar = memo(function FilterBar({
   onCategoryChange,
   onTagToggle,
 }: FilterBarProps) {
+  const [tagsExpanded, setTagsExpanded] = useState(false);
+
+  // Always show selected tags even if collapsed
+  const visibleTags = tagsExpanded
+    ? allTags
+    : allTags.filter((t, i) => i < TAGS_PREVIEW || selectedTags.includes(t));
+
+  const hiddenCount = allTags.length - visibleTags.length;
+
   return (
     <div className="mb-3 flex flex-wrap gap-1">
       {/* Category pills */}
@@ -53,7 +64,7 @@ export const FilterBar = memo(function FilterBar({
       {allTags.length > 0 && (
         <span className="mx-1 self-center text-gray-300 dark:text-gray-700">|</span>
       )}
-      {allTags.map((tag) => (
+      {visibleTags.map((tag) => (
         <button
           key={tag}
           type="button"
@@ -67,6 +78,26 @@ export const FilterBar = memo(function FilterBar({
           #{tag}
         </button>
       ))}
+
+      {/* Show more / less */}
+      {!tagsExpanded && hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setTagsExpanded(true)}
+          className="rounded-full px-3 py-1 text-xs text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700 transition-colors"
+        >
+          +{hiddenCount} more
+        </button>
+      )}
+      {tagsExpanded && allTags.length > TAGS_PREVIEW && (
+        <button
+          type="button"
+          onClick={() => setTagsExpanded(false)}
+          className="rounded-full px-3 py-1 text-xs text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700 transition-colors"
+        >
+          Show less
+        </button>
+      )}
     </div>
   );
 });
