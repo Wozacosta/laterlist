@@ -7,9 +7,10 @@ type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
 
 interface AddItemInputProps {
   onAdd: (data: EnrichedData) => void;
+  isLoggedIn: boolean;
 }
 
-export const AddItemInput = memo(function AddItemInput({ onAdd }: AddItemInputProps) {
+export const AddItemInput = memo(function AddItemInput({ onAdd, isLoggedIn }: AddItemInputProps) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,27 +23,39 @@ export const AddItemInput = memo(function AddItemInput({ onAdd }: AddItemInputPr
       setError(null);
 
       try {
-        const res = await fetch("/api/enrich", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: url.trim() }),
-        });
+        if (isLoggedIn) {
+          // Logged in — full AI enrichment
+          const res = await fetch("/api/enrich", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: url.trim() }),
+          });
 
-        const data = await res.json();
+          const data = await res.json();
 
-        if (!res.ok) {
-          setError(data.error ?? "Failed to enrich URL");
-          return;
+          if (!res.ok) {
+            setError(data.error ?? "Failed to enrich URL");
+            return;
+          }
+
+          onAdd({
+            url: url.trim(),
+            title: data.title,
+            thumbnail: data.thumbnail ?? undefined,
+            category: data.category,
+            tags: data.tags,
+            duration: data.duration ?? undefined,
+          });
+        } else {
+          // Not logged in — save URL as-is, no AI
+          onAdd({
+            url: url.trim(),
+            title: url.trim(),
+            category: "other",
+            tags: [],
+          });
         }
 
-        onAdd({
-          url: url.trim(),
-          title: data.title,
-          thumbnail: data.thumbnail ?? undefined,
-          category: data.category,
-          tags: data.tags,
-          duration: data.duration ?? undefined,
-        });
         setUrl("");
       } catch {
         setError("Network error — please try again");
@@ -50,7 +63,7 @@ export const AddItemInput = memo(function AddItemInput({ onAdd }: AddItemInputPr
         setLoading(false);
       }
     },
-    [url, onAdd]
+    [url, onAdd, isLoggedIn]
   );
 
   return (
@@ -72,6 +85,11 @@ export const AddItemInput = memo(function AddItemInput({ onAdd }: AddItemInputPr
           {loading ? "Adding..." : "Add"}
         </button>
       </form>
+      {!isLoggedIn && (
+        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          Sign in to enable AI enrichment (title, tags, category)
+        </p>
+      )}
       {error && (
         <p className="mt-1 text-sm text-red-500 dark:text-red-400">{error}</p>
       )}

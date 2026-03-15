@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useObservable } from "dexie-react-hooks";
+import { db } from "@/db";
 import { useItems } from "@/hooks/useItems";
 import { AddItemInput } from "@/components/AddItemInput";
 import { FilterBar } from "@/components/FilterBar";
@@ -28,6 +30,8 @@ export default function Page() {
   } = useItems();
 
   const { toast } = useToast();
+  const currentUser = useObservable(db.cloud.currentUser);
+  const isLoggedIn = currentUser?.isLoggedIn ?? false;
 
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -118,7 +122,7 @@ export default function Page() {
         </div>
       </div>
 
-      <AddItemInput onAdd={handleAdd} />
+      <AddItemInput onAdd={handleAdd} isLoggedIn={isLoggedIn} />
 
       <FilterBar
         categories={categories}
