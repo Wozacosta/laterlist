@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useObservable } from "dexie-react-hooks";
 import { db } from "@/db";
 import { useItems } from "@/hooks/useItems";
+import { useGroups } from "@/hooks/useGroups";
 import { AddItemInput } from "@/components/AddItemInput";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
@@ -12,9 +13,12 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { SkeletonList } from "@/components/SkeletonList";
 import { DataManager } from "@/components/DataManager";
 import { useToast } from "@/components/Toast";
-import type { Category, Item } from "@/db";
+import type { Category, Item, GroupColor } from "@/db";
 
 type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
+
+const DEFAULT_COLORS: GroupColor[] = ["blue", "purple", "green", "orange", "pink", "gray"];
+let colorIndex = 0;
 
 export default function Page() {
   const {
@@ -27,7 +31,17 @@ export default function Page() {
     unmarkDone,
     deleteItem,
     reorderItems,
+    assignToGroup,
   } = useItems();
+
+  const {
+    groups,
+    addGroup,
+    renameGroup,
+    setColor,
+    toggleCollapse,
+    deleteGroup,
+  } = useGroups();
 
   const { toast } = useToast();
   const currentUser = useObservable(db.cloud.currentUser);
@@ -61,7 +75,6 @@ export default function Page() {
 
   const handleAdd = useCallback(
     async (data: EnrichedData) => {
-      // Duplicate detection
       const duplicate = items.find(
         (i) => i.url.replace(/\/$/, "") === data.url.replace(/\/$/, "")
       );
@@ -111,6 +124,20 @@ export default function Page() {
     );
   }, []);
 
+  const handleAddGroup = useCallback(async () => {
+    const color = DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length];
+    colorIndex++;
+    await addGroup("New group", color);
+  }, [addGroup]);
+
+  const handleDeleteGroup = useCallback(
+    async (id: string) => {
+      await deleteGroup(id);
+      toast("Group deleted");
+    },
+    [deleteGroup, toast]
+  );
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
@@ -138,6 +165,7 @@ export default function Page() {
       ) : (
         <ItemList
           items={filteredItems}
+          groups={groups}
           filtered={isFiltered}
           onMarkDone={handleMarkDone}
           onUnmarkDone={unmarkDone}
@@ -145,6 +173,12 @@ export default function Page() {
           onUpdateNotes={handleUpdateNotes}
           onDelete={handleDelete}
           onReorder={reorderItems}
+          onAssignToGroup={assignToGroup}
+          onRenameGroup={renameGroup}
+          onSetGroupColor={setColor}
+          onToggleGroupCollapse={toggleCollapse}
+          onDeleteGroup={handleDeleteGroup}
+          onAddGroup={handleAddGroup}
         />
       )}
 

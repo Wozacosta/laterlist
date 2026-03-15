@@ -10,6 +10,22 @@ export type Category =
   | "doc"
   | "other";
 
+export type GroupColor =
+  | "blue"
+  | "purple"
+  | "green"
+  | "orange"
+  | "pink"
+  | "gray";
+
+export interface Group {
+  id: string; // "grp" + crypto.randomUUID()
+  name: string;
+  color: GroupColor;
+  sortOrder: number;
+  collapsed: boolean;
+}
+
 export interface Item {
   id: string; // "itm" + crypto.randomUUID()
   url: string;
@@ -17,22 +33,27 @@ export interface Item {
   thumbnail?: string;
   category: Category;
   tags: string[];
-  duration?: number; // seconds (video length or article read time)
+  duration?: number; // seconds
   addedAt: string; // ISO datetime string
   sortOrder: number; // Date.now() on creation
   status: "unread" | "done";
-  doneAt?: string; // ISO datetime string, set when marked done
+  doneAt?: string; // ISO datetime string
   notes?: string;
+  groupId?: string; // optional group membership
 }
 
 const db = new Dexie("LaterlistDB", { addons: [dexieCloud] }) as Dexie & {
   items: DexieCloudTable<Item, "id">;
+  groups: DexieCloudTable<Group, "id">;
 };
 
-// Plain "id" key (not "@id") — cloud addon works with manually-generated UUIDs,
-// and this avoids a fake-indexeddb v6 incompatibility in tests.
 db.version(1).stores({
   items: "id, url, category, status, sortOrder, addedAt",
+});
+
+db.version(2).stores({
+  items: "id, url, category, status, sortOrder, addedAt, groupId",
+  groups: "id, sortOrder",
 });
 
 db.cloud.configure({

@@ -68,6 +68,13 @@ export function useItems() {
     []
   );
 
+  const assignToGroup = useCallback(
+    async (id: string, groupId: string | undefined) => {
+      await db.items.update(id, { groupId });
+    },
+    []
+  );
+
   return {
     items,
     archivedItems,
@@ -78,5 +85,6 @@ export function useItems() {
     unmarkDone,
     deleteItem,
     reorderItems,
+    assignToGroup,
   };
 }
