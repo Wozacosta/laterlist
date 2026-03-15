@@ -49,6 +49,7 @@ export default function Page() {
 
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [hideDone, setHideDone] = useState(false);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -62,16 +63,17 @@ export default function Page() {
     return Array.from(catSet) as Category[];
   }, [items]);
 
-  const isFiltered = selectedCategory !== null || selectedTags.length > 0;
+  const isFiltered = selectedCategory !== null || selectedTags.length > 0 || hideDone;
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
+      if (hideDone && item.status === "done") return false;
       if (selectedCategory && item.category !== selectedCategory) return false;
       if (selectedTags.length > 0 && !selectedTags.every((t) => item.tags.includes(t)))
         return false;
       return true;
     });
-  }, [items, selectedCategory, selectedTags]);
+  }, [items, selectedCategory, selectedTags, hideDone]);
 
   const handleAdd = useCallback(
     async (data: EnrichedData) => {
@@ -156,8 +158,10 @@ export default function Page() {
         allTags={allTags}
         selectedCategory={selectedCategory}
         selectedTags={selectedTags}
+        hideDone={hideDone}
         onCategoryChange={setSelectedCategory}
         onTagToggle={handleTagToggle}
+        onToggleHideDone={() => setHideDone((v) => !v)}
       />
 
       {isLoading ? (
