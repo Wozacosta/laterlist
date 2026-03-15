@@ -17,6 +17,14 @@ import type { Category, Item, GroupColor } from "@/db";
 
 type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
 
+function formatTotalTime(seconds: number): string {
+  if (seconds === 0) return "";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.round((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m to go`;
+  return `${m}m to go`;
+}
+
 const DEFAULT_COLORS: GroupColor[] = ["blue", "purple", "green", "orange", "pink", "gray"];
 let colorIndex = 0;
 
@@ -74,6 +82,12 @@ export default function Page() {
       return true;
     });
   }, [items, selectedCategory, selectedTags, hideDone]);
+
+  const totalUnreadSeconds = useMemo(() => {
+    return filteredItems
+      .filter((i) => i.status === "unread" && i.duration != null)
+      .reduce((sum, i) => sum + (i.duration ?? 0), 0);
+  }, [filteredItems]);
 
   const handleAdd = useCallback(
     async (data: EnrichedData) => {
@@ -163,6 +177,12 @@ export default function Page() {
         onTagToggle={handleTagToggle}
         onToggleHideDone={() => setHideDone((v) => !v)}
       />
+
+      {!isLoading && totalUnreadSeconds > 0 && (
+        <p className="mb-3 text-xs text-gray-400 dark:text-gray-600">
+          {formatTotalTime(totalUnreadSeconds)}
+        </p>
+      )}
 
       {isLoading ? (
         <SkeletonList />

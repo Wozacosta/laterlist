@@ -101,7 +101,7 @@ export const ItemRow = memo(function ItemRow({
       ref={setNodeRef}
       style={style}
       className={`group rounded-lg border border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900 ${
-        item.status === "done" ? "opacity-50" : ""
+        item.status === "done" ? "opacity-35" : ""
       }`}
     >
       <div
@@ -144,7 +144,7 @@ export const ItemRow = memo(function ItemRow({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate min-w-0 flex-1 hover:underline"
+              className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate min-w-0 flex-1 hover:underline ${item.status === "done" ? "line-through" : ""}`}
             >
               {item.title}
             </a>
