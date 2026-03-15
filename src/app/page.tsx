@@ -6,6 +6,7 @@ import { AddItemInput } from "@/components/AddItemInput";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { Category, Item } from "@/db";
 
 type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
@@ -78,7 +79,10 @@ export default function Page() {
     <main className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">laterlist</h1>
-        <CloudSyncButton />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <CloudSyncButton />
+        </div>
       </div>
 
       <AddItemInput onAdd={handleAdd} />
