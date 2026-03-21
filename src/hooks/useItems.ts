@@ -50,21 +50,28 @@ export function useItems() {
         status: "done",
         doneAt: now,
       });
-      // Auto-log duration to linked topics (LT-10)
-      if (item.duration && item.topicIds?.length) {
+      // Auto-log duration to linked topics (LT-10) and reset SR clock (LT-21)
+      if (item.topicIds?.length) {
         for (const topicId of item.topicIds) {
           const topic = await db.topics.get(topicId);
           if (topic) {
-            await db.topics.update(topicId, {
-              timeSpent: (topic.timeSpent ?? 0) + item.duration,
-            });
-            await db.timeLogs.add({
-              id: `log${crypto.randomUUID()}`,
-              topicId,
-              seconds: item.duration,
-              loggedAt: now,
-              source: "done",
-            });
+            const update: Record<string, unknown> = {
+              lastActivityDate: now,
+              currentInterval: 1,
+            };
+            if (item.duration) {
+              update.timeSpent = (topic.timeSpent ?? 0) + item.duration;
+            }
+            await db.topics.update(topicId, update);
+            if (item.duration) {
+              await db.timeLogs.add({
+                id: `log${crypto.randomUUID()}`,
+                topicId,
+                seconds: item.duration,
+                loggedAt: now,
+                source: "done",
+              });
+            }
           }
         }
       }

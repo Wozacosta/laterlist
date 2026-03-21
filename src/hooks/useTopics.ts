@@ -40,9 +40,12 @@ export function useTopics() {
   }, []);
 
   const completeTopic = useCallback(async (id: string) => {
+    const now = new Date().toISOString();
     await db.topics.update(id, {
       status: "completed",
-      completedAt: new Date().toISOString(),
+      completedAt: now,
+      lastActivityDate: now,
+      currentInterval: 1,
     });
   }, []);
 
@@ -60,6 +63,8 @@ export function useTopics() {
       if (!topic) return;
       await db.topics.update(id, {
         timeSpent: topic.timeSpent + seconds,
+        lastActivityDate: new Date().toISOString(),
+        currentInterval: 1,
       });
       await db.timeLogs.add({
         id: `log${crypto.randomUUID()}`,
