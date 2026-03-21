@@ -32,14 +32,14 @@
 
 ## Phase 2: Data Model Extensions
 
-### LT-03: Non-URL learning items
-- [ ] Allow items without URL (manual title + estimated duration)
-- [ ] UI: toggle between URL input and manual entry in AddItemInput
-- [ ] Skip enrichment for non-URL items
+### LT-03: Non-URL learning items ✓
+- [x] Allow items without URL (manual title + estimated duration)
+- [x] UI: toggle between URL input and manual entry in AddItemInput
+- [x] Skip enrichment for non-URL items
 
-### LT-04: Estimated duration on non-URL items
-- [ ] Duration input (hours/minutes) for manual items
-- [ ] Validate and convert to seconds
+### LT-04: Estimated duration on non-URL items ✓
+- [x] Duration input (hours/minutes) for manual items
+- [x] Validate and convert to seconds
 
 ### LT-05: Dexie Cloud sync
 - [ ] Already working — all tables sync via dexie-cloud-addon

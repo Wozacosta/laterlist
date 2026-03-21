@@ -107,12 +107,15 @@ export default function Page() {
 
   const handleAdd = useCallback(
     async (data: EnrichedData) => {
-      const duplicate = items.find(
-        (i) => i.url.replace(/\/$/, "") === data.url.replace(/\/$/, "")
-      );
-      if (duplicate) {
-        toast(`Already saved: "${duplicate.title}"`, "warning");
-        return;
+      // Only check for duplicates on URL items
+      if (data.url) {
+        const duplicate = items.find(
+          (i) => i.url && i.url.replace(/\/$/, "") === data.url.replace(/\/$/, "")
+        );
+        if (duplicate) {
+          toast(`Already saved: "${duplicate.title}"`, "warning");
+          return;
+        }
       }
       await addItem(data);
       toast("Added to your list");
