@@ -12,6 +12,7 @@ interface TopicListProps {
   onComplete: (id: string) => void;
   onReopen: (id: string) => void;
   onLogTime: (id: string, seconds: number) => void;
+  onSetPriority: (id: string, priority: number) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -32,6 +33,7 @@ const TopicRow = memo(function TopicRow({
   onComplete,
   onReopen,
   onLogTime,
+  onSetPriority,
 }: {
   topic: Topic;
   remainingSeconds: number;
@@ -41,14 +43,18 @@ const TopicRow = memo(function TopicRow({
   onComplete: (id: string) => void;
   onReopen: (id: string) => void;
   onLogTime: (id: string, seconds: number) => void;
+  onSetPriority: (id: string, priority: number) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(topic.name);
   const [showLogTime, setShowLogTime] = useState(false);
   const [logHours, setLogHours] = useState("");
   const [logMinutes, setLogMinutes] = useState("");
+  const [editingPriority, setEditingPriority] = useState(false);
+  const [priorityDraft, setPriorityDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const logInputRef = useRef<HTMLInputElement>(null);
+  const priorityInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
@@ -57,6 +63,18 @@ const TopicRow = memo(function TopicRow({
   useEffect(() => {
     if (showLogTime) logInputRef.current?.focus();
   }, [showLogTime]);
+
+  useEffect(() => {
+    if (editingPriority) priorityInputRef.current?.select();
+  }, [editingPriority]);
+
+  const commitPriority = useCallback(() => {
+    setEditingPriority(false);
+    const val = parseInt(priorityDraft, 10);
+    if (!isNaN(val) && val !== (topic.priority ?? 0)) {
+      onSetPriority(topic.id, val);
+    }
+  }, [priorityDraft, topic.id, topic.priority, onSetPriority]);
 
   const handleLogTimeSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -155,6 +173,42 @@ const TopicRow = memo(function TopicRow({
           >
             {topic.name}
           </button>
+        )}
+
+        {/* Priority badge */}
+        {!isCompleted && (
+          editingPriority ? (
+            <input
+              ref={priorityInputRef}
+              type="number"
+              min="0"
+              max="100"
+              value={priorityDraft}
+              onChange={(e) => setPriorityDraft(e.target.value)}
+              onBlur={commitPriority}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitPriority();
+                if (e.key === "Escape") setEditingPriority(false);
+              }}
+              className="w-12 shrink-0 rounded border border-blue-400 bg-white px-1.5 py-0.5 text-center text-xs text-gray-700 focus:outline-none dark:bg-gray-900 dark:text-gray-300"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setPriorityDraft(String(topic.priority ?? 0));
+                setEditingPriority(true);
+              }}
+              className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${
+                (topic.priority ?? 0) > 0
+                  ? "bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:hover:bg-purple-800"
+                  : "bg-gray-100 text-gray-400 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700"
+              }`}
+              title="Set priority percentage"
+            >
+              {(topic.priority ?? 0)}%
+            </button>
+          )
         )}
 
         {/* Stats + Progress */}
@@ -273,6 +327,7 @@ export const TopicList = memo(function TopicList({
   onComplete,
   onReopen,
   onLogTime,
+  onSetPriority,
 }: TopicListProps) {
   const [newName, setNewName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -300,13 +355,15 @@ export const TopicList = memo(function TopicList({
   const totals = useMemo(() => {
     let totalSpent = 0;
     let totalRemaining = 0;
+    let totalPriority = 0;
     for (const topic of topics) {
       if (topic.status === "completed") continue;
       totalSpent += topic.timeSpent;
+      totalPriority += topic.priority ?? 0;
       const s = topicStats.get(topic.id);
       totalRemaining += s?.remainingSeconds ?? 0;
     }
-    return { totalSpent, totalRemaining };
+    return { totalSpent, totalRemaining, totalPriority };
   }, [topics, topicStats]);
 
   // Sort: active topics first (preserving sortOrder), completed at bottom
@@ -387,14 +444,28 @@ export const TopicList = memo(function TopicList({
                 onComplete={onComplete}
                 onReopen={onReopen}
                 onLogTime={onLogTime}
+                onSetPriority={onSetPriority}
               />
             );
           })}
 
           {/* Totals summary */}
-          {(totals.totalSpent > 0 || totals.totalRemaining > 0) && (
+          {(totals.totalSpent > 0 || totals.totalRemaining > 0 || totals.totalPriority > 0) && (
             <div className="mt-2 flex items-center justify-between rounded-lg border border-dashed border-gray-200 px-4 py-2.5 dark:border-gray-800">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">All topics</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">All topics</span>
+                {totals.totalPriority > 0 && (
+                  <span className={`text-xs font-medium ${
+                    totals.totalPriority === 100
+                      ? "text-green-600 dark:text-green-400"
+                      : totals.totalPriority > 100
+                        ? "text-red-500 dark:text-red-400"
+                        : "text-purple-600 dark:text-purple-400"
+                  }`}>
+                    {totals.totalPriority}% allocated
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-3 text-xs">
                 {totals.totalSpent > 0 && (
                   <span className="text-green-600 dark:text-green-400">{formatTime(totals.totalSpent)} done</span>

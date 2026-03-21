@@ -54,8 +54,15 @@
 - [x] Toast feedback on successful time logging
 - [x] Hidden for completed topics
 
+### LT-20: Weighted priority percentages ✓
+- [x] Add `priority: number` (0-100) to Topic interface
+- [x] DB v6 migration: set `priority = 0` on existing topics
+- [x] `setPriority(id, value)` in useTopics with clamping to 0-100
+- [x] Clickable percentage badge on each active TopicRow (click to edit inline)
+- [x] Purple highlight when priority > 0, gray when 0%
+- [x] Total allocation display in summary row (green=100%, red=>100%, purple=<100%)
+
 ### Remaining
-- [ ] LT-20: Weighted priority percentages
 - [ ] LT-21: Daily learning goal
 - [ ] LT-22: Streak tracking
 - [ ] LT-23: Smart recommendations

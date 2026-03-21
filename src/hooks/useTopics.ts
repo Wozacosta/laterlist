@@ -15,6 +15,7 @@ export function useTopics() {
       sortOrder: Date.now(),
       status: "active",
       timeSpent: 0,
+      priority: 0,
     });
   }, []);
 
@@ -60,6 +61,11 @@ export function useTopics() {
     });
   }, []);
 
+  const setPriority = useCallback(async (id: string, priority: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(priority)));
+    await db.topics.update(id, { priority: clamped });
+  }, []);
+
   return {
     topics: topics ?? [],
     isLoading: topics === undefined,
@@ -69,5 +75,6 @@ export function useTopics() {
     completeTopic,
     reopenTopic,
     logTime,
+    setPriority,
   };
 }

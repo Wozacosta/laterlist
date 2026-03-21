@@ -65,6 +65,7 @@ export default function Page() {
     completeTopic,
     reopenTopic,
     logTime,
+    setPriority,
   } = useTopics();
 
   const { toast } = useToast();
@@ -300,6 +301,7 @@ export default function Page() {
           onComplete={completeTopic}
           onReopen={reopenTopic}
           onLogTime={handleLogTime}
+          onSetPriority={setPriority}
         />
       )}
     </main>
