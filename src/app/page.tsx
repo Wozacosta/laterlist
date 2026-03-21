@@ -62,6 +62,8 @@ export default function Page() {
     addTopic,
     renameTopic,
     deleteTopic,
+    completeTopic,
+    reopenTopic,
   } = useTopics();
 
   const { toast } = useToast();
@@ -280,6 +282,8 @@ export default function Page() {
           onAdd={handleAddTopic}
           onRename={renameTopic}
           onDelete={handleDeleteTopic}
+          onComplete={completeTopic}
+          onReopen={reopenTopic}
         />
       )}
     </main>

@@ -9,6 +9,8 @@ interface TopicListProps {
   onAdd: (name: string) => void;
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
+  onComplete: (id: string) => void;
+  onReopen: (id: string) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -26,12 +28,16 @@ const TopicRow = memo(function TopicRow({
   itemCount,
   onRename,
   onDelete,
+  onComplete,
+  onReopen,
 }: {
   topic: Topic;
   remainingSeconds: number;
   itemCount: number;
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
+  onComplete: (id: string) => void;
+  onReopen: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(topic.name);
@@ -62,10 +68,33 @@ const TopicRow = memo(function TopicRow({
     [commitRename, topic.name]
   );
 
+  const isCompleted = topic.status === "completed";
+
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950">
+    <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${
+      isCompleted
+        ? "border-gray-100 bg-gray-50 opacity-60 dark:border-gray-900 dark:bg-gray-950"
+        : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950"
+    }`}>
+      {/* Complete/Reopen toggle */}
+      <button
+        type="button"
+        onClick={() => isCompleted ? onReopen(topic.id) : onComplete(topic.id)}
+        className={`shrink-0 transition-colors ${
+          isCompleted
+            ? "text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300"
+            : "text-gray-300 hover:text-green-500 dark:text-gray-700 dark:hover:text-green-400"
+        }`}
+        aria-label={isCompleted ? "Reopen topic" : "Complete topic"}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill={isCompleted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      </button>
+
       {/* Topic icon */}
-      <span className="shrink-0 text-blue-500 dark:text-blue-400">
+      <span className={`shrink-0 ${isCompleted ? "text-gray-400 dark:text-gray-600" : "text-blue-500 dark:text-blue-400"}`}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
           <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
@@ -89,7 +118,11 @@ const TopicRow = memo(function TopicRow({
             setDraft(topic.name);
             setEditing(true);
           }}
-          className="flex-1 min-w-0 text-left text-sm font-medium text-gray-800 dark:text-gray-200 truncate"
+          className={`flex-1 min-w-0 text-left text-sm font-medium truncate ${
+            isCompleted
+              ? "line-through text-gray-400 dark:text-gray-600"
+              : "text-gray-800 dark:text-gray-200"
+          }`}
           title="Double-click to rename"
         >
           {topic.name}
@@ -131,6 +164,8 @@ export const TopicList = memo(function TopicList({
   onAdd,
   onRename,
   onDelete,
+  onComplete,
+  onReopen,
 }: TopicListProps) {
   const [newName, setNewName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -153,6 +188,15 @@ export const TopicList = memo(function TopicList({
     }
     return stats;
   }, [topics, items]);
+
+  // Sort: active topics first (preserving sortOrder), completed at bottom
+  const sortedTopics = useMemo(() => {
+    return [...topics].sort((a, b) => {
+      if (a.status === "completed" && b.status !== "completed") return 1;
+      if (a.status !== "completed" && b.status === "completed") return -1;
+      return 0; // preserve existing sortOrder from DB
+    });
+  }, [topics]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -210,7 +254,7 @@ export const TopicList = memo(function TopicList({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {topics.map((topic) => {
+          {sortedTopics.map((topic) => {
             const s = topicStats.get(topic.id);
             return (
               <TopicRow
@@ -220,6 +264,8 @@ export const TopicList = memo(function TopicList({
                 remainingSeconds={s?.remainingSeconds ?? 0}
                 onRename={onRename}
                 onDelete={onDelete}
+                onComplete={onComplete}
+                onReopen={onReopen}
               />
             );
           })}

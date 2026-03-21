@@ -19,11 +19,11 @@
 - [x] Show time spent per topic in TopicList UI (with item count + remaining time)
 - [x] Test: verify time accumulates on markDone and reverses on unmarkDone
 
-### LT-13: Mark topic as complete (UI)
-- [ ] Backend already exists (`completeTopic`/`reopenTopic` in useTopics)
-- [ ] Add complete/reopen toggle button to TopicRow
-- [ ] Visual distinction for completed topics (faded, strikethrough)
-- [ ] Filter completed topics to bottom of list
+### LT-13: Mark topic as complete (UI) ✓
+- [x] Backend already exists (`completeTopic`/`reopenTopic` in useTopics)
+- [x] Add complete/reopen toggle button to TopicRow
+- [x] Visual distinction for completed topics (faded, strikethrough, opacity)
+- [x] Filter completed topics to bottom of list
 
 ### LT-12: Remaining time per topic
 - [ ] Compute: sum of unread items' durations per topic
