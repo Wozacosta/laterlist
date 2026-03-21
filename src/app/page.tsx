@@ -18,6 +18,7 @@ import { TopicList } from "@/components/TopicList";
 import { DailyGoal } from "@/components/DailyGoal";
 import { Recommendation } from "@/components/Recommendation";
 import { LearningDashboard } from "@/components/LearningDashboard";
+import { TopicDetail } from "@/components/TopicDetail";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SkeletonList } from "@/components/SkeletonList";
@@ -87,9 +88,15 @@ export default function Page() {
   const isLoggedIn = currentUser?.isLoggedIn ?? false;
 
   const [view, setView] = useState<View>("list");
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [hideDone, setHideDone] = useState(false);
+
+  const selectedTopic = useMemo(
+    () => selectedTopicId ? topics.find((t) => t.id === selectedTopicId) ?? null : null,
+    [selectedTopicId, topics]
+  );
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -305,6 +312,14 @@ export default function Page() {
             </p>
           )}
         </>
+      ) : selectedTopic ? (
+        <TopicDetail
+          topic={selectedTopic}
+          items={items}
+          onBack={() => setSelectedTopicId(null)}
+          onMarkDone={handleMarkDone}
+          onUnmarkDone={unmarkDone}
+        />
       ) : (
         <>
           <DailyGoal
@@ -334,6 +349,7 @@ export default function Page() {
             onReopen={reopenTopic}
             onLogTime={handleLogTime}
             onSetPriority={setPriority}
+            onSelectTopic={setSelectedTopicId}
           />
         </>
       )}

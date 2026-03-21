@@ -14,6 +14,7 @@ interface TopicListProps {
   onReopen: (id: string) => void;
   onLogTime: (id: string, seconds: number) => void;
   onSetPriority: (id: string, priority: number) => void;
+  onSelectTopic: (id: string) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -50,6 +51,7 @@ const TopicRow = memo(function TopicRow({
   onReopen,
   onLogTime,
   onSetPriority,
+  onSelect,
 }: {
   topic: Topic;
   remainingSeconds: number;
@@ -61,6 +63,7 @@ const TopicRow = memo(function TopicRow({
   onReopen: (id: string) => void;
   onLogTime: (id: string, seconds: number) => void;
   onSetPriority: (id: string, priority: number) => void;
+  onSelect: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(topic.name);
@@ -177,16 +180,17 @@ const TopicRow = memo(function TopicRow({
         ) : (
           <button
             type="button"
+            onClick={() => onSelect(topic.id)}
             onDoubleClick={() => {
               setDraft(topic.name);
               setEditing(true);
             }}
-            className={`flex-1 min-w-0 text-left text-sm font-medium truncate ${
+            className={`flex-1 min-w-0 text-left text-sm font-medium truncate cursor-pointer ${
               isCompleted
                 ? "line-through text-gray-400 dark:text-gray-600"
-                : "text-gray-800 dark:text-gray-200"
+                : "text-gray-800 hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400"
             }`}
-            title="Double-click to rename"
+            title="Click to view details, double-click to rename"
           >
             {topic.name}
           </button>
@@ -350,6 +354,7 @@ export const TopicList = memo(function TopicList({
   onReopen,
   onLogTime,
   onSetPriority,
+  onSelectTopic,
 }: TopicListProps) {
   const [newName, setNewName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -482,6 +487,7 @@ export const TopicList = memo(function TopicList({
                 onReopen={onReopen}
                 onLogTime={onLogTime}
                 onSetPriority={onSetPriority}
+                onSelect={onSelectTopic}
               />
             );
           })}

@@ -105,7 +105,16 @@
 - [x] Auto-hides when no data exists
 - [x] Renders in Learn view between DailyGoal and Recommendation
 
+### LT-31: Topic detail view ✓
+- [x] `TopicDetail` component: full topic view with back navigation
+- [x] Stats cards: time spent, remaining, items completed count
+- [x] Progress bar: visual completion based on time spent vs total
+- [x] Unread items list: clickable titles (links for URLs), mark-done buttons, duration labels
+- [x] Completed items list: faded with unmark-done buttons and completion dates
+- [x] Recent activity: last 20 time logs with source badges (completed/logged) and timestamps
+- [x] Single-click topic name in TopicRow opens detail; double-click still renames
+- [x] `selectedTopicId` state in page.tsx toggles between topic list and detail views
+
 ### Remaining
-- [ ] LT-31: Topic detail view
 - [ ] LT-32: Weekly/monthly report
 - [ ] LT-33: Export learning data
