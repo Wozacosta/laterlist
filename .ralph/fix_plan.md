@@ -16,7 +16,7 @@
 
 ### Dashboard & Detail Updates
 - [x] **LT-30** (update): Add study queue section at the top of the learning dashboard. Show urgency scores, overdue indicators.
-- [ ] **LT-31** (update): Add SR status to topic detail view — next review date, urgency score, days since last activity.
+- [x] **LT-31** (update): Add SR status to topic detail view — next review date, urgency score, days since last activity.
 
 ### Learning Notes
 - [ ] **LT-34**: Add markdown notes field to topics and items. DB migration. Notes stored as plain markdown strings.

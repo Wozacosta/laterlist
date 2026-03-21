@@ -3,6 +3,7 @@
 import { memo, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Topic, type Item } from "@/db";
+import { maxInterval, urgency } from "@/lib/spacedRepetition";
 
 interface TopicDetailProps {
   topic: Topic;
@@ -137,6 +138,79 @@ export const TopicDetail = memo(function TopicDetail({
           </p>
         </div>
       </div>
+
+      {/* SR status */}
+      {!isCompleted && (() => {
+        const priority = topic.priority ?? 3;
+        const maxDays = maxInterval(priority);
+        const DAY_MS = 86_400_000;
+        const now = Date.now();
+        const lastDate = topic.lastActivityDate
+          ? new Date(topic.lastActivityDate).getTime()
+          : new Date(topic.createdAt).getTime();
+        const daysSince = Math.max(0, (now - lastDate) / DAY_MS);
+        const score = urgency(daysSince, priority);
+        const isOverdue = score >= 1.0;
+        const nextReviewDate = new Date(lastDate + maxDays * DAY_MS);
+        const nextReviewLabel = isOverdue
+          ? "Overdue"
+          : nextReviewDate.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+        return (
+          <div className="mb-4 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950">
+            <h3 className="mb-2 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              Review status
+            </h3>
+            <div className="grid grid-cols-4 gap-3 text-center">
+              <div>
+                <p className={`text-sm font-semibold ${
+                  isOverdue
+                    ? "text-red-600 dark:text-red-400"
+                    : score >= 0.7
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-green-600 dark:text-green-400"
+                }`}>
+                  {score.toFixed(2)}
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">Urgency</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {daysSince < 1 ? "<1" : Math.round(daysSince)}d
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">Since activity</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {maxDays}d
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">Max interval</p>
+              </div>
+              <div>
+                <p className={`text-sm font-semibold ${
+                  isOverdue ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-gray-300"
+                }`}>
+                  {nextReviewLabel}
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">Next review</p>
+              </div>
+            </div>
+            {/* Urgency bar */}
+            <div className="mt-2 h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  isOverdue
+                    ? "bg-red-500 dark:bg-red-400"
+                    : score >= 0.7
+                      ? "bg-amber-500 dark:bg-amber-400"
+                      : "bg-green-500 dark:bg-green-400"
+                }`}
+                style={{ width: `${Math.min(100, Math.round(score * 100))}%` }}
+              />
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Progress bar */}
       {totalEstimated > 0 && (
