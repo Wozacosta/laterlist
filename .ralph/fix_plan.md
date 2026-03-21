@@ -15,7 +15,7 @@
 - [x] **LT-24**: Add "mark as studied" action in study queue (resets SR clock without logging time — for offline/untracked study).
 
 ### Dashboard & Detail Updates
-- [ ] **LT-30** (update): Add study queue section at the top of the learning dashboard. Show urgency scores, overdue indicators.
+- [x] **LT-30** (update): Add study queue section at the top of the learning dashboard. Show urgency scores, overdue indicators.
 - [ ] **LT-31** (update): Add SR status to topic detail view — next review date, urgency score, days since last activity.
 
 ### Learning Notes

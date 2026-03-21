@@ -16,7 +16,7 @@ import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
 import { TopicList } from "@/components/TopicList";
 import { DailyGoal } from "@/components/DailyGoal";
-import { Recommendation } from "@/components/Recommendation";
+import { StudyQueue } from "@/components/StudyQueue";
 import { LearningDashboard } from "@/components/LearningDashboard";
 import { TopicDetail } from "@/components/TopicDetail";
 import { LearningReport } from "@/components/LearningReport";
@@ -84,10 +84,6 @@ export default function Page() {
   const todaySeconds = useTodayTime();
   const streak = useStreak();
   const studyQueue = useStudyQueue(topics);
-  // Adapt top study queue entry to Recommendation shape for existing component
-  const recommendation = studyQueue.length > 0
-    ? { topicId: studyQueue[0].topicId, topicName: studyQueue[0].topicName, reason: studyQueue[0].reason, score: studyQueue[0].urgencyScore }
-    : null;
   const { days, topicTotals, weekTotal } = useWeeklyActivity();
 
   const { toast } = useToast();
@@ -358,12 +354,11 @@ export default function Page() {
             totalVelocitySecsPerDay={weekTotal / 7}
             onViewReport={() => setShowReport(true)}
           />
-          {recommendation && (
-            <Recommendation
-              recommendation={recommendation}
-              onMarkStudied={() => handleMarkStudied(recommendation.topicId)}
-            />
-          )}
+          <StudyQueue
+            entries={studyQueue}
+            onMarkStudied={handleMarkStudied}
+            onSelectTopic={setSelectedTopicId}
+          />
           <TopicList
             topics={topics}
             items={items}
