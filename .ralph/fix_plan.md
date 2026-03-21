@@ -12,7 +12,7 @@
 - [x] **LT-21**: Reset SR clock on any topic activity — wire into `logTime`, `completeTopic`, and item done handler.
 - [x] **LT-22**: Implement priority-scaled max intervals (P5=3d, P4=7d, P3=14d, P2=21d, P1=30d).
 - [x] **LT-23**: Build `useStudyQueue` hook — rank active topics by `urgency = daysSinceLastActivity / maxInterval(priority)`. Replace existing recommendation hook.
-- [ ] **LT-24**: Add "mark as studied" action in study queue (resets SR clock without logging time — for offline/untracked study).
+- [x] **LT-24**: Add "mark as studied" action in study queue (resets SR clock without logging time — for offline/untracked study).
 
 ### Dashboard & Detail Updates
 - [ ] **LT-30** (update): Add study queue section at the top of the learning dashboard. Show urgency scores, overdue indicators.

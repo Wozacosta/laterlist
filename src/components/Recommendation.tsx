@@ -6,10 +6,12 @@ interface RecommendationProps {
     topicName: string;
     reason: string;
   };
+  onMarkStudied?: () => void;
 }
 
 export const Recommendation = memo(function Recommendation({
   recommendation,
+  onMarkStudied,
 }: RecommendationProps) {
   return (
     <div className="mb-4 flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-2.5 dark:border-blue-900 dark:bg-blue-950">
@@ -42,6 +44,17 @@ export const Recommendation = memo(function Recommendation({
           </p>
         )}
       </div>
+
+      {onMarkStudied && (
+        <button
+          type="button"
+          onClick={onMarkStudied}
+          className="shrink-0 rounded px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900 transition-colors"
+          title="Mark as studied (resets review timer)"
+        >
+          Studied
+        </button>
+      )}
     </div>
   );
 });

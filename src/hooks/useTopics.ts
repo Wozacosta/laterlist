@@ -85,6 +85,14 @@ export function useTopics() {
     await db.topics.update(id, { estimatedSeconds: Math.max(0, Math.round(seconds)) });
   }, []);
 
+  /** Reset SR clock without logging time — for offline/untracked study (LT-24). */
+  const markStudied = useCallback(async (id: string) => {
+    await db.topics.update(id, {
+      lastActivityDate: new Date().toISOString(),
+      currentInterval: 1,
+    });
+  }, []);
+
   return {
     topics: topics ?? [],
     isLoading: topics === undefined,
@@ -96,5 +104,6 @@ export function useTopics() {
     logTime,
     setPriority,
     setEstimate,
+    markStudied,
   };
 }

@@ -77,6 +77,7 @@ export default function Page() {
     logTime,
     setPriority,
     setEstimate,
+    markStudied,
   } = useTopics();
 
   const { dailyGoalMinutes, setDailyGoal } = useSettings();
@@ -230,6 +231,14 @@ export default function Page() {
     [logTime, toast]
   );
 
+  const handleMarkStudied = useCallback(
+    async (id: string) => {
+      await markStudied(id);
+      toast("Marked as studied");
+    },
+    [markStudied, toast]
+  );
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
@@ -350,7 +359,10 @@ export default function Page() {
             onViewReport={() => setShowReport(true)}
           />
           {recommendation && (
-            <Recommendation recommendation={recommendation} />
+            <Recommendation
+              recommendation={recommendation}
+              onMarkStudied={() => handleMarkStudied(recommendation.topicId)}
+            />
           )}
           <TopicList
             topics={topics}
