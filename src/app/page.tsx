@@ -64,6 +64,7 @@ export default function Page() {
     deleteTopic,
     completeTopic,
     reopenTopic,
+    logTime,
   } = useTopics();
 
   const { toast } = useToast();
@@ -189,6 +190,17 @@ export default function Page() {
     [deleteTopic, toast]
   );
 
+  const handleLogTime = useCallback(
+    async (id: string, seconds: number) => {
+      await logTime(id, seconds);
+      const h = Math.floor(seconds / 3600);
+      const m = Math.round((seconds % 3600) / 60);
+      const label = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      toast(`Logged ${label}`);
+    },
+    [logTime, toast]
+  );
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
@@ -287,6 +299,7 @@ export default function Page() {
           onDelete={handleDeleteTopic}
           onComplete={completeTopic}
           onReopen={reopenTopic}
+          onLogTime={handleLogTime}
         />
       )}
     </main>

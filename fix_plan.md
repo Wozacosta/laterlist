@@ -45,8 +45,16 @@
 - [ ] Already working — all tables sync via dexie-cloud-addon
 - [x] Verified: topics table included in cloud config
 
-## Phase 3: Smart Features (future)
-- [ ] LT-11: Manual time logging
+## Phase 3: Smart Features
+
+### LT-11: Manual time logging ✓
+- [x] `logTime(id, seconds)` function in useTopics hook
+- [x] Clock icon button in TopicRow to toggle inline log time form
+- [x] Inline form with hours/minutes inputs and Log/Cancel buttons
+- [x] Toast feedback on successful time logging
+- [x] Hidden for completed topics
+
+### Remaining
 - [ ] LT-20: Weighted priority percentages
 - [ ] LT-21: Daily learning goal
 - [ ] LT-22: Streak tracking

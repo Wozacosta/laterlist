@@ -11,6 +11,7 @@ interface TopicListProps {
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
   onReopen: (id: string) => void;
+  onLogTime: (id: string, seconds: number) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -30,6 +31,7 @@ const TopicRow = memo(function TopicRow({
   onDelete,
   onComplete,
   onReopen,
+  onLogTime,
 }: {
   topic: Topic;
   remainingSeconds: number;
@@ -38,14 +40,39 @@ const TopicRow = memo(function TopicRow({
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
   onReopen: (id: string) => void;
+  onLogTime: (id: string, seconds: number) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(topic.name);
+  const [showLogTime, setShowLogTime] = useState(false);
+  const [logHours, setLogHours] = useState("");
+  const [logMinutes, setLogMinutes] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const logInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
   }, [editing]);
+
+  useEffect(() => {
+    if (showLogTime) logInputRef.current?.focus();
+  }, [showLogTime]);
+
+  const handleLogTimeSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const h = parseInt(logHours, 10) || 0;
+      const m = parseInt(logMinutes, 10) || 0;
+      const totalSeconds = h * 3600 + m * 60;
+      if (totalSeconds > 0) {
+        onLogTime(topic.id, totalSeconds);
+      }
+      setLogHours("");
+      setLogMinutes("");
+      setShowLogTime(false);
+    },
+    [logHours, logMinutes, topic.id, onLogTime]
+  );
 
   const commitRename = useCallback(() => {
     setEditing(false);
@@ -71,99 +98,168 @@ const TopicRow = memo(function TopicRow({
   const isCompleted = topic.status === "completed";
 
   return (
-    <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${
+    <div className={`rounded-lg border ${
       isCompleted
         ? "border-gray-100 bg-gray-50 opacity-60 dark:border-gray-900 dark:bg-gray-950"
         : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950"
     }`}>
-      {/* Complete/Reopen toggle */}
-      <button
-        type="button"
-        onClick={() => isCompleted ? onReopen(topic.id) : onComplete(topic.id)}
-        className={`shrink-0 transition-colors ${
-          isCompleted
-            ? "text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300"
-            : "text-gray-300 hover:text-green-500 dark:text-gray-700 dark:hover:text-green-400"
-        }`}
-        aria-label={isCompleted ? "Reopen topic" : "Complete topic"}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill={isCompleted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-      </button>
-
-      {/* Topic icon */}
-      <span className={`shrink-0 ${isCompleted ? "text-gray-400 dark:text-gray-600" : "text-blue-500 dark:text-blue-400"}`}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-        </svg>
-      </span>
-
-      {/* Name */}
-      {editing ? (
-        <input
-          ref={inputRef}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commitRename}
-          onKeyDown={handleKeyDown}
-          className="flex-1 min-w-0 bg-transparent text-sm font-medium text-gray-800 dark:text-gray-200 outline-none border-b border-blue-400"
-        />
-      ) : (
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Complete/Reopen toggle */}
         <button
           type="button"
-          onDoubleClick={() => {
-            setDraft(topic.name);
-            setEditing(true);
-          }}
-          className={`flex-1 min-w-0 text-left text-sm font-medium truncate ${
+          onClick={() => isCompleted ? onReopen(topic.id) : onComplete(topic.id)}
+          className={`shrink-0 transition-colors ${
             isCompleted
-              ? "line-through text-gray-400 dark:text-gray-600"
-              : "text-gray-800 dark:text-gray-200"
+              ? "text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300"
+              : "text-gray-300 hover:text-green-500 dark:text-gray-700 dark:hover:text-green-400"
           }`}
-          title="Double-click to rename"
+          aria-label={isCompleted ? "Reopen topic" : "Complete topic"}
         >
-          {topic.name}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={isCompleted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
         </button>
-      )}
 
-      {/* Stats + Progress */}
-      <div className="shrink-0 flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
-        <span>{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
-        {(topic.timeSpent > 0 || remainingSeconds > 0) && (
-          <div className="flex items-center gap-2">
-            {topic.timeSpent > 0 && (
-              <span className="text-green-600 dark:text-green-400">{formatTime(topic.timeSpent)}</span>
-            )}
-            <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden" title={`${topic.timeSpent > 0 ? formatTime(topic.timeSpent) + " done" : ""}${remainingSeconds > 0 ? (topic.timeSpent > 0 ? ", " : "") + formatTime(remainingSeconds) + " left" : ""}`}>
-              <div
-                className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all"
-                style={{ width: `${topic.timeSpent + remainingSeconds > 0 ? Math.round((topic.timeSpent / (topic.timeSpent + remainingSeconds)) * 100) : 0}%` }}
-              />
-            </div>
-            {remainingSeconds > 0 && (
-              <span>{formatTime(remainingSeconds)} left</span>
-            )}
-          </div>
+        {/* Topic icon */}
+        <span className={`shrink-0 ${isCompleted ? "text-gray-400 dark:text-gray-600" : "text-blue-500 dark:text-blue-400"}`}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+          </svg>
+        </span>
+
+        {/* Name */}
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={handleKeyDown}
+            className="flex-1 min-w-0 bg-transparent text-sm font-medium text-gray-800 dark:text-gray-200 outline-none border-b border-blue-400"
+          />
+        ) : (
+          <button
+            type="button"
+            onDoubleClick={() => {
+              setDraft(topic.name);
+              setEditing(true);
+            }}
+            className={`flex-1 min-w-0 text-left text-sm font-medium truncate ${
+              isCompleted
+                ? "line-through text-gray-400 dark:text-gray-600"
+                : "text-gray-800 dark:text-gray-200"
+            }`}
+            title="Double-click to rename"
+          >
+            {topic.name}
+          </button>
         )}
+
+        {/* Stats + Progress */}
+        <div className="shrink-0 flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+          <span>{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
+          {(topic.timeSpent > 0 || remainingSeconds > 0) && (
+            <div className="flex items-center gap-2">
+              {topic.timeSpent > 0 && (
+                <span className="text-green-600 dark:text-green-400">{formatTime(topic.timeSpent)}</span>
+              )}
+              <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden" title={`${topic.timeSpent > 0 ? formatTime(topic.timeSpent) + " done" : ""}${remainingSeconds > 0 ? (topic.timeSpent > 0 ? ", " : "") + formatTime(remainingSeconds) + " left" : ""}`}>
+                <div
+                  className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all"
+                  style={{ width: `${topic.timeSpent + remainingSeconds > 0 ? Math.round((topic.timeSpent / (topic.timeSpent + remainingSeconds)) * 100) : 0}%` }}
+                />
+              </div>
+              {remainingSeconds > 0 && (
+                <span>{formatTime(remainingSeconds)} left</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Log time button */}
+        {!isCompleted && (
+          <button
+            type="button"
+            onClick={() => setShowLogTime((v) => !v)}
+            className={`shrink-0 transition-colors ${
+              showLogTime
+                ? "text-blue-500 dark:text-blue-400"
+                : "text-gray-300 hover:text-blue-500 dark:text-gray-700 dark:hover:text-blue-400"
+            }`}
+            aria-label="Log time"
+            title="Log time"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </button>
+        )}
+
+        {/* Delete */}
+        <button
+          type="button"
+          onClick={() => onDelete(topic.id)}
+          className="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-700 dark:hover:text-red-400 transition-colors"
+          aria-label="Delete topic"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6M14 11v6" />
+            <path d="M9 6V4h6v2" />
+          </svg>
+        </button>
       </div>
 
-      {/* Delete */}
-      <button
-        type="button"
-        onClick={() => onDelete(topic.id)}
-        className="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-700 dark:hover:text-red-400 transition-colors"
-        aria-label="Delete topic"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-          <path d="M10 11v6M14 11v6" />
-          <path d="M9 6V4h6v2" />
-        </svg>
-      </button>
+      {/* Inline log time form */}
+      {showLogTime && (
+        <form
+          onSubmit={handleLogTimeSubmit}
+          className="flex items-center gap-2 border-t border-gray-100 px-4 py-2 dark:border-gray-800"
+        >
+          <span className="text-xs text-gray-400 dark:text-gray-500">Log:</span>
+          <input
+            ref={logInputRef}
+            type="number"
+            min="0"
+            max="999"
+            placeholder="0"
+            value={logHours}
+            onChange={(e) => setLogHours(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") setShowLogTime(false); }}
+            className="w-12 rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          />
+          <span className="text-xs text-gray-400">h</span>
+          <input
+            type="number"
+            min="0"
+            max="59"
+            placeholder="0"
+            value={logMinutes}
+            onChange={(e) => setLogMinutes(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") setShowLogTime(false); }}
+            className="w-12 rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          />
+          <span className="text-xs text-gray-400">m</span>
+          <button
+            type="submit"
+            disabled={!((parseInt(logHours, 10) || 0) * 3600 + (parseInt(logMinutes, 10) || 0) * 60 > 0)}
+            className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            Log
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowLogTime(false)}
+            className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+          >
+            Cancel
+          </button>
+        </form>
+      )}
     </div>
   );
 });
@@ -176,6 +272,7 @@ export const TopicList = memo(function TopicList({
   onDelete,
   onComplete,
   onReopen,
+  onLogTime,
 }: TopicListProps) {
   const [newName, setNewName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -289,6 +386,7 @@ export const TopicList = memo(function TopicList({
                 onDelete={onDelete}
                 onComplete={onComplete}
                 onReopen={onReopen}
+                onLogTime={onLogTime}
               />
             );
           })}

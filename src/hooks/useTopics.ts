@@ -51,6 +51,15 @@ export function useTopics() {
     });
   }, []);
 
+  const logTime = useCallback(async (id: string, seconds: number) => {
+    if (seconds <= 0) return;
+    const topic = await db.topics.get(id);
+    if (!topic) return;
+    await db.topics.update(id, {
+      timeSpent: topic.timeSpent + seconds,
+    });
+  }, []);
+
   return {
     topics: topics ?? [],
     isLoading: topics === undefined,
@@ -59,5 +68,6 @@ export function useTopics() {
     deleteTopic,
     completeTopic,
     reopenTopic,
+    logTime,
   };
 }
