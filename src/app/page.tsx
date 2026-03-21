@@ -19,6 +19,7 @@ import { DailyGoal } from "@/components/DailyGoal";
 import { Recommendation } from "@/components/Recommendation";
 import { LearningDashboard } from "@/components/LearningDashboard";
 import { TopicDetail } from "@/components/TopicDetail";
+import { LearningReport } from "@/components/LearningReport";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SkeletonList } from "@/components/SkeletonList";
@@ -89,6 +90,7 @@ export default function Page() {
 
   const [view, setView] = useState<View>("list");
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [showReport, setShowReport] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [hideDone, setHideDone] = useState(false);
@@ -312,6 +314,11 @@ export default function Page() {
             </p>
           )}
         </>
+      ) : showReport ? (
+        <LearningReport
+          topics={topics}
+          onBack={() => setShowReport(false)}
+        />
       ) : selectedTopic ? (
         <TopicDetail
           topic={selectedTopic}
@@ -335,6 +342,7 @@ export default function Page() {
             topics={topics}
             streak={streak}
             totalVelocitySecsPerDay={weekTotal / 7}
+            onViewReport={() => setShowReport(true)}
           />
           {recommendation && (
             <Recommendation recommendation={recommendation} />

@@ -11,6 +11,7 @@ interface LearningDashboardProps {
   topics: Topic[];
   streak: number;
   totalVelocitySecsPerDay: number;
+  onViewReport: () => void;
 }
 
 function formatDuration(seconds: number): string {
@@ -51,6 +52,7 @@ export const LearningDashboard = memo(function LearningDashboard({
   topics,
   streak,
   totalVelocitySecsPerDay,
+  onViewReport,
 }: LearningDashboardProps) {
   // Build topic color map
   const topicColorMap = useMemo(() => {
@@ -100,6 +102,18 @@ export const LearningDashboard = memo(function LearningDashboard({
               {formatDuration(Math.round(totalVelocitySecsPerDay))}/d avg
             </span>
           )}
+          <button
+            type="button"
+            onClick={onViewReport}
+            className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            title="View full report"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+          </button>
         </div>
       </div>
 

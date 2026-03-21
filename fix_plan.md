@@ -115,6 +115,15 @@
 - [x] Single-click topic name in TopicRow opens detail; double-click still renames
 - [x] `selectedTopicId` state in page.tsx toggles between topic list and detail views
 
+### LT-32: Weekly/monthly report ✓
+- [x] `useReportData` hook: aggregates timeLogs for configurable period (7d / 30d)
+- [x] Computes: total time, avg/day, active days, per-topic breakdown with drift vs priority
+- [x] Daily activity bar chart with period-aware label density
+- [x] Topic allocation bars with priority target markers and drift indicators
+- [x] `LearningReport` component: back navigation, week/month toggle, stats cards
+- [x] Color-coded drift: red when under target, green when over target (>10% threshold)
+- [x] Chart icon button in LearningDashboard header opens report view
+- [x] `showReport` state in page.tsx toggles between dashboard and report views
+
 ### Remaining
-- [ ] LT-32: Weekly/monthly report
 - [ ] LT-33: Export learning data
