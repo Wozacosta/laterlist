@@ -78,8 +78,15 @@
 - [x] Flame badge in DailyGoal: "Xd" counter, orange highlight at ≥7 days
 - [x] Wired through page.tsx to DailyGoal component
 
+### LT-23: Smart recommendations ✓
+- [x] `useRecommendation` hook: scores active topics by priority drift, recency, and actionability
+- [x] Scoring: priority drift (0-50pts), recency/days since last session (0-30pts), unread item count (0-20pts)
+- [x] Actionability penalty: topics with no items get 50% score reduction
+- [x] `Recommendation` component: blue suggestion card with compass icon, topic name, and reason
+- [x] Renders in Learn view between DailyGoal and TopicList
+- [x] Only shows when there's a valid recommendation (score > 0)
+
 ### Remaining
-- [ ] LT-23: Smart recommendations
 - [ ] LT-24: Velocity & projections
 
 ## Phase 4: UX (future)
