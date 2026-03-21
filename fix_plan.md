@@ -125,5 +125,12 @@
 - [x] Chart icon button in LearningDashboard header opens report view
 - [x] `showReport` state in page.tsx toggles between dashboard and report views
 
-### Remaining
-- [ ] LT-33: Export learning data
+### LT-33: Export learning data ✓
+- [x] `exportLearningJSON()`: exports topics, timeLogs, items with topic names, and summary stats
+- [x] `exportLearningCSV()`: exports time logs as CSV with date, topic, duration, source columns
+- [x] Human-readable formatted durations alongside raw seconds in both formats
+- [x] Export buttons in LearningReport: "JSON (full)" and "CSV (time logs)"
+- [x] Status feedback message after export with auto-dismiss
+- [x] Description text explaining what each format contains
+
+## All tasks complete!

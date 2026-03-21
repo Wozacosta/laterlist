@@ -1,8 +1,9 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useState, useCallback } from "react";
 import type { Topic } from "@/db";
 import { useReportData, type ReportPeriod } from "@/hooks/useReportData";
+import { exportLearningJSON, exportLearningCSV } from "@/lib/exportLearning";
 
 interface LearningReportProps {
   topics: Topic[];
@@ -23,7 +24,30 @@ export const LearningReport = memo(function LearningReport({
   onBack,
 }: LearningReportProps) {
   const [period, setPeriod] = useState<ReportPeriod>("week");
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
   const report = useReportData(topics, period);
+
+  const handleExportJSON = useCallback(async () => {
+    try {
+      const count = await exportLearningJSON();
+      setExportStatus(`Exported ${count} records as JSON`);
+      setTimeout(() => setExportStatus(null), 3000);
+    } catch {
+      setExportStatus("Export failed");
+      setTimeout(() => setExportStatus(null), 3000);
+    }
+  }, []);
+
+  const handleExportCSV = useCallback(async () => {
+    try {
+      const count = await exportLearningCSV();
+      setExportStatus(`Exported ${count} time logs as CSV`);
+      setTimeout(() => setExportStatus(null), 3000);
+    } catch {
+      setExportStatus("Export failed");
+      setTimeout(() => setExportStatus(null), 3000);
+    }
+  }, []);
 
   const maxDaySecs = Math.max(1, ...report.dailyBreakdown.map((d) => d.seconds));
 
@@ -204,6 +228,45 @@ export const LearningReport = memo(function LearningReport({
           </p>
         </div>
       )}
+
+      {/* Export section */}
+      <div className="mt-4 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950">
+        <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+          Export data
+        </h3>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleExportJSON}
+            className="flex items-center gap-1.5 rounded border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            JSON (full)
+          </button>
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 rounded border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            CSV (time logs)
+          </button>
+        </div>
+        {exportStatus && (
+          <p className="mt-2 text-xs text-green-600 dark:text-green-400">{exportStatus}</p>
+        )}
+        <p className="mt-2 text-[10px] text-gray-300 dark:text-gray-600">
+          JSON includes topics, time logs, items, and summary. CSV includes time log entries.
+        </p>
+      </div>
     </div>
   );
 });
