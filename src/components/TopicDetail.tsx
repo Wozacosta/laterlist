@@ -12,6 +12,7 @@ interface TopicDetailProps {
   onMarkDone: (id: string) => void;
   onUnmarkDone: (id: string) => void;
   onSetNotes?: (id: string, notes: string) => void;
+  onUpdateItemNotes?: (id: string, notes: string) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -45,6 +46,7 @@ export const TopicDetail = memo(function TopicDetail({
   onMarkDone,
   onUnmarkDone,
   onSetNotes,
+  onUpdateItemNotes,
 }: TopicDetailProps) {
   // Filter items for this topic
   const topicItems = useMemo(() => {
@@ -236,51 +238,11 @@ export const TopicDetail = memo(function TopicDetail({
 
       {/* Unread items */}
       {unreadItems.length > 0 && (
-        <div className="mb-4">
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
-            To learn ({unreadItems.length})
-          </h3>
-          <div className="flex flex-col gap-1">
-            {unreadItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-2 rounded border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-950"
-              >
-                <button
-                  type="button"
-                  onClick={() => onMarkDone(item.id)}
-                  className="shrink-0 text-gray-300 hover:text-green-500 dark:text-gray-700 dark:hover:text-green-400"
-                  aria-label="Mark done"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                  </svg>
-                </button>
-                <div className="min-w-0 flex-1">
-                  {item.url ? (
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline dark:text-blue-400 truncate block"
-                    >
-                      {item.title}
-                    </a>
-                  ) : (
-                    <span className="text-sm text-gray-800 dark:text-gray-200 truncate block">
-                      {item.title}
-                    </span>
-                  )}
-                </div>
-                {item.duration && (
-                  <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
-                    {formatTime(item.duration)}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <UnreadItemList
+          items={unreadItems}
+          onMarkDone={onMarkDone}
+          onUpdateItemNotes={onUpdateItemNotes}
+        />
       )}
 
       {/* Done items */}
@@ -364,6 +326,140 @@ export const TopicDetail = memo(function TopicDetail({
           </div>
         </div>
       )}
+    </div>
+  );
+});
+
+/** Unread item list with "what did you learn?" prompt on completion. */
+const UnreadItemList = memo(function UnreadItemList({
+  items,
+  onMarkDone,
+  onUpdateItemNotes,
+}: {
+  items: Item[];
+  onMarkDone: (id: string) => void;
+  onUpdateItemNotes?: (id: string, notes: string) => void;
+}) {
+  const [promptItemId, setPromptItemId] = useState<string | null>(null);
+  const [learnDraft, setLearnDraft] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (promptItemId && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [promptItemId]);
+
+  const handleDoneClick = useCallback((id: string) => {
+    if (onUpdateItemNotes) {
+      setPromptItemId(id);
+      setLearnDraft("");
+    } else {
+      onMarkDone(id);
+    }
+  }, [onMarkDone, onUpdateItemNotes]);
+
+  const handleSubmit = useCallback(() => {
+    if (!promptItemId) return;
+    const trimmed = learnDraft.trim();
+    if (trimmed && onUpdateItemNotes) {
+      onUpdateItemNotes(promptItemId, trimmed);
+    }
+    onMarkDone(promptItemId);
+    setPromptItemId(null);
+    setLearnDraft("");
+  }, [promptItemId, learnDraft, onMarkDone, onUpdateItemNotes]);
+
+  const handleSkip = useCallback(() => {
+    if (!promptItemId) return;
+    onMarkDone(promptItemId);
+    setPromptItemId(null);
+    setLearnDraft("");
+  }, [promptItemId, onMarkDone]);
+
+  return (
+    <div className="mb-4">
+      <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+        To learn ({items.length})
+      </h3>
+      <div className="flex flex-col gap-1">
+        {items.map((item) => (
+          <div key={item.id}>
+            <div className="flex items-center gap-2 rounded border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-950">
+              <button
+                type="button"
+                onClick={() => handleDoneClick(item.id)}
+                className="shrink-0 text-gray-300 hover:text-green-500 dark:text-gray-700 dark:hover:text-green-400"
+                aria-label="Mark done"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                </svg>
+              </button>
+              <div className="min-w-0 flex-1">
+                {item.url ? (
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline dark:text-blue-400 truncate block"
+                  >
+                    {item.title}
+                  </a>
+                ) : (
+                  <span className="text-sm text-gray-800 dark:text-gray-200 truncate block">
+                    {item.title}
+                  </span>
+                )}
+              </div>
+              {item.duration && (
+                <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                  {formatTime(item.duration)}
+                </span>
+              )}
+            </div>
+            {/* "What did you learn?" prompt */}
+            {promptItemId === item.id && (
+              <div className="ml-6 mt-1 rounded border border-green-200 bg-green-50 px-3 py-2 dark:border-green-900 dark:bg-green-950">
+                <p className="mb-1 text-xs font-medium text-green-700 dark:text-green-400">
+                  What did you learn?
+                </p>
+                <textarea
+                  ref={inputRef}
+                  value={learnDraft}
+                  onChange={(e) => setLearnDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                    if (e.key === "Escape") handleSkip();
+                  }}
+                  rows={2}
+                  placeholder="Optional — jot down a quick note..."
+                  className="w-full rounded border border-green-300 bg-white px-2 py-1 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-green-800 dark:bg-gray-900 dark:text-gray-200 dark:placeholder-gray-500"
+                />
+                <div className="mt-1 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    className="rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700"
+                  >
+                    {learnDraft.trim() ? "Save & Done" : "Done"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSkip}
+                    className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                  >
+                    Skip
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 });

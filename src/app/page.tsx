@@ -338,6 +338,7 @@ export default function Page() {
           onMarkDone={handleMarkDone}
           onUnmarkDone={unmarkDone}
           onSetNotes={setNotes}
+          onUpdateItemNotes={handleUpdateNotes}
         />
       ) : (
         <>
