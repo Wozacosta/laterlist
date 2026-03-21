@@ -72,8 +72,13 @@
 - [x] `DailyGoal` component: clickable goal badge, progress bar, today's total, goal-met state
 - [x] Renders in Learn view above TopicList
 
+### LT-22: Streak tracking ✓
+- [x] `useStreak` hook: queries timeLogs, groups by calendar day, walks backwards to compute streak
+- [x] Streak rules: counts consecutive days with ≥1 log; today or yesterday as anchor
+- [x] Flame badge in DailyGoal: "Xd" counter, orange highlight at ≥7 days
+- [x] Wired through page.tsx to DailyGoal component
+
 ### Remaining
-- [ ] LT-22: Streak tracking
 - [ ] LT-23: Smart recommendations
 - [ ] LT-24: Velocity & projections
 

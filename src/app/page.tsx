@@ -8,6 +8,7 @@ import { useGroups } from "@/hooks/useGroups";
 import { useTopics } from "@/hooks/useTopics";
 import { useSettings } from "@/hooks/useSettings";
 import { useTodayTime } from "@/hooks/useTodayTime";
+import { useStreak } from "@/hooks/useStreak";
 import { AddItemInput } from "@/components/AddItemInput";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
@@ -73,6 +74,7 @@ export default function Page() {
 
   const { dailyGoalMinutes, setDailyGoal } = useSettings();
   const todaySeconds = useTodayTime();
+  const streak = useStreak();
 
   const { toast } = useToast();
   const currentUser = useObservable(db.cloud.currentUser);
@@ -302,6 +304,7 @@ export default function Page() {
           <DailyGoal
             dailyGoalMinutes={dailyGoalMinutes}
             todaySeconds={todaySeconds}
+            streak={streak}
             onSetGoal={setDailyGoal}
           />
           <TopicList

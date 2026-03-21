@@ -5,6 +5,7 @@ import { memo, useState, useCallback, useRef, useEffect } from "react";
 interface DailyGoalProps {
   dailyGoalMinutes: number;
   todaySeconds: number;
+  streak: number;
   onSetGoal: (minutes: number) => void;
 }
 
@@ -19,6 +20,7 @@ function formatMinutes(totalMinutes: number): string {
 export const DailyGoal = memo(function DailyGoal({
   dailyGoalMinutes,
   todaySeconds,
+  streak,
   onSetGoal,
 }: DailyGoalProps) {
   const [editing, setEditing] = useState(false);
@@ -77,6 +79,23 @@ export const DailyGoal = memo(function DailyGoal({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Streak badge */}
+          {streak > 0 && (
+            <span
+              className={`flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
+                streak >= 7
+                  ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"
+                  : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+              }`}
+              title={`${streak} day streak`}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <path d="M12 23c-3.866 0-7-3.134-7-7 0-3.037 1.952-5.942 3.5-7.674a.75.75 0 0 1 1.216.18C10.572 10.2 11.263 11 12 11c.462 0 .894-.2 1.232-.538a.75.75 0 0 1 1.24.28C15.59 13.638 19 15.634 19 16c0 3.866-3.134 7-7 7Z" />
+              </svg>
+              {streak}d
+            </span>
+          )}
+
           {/* Goal display / edit */}
           {editing ? (
             <div className="flex items-center gap-1">
