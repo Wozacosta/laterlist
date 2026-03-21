@@ -86,8 +86,13 @@
 - [x] Renders in Learn view between DailyGoal and TopicList
 - [x] Only shows when there's a valid recommendation (score > 0)
 
-### Remaining
-- [ ] LT-24: Velocity & projections
+### LT-24: Velocity & projections ✓
+- [x] `useVelocity` hook: computes per-topic velocity (secs/day) over 14-day sliding window
+- [x] Projected completion date per topic: remaining time / velocity
+- [x] `formatProjectedDate` helper: shows "today", "tomorrow", "Xd", "Xw", "Xmo"
+- [x] Cyan projected date in TopicRow stats (e.g., "~3w") with velocity tooltip
+- [x] Overall velocity in totals summary row (e.g., "45m/d")
+- [x] Called inside TopicList using remainingByTopic map from topicStats
 
 ## Phase 4: UX (future)
 - [ ] LT-30: Learning dashboard

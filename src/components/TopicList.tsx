@@ -2,6 +2,7 @@
 
 import { memo, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { Topic, Item } from "@/db";
+import { useVelocity, type TopicVelocity } from "@/hooks/useVelocity";
 
 interface TopicListProps {
   topics: Topic[];
@@ -24,10 +25,25 @@ function formatTime(seconds: number): string {
   return `${m}m`;
 }
 
+function formatProjectedDate(date: Date): string {
+  const now = new Date();
+  const diffDays = Math.ceil((date.getTime() - now.getTime()) / 86_400_000);
+  if (diffDays <= 0) return "today";
+  if (diffDays === 1) return "tomorrow";
+  if (diffDays <= 7) return `${diffDays}d`;
+  if (diffDays <= 30) {
+    const weeks = Math.round(diffDays / 7);
+    return `${weeks}w`;
+  }
+  const months = Math.round(diffDays / 30);
+  return months === 1 ? "1mo" : `${months}mo`;
+}
+
 const TopicRow = memo(function TopicRow({
   topic,
   remainingSeconds,
   itemCount,
+  velocity,
   onRename,
   onDelete,
   onComplete,
@@ -38,6 +54,7 @@ const TopicRow = memo(function TopicRow({
   topic: Topic;
   remainingSeconds: number;
   itemCount: number;
+  velocity?: TopicVelocity;
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
@@ -228,6 +245,11 @@ const TopicRow = memo(function TopicRow({
               {remainingSeconds > 0 && (
                 <span>{formatTime(remainingSeconds)} left</span>
               )}
+              {velocity?.projectedDate && (
+                <span className="text-cyan-600 dark:text-cyan-400" title={`At ${formatTime(Math.round(velocity.secsPerDay))}/day`}>
+                  ~{formatProjectedDate(velocity.projectedDate)}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -351,20 +373,34 @@ export const TopicList = memo(function TopicList({
     return stats;
   }, [topics, items]);
 
+  // Build remainingByTopic map for velocity hook
+  const remainingByTopic = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const [id, s] of topicStats) {
+      map.set(id, s.remainingSeconds);
+    }
+    return map;
+  }, [topicStats]);
+
+  const velocityMap = useVelocity(topics, remainingByTopic);
+
   // Compute totals across all active topics
   const totals = useMemo(() => {
     let totalSpent = 0;
     let totalRemaining = 0;
     let totalPriority = 0;
+    let totalVelocity = 0;
     for (const topic of topics) {
       if (topic.status === "completed") continue;
       totalSpent += topic.timeSpent;
       totalPriority += topic.priority ?? 0;
       const s = topicStats.get(topic.id);
       totalRemaining += s?.remainingSeconds ?? 0;
+      const v = velocityMap.get(topic.id);
+      if (v) totalVelocity += v.secsPerDay;
     }
-    return { totalSpent, totalRemaining, totalPriority };
-  }, [topics, topicStats]);
+    return { totalSpent, totalRemaining, totalPriority, totalVelocity };
+  }, [topics, topicStats, velocityMap]);
 
   // Sort: active topics first (preserving sortOrder), completed at bottom
   const sortedTopics = useMemo(() => {
@@ -439,6 +475,7 @@ export const TopicList = memo(function TopicList({
                 topic={topic}
                 itemCount={s?.itemCount ?? 0}
                 remainingSeconds={s?.remainingSeconds ?? 0}
+                velocity={velocityMap.get(topic.id)}
                 onRename={onRename}
                 onDelete={onDelete}
                 onComplete={onComplete}
@@ -480,6 +517,9 @@ export const TopicList = memo(function TopicList({
                 )}
                 {totals.totalRemaining > 0 && (
                   <span className="text-gray-400 dark:text-gray-500">{formatTime(totals.totalRemaining)} left</span>
+                )}
+                {totals.totalVelocity > 0 && (
+                  <span className="text-cyan-600 dark:text-cyan-400">{formatTime(Math.round(totals.totalVelocity))}/d</span>
                 )}
               </div>
             </div>
