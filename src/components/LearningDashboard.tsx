@@ -182,20 +182,24 @@ export const LearningDashboard = memo(function LearningDashboard({
 
           {/* Legend */}
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            {allocation.map(({ topic, percent, secs, colorIdx }) => (
-              <span key={topic.id} className="flex items-center gap-1 text-[10px]">
-                <span className={`inline-block h-2 w-2 rounded-sm ${TOPIC_COLORS[colorIdx]}`} />
-                <span className="text-gray-500 dark:text-gray-400">{topic.name}</span>
-                <span className={`font-medium ${TEXT_COLORS[colorIdx]}`}>
-                  {percent}%
-                </span>
-                {topic.priority > 0 && percent < topic.priority && (
-                  <span className="text-gray-300 dark:text-gray-600">
-                    (target {topic.priority}%)
+            {allocation.map(({ topic, percent, colorIdx }) => {
+              const totalPriority = topics.filter((t) => t.status === "active").reduce((sum, t) => sum + (t.priority ?? 3), 0);
+              const targetPct = totalPriority > 0 ? Math.round(((topic.priority ?? 3) / totalPriority) * 100) : 0;
+              return (
+                <span key={topic.id} className="flex items-center gap-1 text-[10px]">
+                  <span className={`inline-block h-2 w-2 rounded-sm ${TOPIC_COLORS[colorIdx]}`} />
+                  <span className="text-gray-500 dark:text-gray-400">{topic.name}</span>
+                  <span className={`font-medium ${TEXT_COLORS[colorIdx]}`}>
+                    {percent}%
                   </span>
-                )}
-              </span>
-            ))}
+                  {percent < targetPct && (
+                    <span className="text-gray-300 dark:text-gray-600">
+                      (target {targetPct}%)
+                    </span>
+                  )}
+                </span>
+              );
+            })}
           </div>
         </div>
       )}

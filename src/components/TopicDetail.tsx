@@ -57,10 +57,15 @@ export const TopicDetail = memo(function TopicDetail({
     [topicItems]
   );
 
-  const remainingSeconds = useMemo(
+  const itemRemainingSeconds = useMemo(
     () => unreadItems.reduce((sum, i) => sum + (i.duration ?? 0), 0),
     [unreadItems]
   );
+
+  // Use topic-level estimate when set, otherwise fall back to item-based remaining
+  const remainingSeconds = topic.estimatedSeconds && topic.estimatedSeconds > 0
+    ? Math.max(0, topic.estimatedSeconds - topic.timeSpent)
+    : itemRemainingSeconds;
 
   const totalEstimated = useMemo(
     () => topicItems.reduce((sum, i) => sum + (i.duration ?? 0), 0),
@@ -106,7 +111,7 @@ export const TopicDetail = memo(function TopicDetail({
           <p className="text-xs text-gray-400 dark:text-gray-500">
             Created {formatDate(topic.createdAt)}
             {isCompleted && topic.completedAt && ` · Completed ${formatDate(topic.completedAt)}`}
-            {topic.priority > 0 && ` · ${topic.priority}% priority`}
+            {` · P${topic.priority ?? 3}`}
           </p>
         </div>
       </div>

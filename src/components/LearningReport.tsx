@@ -179,7 +179,7 @@ export const LearningReport = memo(function LearningReport({
                       {formatTime(tr.seconds)}
                     </span>
                     <span className={`font-medium ${
-                      tr.priority > 0 && Math.abs(tr.drift) > 10
+                      Math.abs(tr.drift) > 10
                         ? tr.drift < 0
                           ? "text-red-500 dark:text-red-400"
                           : "text-green-600 dark:text-green-400"
@@ -195,22 +195,20 @@ export const LearningReport = memo(function LearningReport({
                     className="h-full rounded-full bg-blue-500 dark:bg-blue-400 transition-all"
                     style={{ width: `${Math.min(100, tr.percent)}%` }}
                   />
-                  {tr.priority > 0 && (
+                  {tr.targetPercent > 0 && (
                     <div
                       className="absolute top-0 h-full w-0.5 bg-gray-400 dark:bg-gray-500"
-                      style={{ left: `${Math.min(100, tr.priority)}%` }}
-                      title={`Target: ${tr.priority}%`}
+                      style={{ left: `${Math.min(100, tr.targetPercent)}%` }}
+                      title={`Target: ${tr.targetPercent}% (P${tr.priority})`}
                     />
                   )}
                 </div>
-                {tr.priority > 0 && (
-                  <div className="mt-0.5 flex justify-between text-[10px] text-gray-400 dark:text-gray-600">
-                    <span>
-                      {tr.drift > 0 ? `+${tr.drift}%` : `${tr.drift}%`} vs target
-                    </span>
-                    <span>target {tr.priority}%</span>
-                  </div>
-                )}
+                <div className="mt-0.5 flex justify-between text-[10px] text-gray-400 dark:text-gray-600">
+                  <span>
+                    {tr.drift > 0 ? `+${tr.drift}%` : `${tr.drift}%`} vs target
+                  </span>
+                  <span>P{tr.priority} (target {tr.targetPercent}%)</span>
+                </div>
               </div>
             ))}
           </div>

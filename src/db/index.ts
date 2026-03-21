@@ -51,7 +51,8 @@ export interface Topic {
   status: "active" | "completed";
   completedAt?: string; // ISO datetime string
   timeSpent: number; // seconds of learning time logged
-  priority: number; // 0-100 weighted percentage
+  priority: number; // 1-5 priority score (1=lowest, 5=critical)
+  estimatedSeconds?: number; // total time budget for this topic (e.g. 30h = 108000)
 }
 
 export interface TimeLog {
@@ -148,6 +149,47 @@ db.version(7).stores({
   timeLogs: "id, topicId, loggedAt",
   settings: "id",
 });
+
+db.version(8)
+  .stores({
+    items: "id, url, category, status, sortOrder, addedAt, groupId, *topicIds",
+    groups: "id, sortOrder",
+    topics: "id, sortOrder, status",
+    timeLogs: "id, topicId, loggedAt",
+    settings: "id",
+  })
+  .upgrade((tx) => {
+    return tx
+      .table("topics")
+      .toCollection()
+      .modify((topic: Record<string, unknown>) => {
+        if (topic.estimatedSeconds === undefined) {
+          topic.estimatedSeconds = 0;
+        }
+      });
+  });
+
+db.version(9)
+  .stores({
+    items: "id, url, category, status, sortOrder, addedAt, groupId, *topicIds",
+    groups: "id, sortOrder",
+    topics: "id, sortOrder, status",
+    timeLogs: "id, topicId, loggedAt",
+    settings: "id",
+  })
+  .upgrade((tx) => {
+    return tx
+      .table("topics")
+      .toCollection()
+      .modify((topic: Record<string, unknown>) => {
+        const old = (topic.priority as number) ?? 0;
+        if (old === 0) topic.priority = 1;
+        else if (old <= 25) topic.priority = 2;
+        else if (old <= 50) topic.priority = 3;
+        else if (old <= 75) topic.priority = 4;
+        else topic.priority = 5;
+      });
+  });
 
 db.cloud.configure({
   databaseUrl: process.env.NEXT_PUBLIC_DEXIE_CLOUD_URL || "",

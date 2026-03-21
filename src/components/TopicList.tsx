@@ -14,6 +14,7 @@ interface TopicListProps {
   onReopen: (id: string) => void;
   onLogTime: (id: string, seconds: number) => void;
   onSetPriority: (id: string, priority: number) => void;
+  onSetEstimate: (id: string, seconds: number) => void;
   onSelectTopic: (id: string) => void;
 }
 
@@ -51,6 +52,7 @@ const TopicRow = memo(function TopicRow({
   onReopen,
   onLogTime,
   onSetPriority,
+  onSetEstimate,
   onSelect,
 }: {
   topic: Topic;
@@ -63,6 +65,7 @@ const TopicRow = memo(function TopicRow({
   onReopen: (id: string) => void;
   onLogTime: (id: string, seconds: number) => void;
   onSetPriority: (id: string, priority: number) => void;
+  onSetEstimate: (id: string, seconds: number) => void;
   onSelect: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -72,9 +75,12 @@ const TopicRow = memo(function TopicRow({
   const [logMinutes, setLogMinutes] = useState("");
   const [editingPriority, setEditingPriority] = useState(false);
   const [priorityDraft, setPriorityDraft] = useState("");
+  const [editingEstimate, setEditingEstimate] = useState(false);
+  const [estimateHoursDraft, setEstimateHoursDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const logInputRef = useRef<HTMLInputElement>(null);
   const priorityInputRef = useRef<HTMLInputElement>(null);
+  const estimateInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
@@ -87,6 +93,18 @@ const TopicRow = memo(function TopicRow({
   useEffect(() => {
     if (editingPriority) priorityInputRef.current?.select();
   }, [editingPriority]);
+
+  useEffect(() => {
+    if (editingEstimate) estimateInputRef.current?.select();
+  }, [editingEstimate]);
+
+  const commitEstimate = useCallback(() => {
+    setEditingEstimate(false);
+    const val = parseFloat(estimateHoursDraft);
+    if (!isNaN(val) && val >= 0) {
+      onSetEstimate(topic.id, Math.round(val * 3600));
+    }
+  }, [estimateHoursDraft, topic.id, onSetEstimate]);
 
   const commitPriority = useCallback(() => {
     setEditingPriority(false);
@@ -202,8 +220,8 @@ const TopicRow = memo(function TopicRow({
             <input
               ref={priorityInputRef}
               type="number"
-              min="0"
-              max="100"
+              min="1"
+              max="5"
               value={priorityDraft}
               onChange={(e) => setPriorityDraft(e.target.value)}
               onBlur={commitPriority}
@@ -211,23 +229,68 @@ const TopicRow = memo(function TopicRow({
                 if (e.key === "Enter") commitPriority();
                 if (e.key === "Escape") setEditingPriority(false);
               }}
-              className="w-12 shrink-0 rounded border border-blue-400 bg-white px-1.5 py-0.5 text-center text-xs text-gray-700 focus:outline-none dark:bg-gray-900 dark:text-gray-300"
+              className="w-10 shrink-0 rounded border border-blue-400 bg-white px-1.5 py-0.5 text-center text-xs text-gray-700 focus:outline-none dark:bg-gray-900 dark:text-gray-300"
             />
           ) : (
             <button
               type="button"
               onClick={() => {
-                setPriorityDraft(String(topic.priority ?? 0));
+                setPriorityDraft(String(topic.priority ?? 3));
                 setEditingPriority(true);
               }}
               className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${
-                (topic.priority ?? 0) > 0
+                (topic.priority ?? 3) >= 4
                   ? "bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:hover:bg-purple-800"
+                  : (topic.priority ?? 3) === 3
+                    ? "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-300 dark:hover:bg-amber-800"
+                    : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+              }`}
+              title="Set priority (1-5)"
+            >
+              P{topic.priority ?? 3}
+            </button>
+          )
+        )}
+
+        {/* Estimate badge */}
+        {!isCompleted && (
+          editingEstimate ? (
+            <input
+              ref={estimateInputRef}
+              type="number"
+              min="0"
+              step="0.5"
+              value={estimateHoursDraft}
+              onChange={(e) => setEstimateHoursDraft(e.target.value)}
+              onBlur={commitEstimate}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitEstimate();
+                if (e.key === "Escape") setEditingEstimate(false);
+              }}
+              className="w-14 shrink-0 rounded border border-blue-400 bg-white px-1.5 py-0.5 text-center text-xs text-gray-700 focus:outline-none dark:bg-gray-900 dark:text-gray-300"
+              placeholder="hrs"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setEstimateHoursDraft(
+                  topic.estimatedSeconds
+                    ? String(Math.round((topic.estimatedSeconds / 3600) * 10) / 10)
+                    : ""
+                );
+                setEditingEstimate(true);
+              }}
+              className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${
+                topic.estimatedSeconds
+                  ? "bg-cyan-100 text-cyan-700 hover:bg-cyan-200 dark:bg-cyan-900 dark:text-cyan-300 dark:hover:bg-cyan-800"
                   : "bg-gray-100 text-gray-400 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700"
               }`}
-              title="Set priority percentage"
+              title="Set total time estimate (hours)"
             >
-              {(topic.priority ?? 0)}%
+              {topic.estimatedSeconds
+                ? formatTime(topic.estimatedSeconds)
+                : "est."}
             </button>
           )
         )}
@@ -354,6 +417,7 @@ export const TopicList = memo(function TopicList({
   onReopen,
   onLogTime,
   onSetPriority,
+  onSetEstimate,
   onSelectTopic,
 }: TopicListProps) {
   const [newName, setNewName] = useState("");
@@ -372,6 +436,15 @@ export const TopicList = memo(function TopicList({
         s.itemCount++;
         if (item.status === "unread" && item.duration) {
           s.remainingSeconds += item.duration;
+        }
+      }
+    }
+    // When a topic has an overall estimate, use that instead of item-based remaining
+    for (const topic of topics) {
+      if (topic.estimatedSeconds && topic.estimatedSeconds > 0) {
+        const s = stats.get(topic.id);
+        if (s) {
+          s.remainingSeconds = Math.max(0, topic.estimatedSeconds - topic.timeSpent);
         }
       }
     }
@@ -487,27 +560,17 @@ export const TopicList = memo(function TopicList({
                 onReopen={onReopen}
                 onLogTime={onLogTime}
                 onSetPriority={onSetPriority}
+                onSetEstimate={onSetEstimate}
                 onSelect={onSelectTopic}
               />
             );
           })}
 
           {/* Totals summary */}
-          {(totals.totalSpent > 0 || totals.totalRemaining > 0 || totals.totalPriority > 0) && (
+          {(totals.totalSpent > 0 || totals.totalRemaining > 0) && (
             <div className="mt-2 flex items-center justify-between rounded-lg border border-dashed border-gray-200 px-4 py-2.5 dark:border-gray-800">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-gray-500 dark:text-gray-400">All topics</span>
-                {totals.totalPriority > 0 && (
-                  <span className={`text-xs font-medium ${
-                    totals.totalPriority === 100
-                      ? "text-green-600 dark:text-green-400"
-                      : totals.totalPriority > 100
-                        ? "text-red-500 dark:text-red-400"
-                        : "text-purple-600 dark:text-purple-400"
-                  }`}>
-                    {totals.totalPriority}% allocated
-                  </span>
-                )}
               </div>
               <div className="flex items-center gap-3 text-xs">
                 {totals.totalSpent > 0 && (

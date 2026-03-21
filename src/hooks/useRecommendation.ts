@@ -54,19 +54,20 @@ export function useRecommendation(topics: Topic[], items: Item[]) {
       let reason = "";
 
       // 1. Priority drift (0-50 points)
-      // If topic has priority > 0, compare actual % vs target %
-      const hasPriorities = activeTopics.some((t) => t.priority > 0);
-      if (hasPriorities && topic.priority > 0 && totalSpent > 0) {
+      // Convert 1-5 priorities to weighted target percentages
+      const totalPriority = activeTopics.reduce((sum, t) => sum + (t.priority ?? 3), 0);
+      const targetPercent = totalPriority > 0 ? ((topic.priority ?? 3) / totalPriority) * 100 : 0;
+      if (totalSpent > 0) {
         const actualPercent = (topic.timeSpent / totalSpent) * 100;
-        const drift = topic.priority - actualPercent; // positive = under-served
+        const drift = targetPercent - actualPercent; // positive = under-served
         if (drift > 0) {
           score += Math.min(50, drift * 1.5);
           reason = `${Math.round(drift)}% behind target`;
         }
-      } else if (hasPriorities && topic.priority > 0 && totalSpent === 0) {
-        // No time spent yet, priority topics should be recommended
-        score += topic.priority * 0.5;
-        reason = `${topic.priority}% priority, not started`;
+      } else {
+        // No time spent yet — higher priority topics recommended first
+        score += (topic.priority ?? 3) * 5;
+        reason = `P${topic.priority ?? 3}, not started`;
       }
 
       // 2. Recency (0-30 points)

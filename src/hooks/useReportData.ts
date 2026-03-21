@@ -12,7 +12,8 @@ export interface TopicReport {
   priority: number;
   seconds: number;
   percent: number; // actual allocation %
-  drift: number; // percent - priority (positive = over-served)
+  targetPercent: number; // weight-based target from 1-5 priority
+  drift: number; // percent - targetPercent (positive = over-served)
 }
 
 export interface ReportData {
@@ -79,17 +80,20 @@ export function useReportData(topics: Topic[], period: ReportPeriod): ReportData
     const daysWithActivity = Array.from(dailyMap.values()).filter((s) => s > 0).length;
     const avgSecondsPerDay = daysInPeriod > 0 ? totalSeconds / daysInPeriod : 0;
 
-    // Build topic reports
+    // Build topic reports with weight-based targets
     const activeTopics = topics.filter((t) => t.status === "active");
+    const totalPriority = activeTopics.reduce((sum, t) => sum + (t.priority ?? 3), 0);
     const topicReports: TopicReport[] = activeTopics
       .map((topic) => {
         const seconds = topicSecsMap.get(topic.id) ?? 0;
         const percent = totalSeconds > 0 ? Math.round((seconds / totalSeconds) * 100) : 0;
-        const drift = percent - (topic.priority ?? 0);
+        const targetPercent = totalPriority > 0 ? Math.round(((topic.priority ?? 3) / totalPriority) * 100) : 0;
+        const drift = percent - targetPercent;
         return {
           topicId: topic.id,
           topicName: topic.name,
-          priority: topic.priority ?? 0,
+          priority: topic.priority ?? 3,
+          targetPercent,
           seconds,
           percent,
           drift,
