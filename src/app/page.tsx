@@ -9,7 +9,7 @@ import { useTopics } from "@/hooks/useTopics";
 import { useSettings } from "@/hooks/useSettings";
 import { useTodayTime } from "@/hooks/useTodayTime";
 import { useStreak } from "@/hooks/useStreak";
-import { useRecommendation } from "@/hooks/useRecommendation";
+import { useStudyQueue } from "@/hooks/useStudyQueue";
 import { useWeeklyActivity } from "@/hooks/useWeeklyActivity";
 import { AddItemInput } from "@/components/AddItemInput";
 import { FilterBar } from "@/components/FilterBar";
@@ -76,12 +76,17 @@ export default function Page() {
     reopenTopic,
     logTime,
     setPriority,
+    setEstimate,
   } = useTopics();
 
   const { dailyGoalMinutes, setDailyGoal } = useSettings();
   const todaySeconds = useTodayTime();
   const streak = useStreak();
-  const recommendation = useRecommendation(topics, items);
+  const studyQueue = useStudyQueue(topics);
+  // Adapt top study queue entry to Recommendation shape for existing component
+  const recommendation = studyQueue.length > 0
+    ? { topicId: studyQueue[0].topicId, topicName: studyQueue[0].topicName, reason: studyQueue[0].reason, score: studyQueue[0].urgencyScore }
+    : null;
   const { days, topicTotals, weekTotal } = useWeeklyActivity();
 
   const { toast } = useToast();
@@ -357,6 +362,7 @@ export default function Page() {
             onReopen={reopenTopic}
             onLogTime={handleLogTime}
             onSetPriority={setPriority}
+            onSetEstimate={setEstimate}
             onSelectTopic={setSelectedTopicId}
           />
         </>

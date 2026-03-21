@@ -1,10 +1,11 @@
 "use client";
 
 import { memo } from "react";
-import type { Recommendation as RecommendationType } from "@/hooks/useRecommendation";
-
 interface RecommendationProps {
-  recommendation: RecommendationType;
+  recommendation: {
+    topicName: string;
+    reason: string;
+  };
 }
 
 export const Recommendation = memo(function Recommendation({

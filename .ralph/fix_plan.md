@@ -11,7 +11,7 @@
 - [x] **LT-20**: Add SR state to Topic model — `lastActivityDate`, `currentInterval` fields. DB migration.
 - [x] **LT-21**: Reset SR clock on any topic activity — wire into `logTime`, `completeTopic`, and item done handler.
 - [x] **LT-22**: Implement priority-scaled max intervals (P5=3d, P4=7d, P3=14d, P2=21d, P1=30d).
-- [ ] **LT-23**: Build `useStudyQueue` hook — rank active topics by `urgency = daysSinceLastActivity / maxInterval(priority)`. Replace existing recommendation hook.
+- [x] **LT-23**: Build `useStudyQueue` hook — rank active topics by `urgency = daysSinceLastActivity / maxInterval(priority)`. Replace existing recommendation hook.
 - [ ] **LT-24**: Add "mark as studied" action in study queue (resets SR clock without logging time — for offline/untracked study).
 
 ### Dashboard & Detail Updates
