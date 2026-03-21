@@ -10,7 +10,7 @@ export async function fetchYouTubeMetadata(url: string): Promise<{
   // oEmbed for title + thumbnail
   const oembedRes = await fetch(
     `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
-    { headers: { "User-Agent": BROWSER_UA } }
+    { headers: { "User-Agent": BROWSER_UA }, cache: "no-store" }
   );
   if (!oembedRes.ok) {
     throw new Error(`YouTube oEmbed failed: ${oembedRes.status}`);
@@ -27,7 +27,7 @@ export async function fetchYouTubeMetadata(url: string): Promise<{
     try {
       const watchRes = await fetch(
         `https://www.youtube.com/watch?v=${videoIdMatch[1]}`,
-        { headers: { "User-Agent": BROWSER_UA } }
+        { headers: { "User-Agent": BROWSER_UA }, cache: "no-store" }
       );
       if (watchRes.ok) {
         const html = await watchRes.text();
@@ -52,6 +52,7 @@ export async function fetchArticleMetadata(url: string): Promise<{
 }> {
   const res = await fetch(url, {
     headers: { "User-Agent": BROWSER_UA },
+    cache: "no-store",
   });
   if (!res.ok) {
     throw new Error(`Article fetch failed: ${res.status}`);
