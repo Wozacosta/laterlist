@@ -8,7 +8,7 @@
 - [x] **LT-08**: Migrate priority from 0-100 percentage to 1-5 score (default: 3). Update Topic interface, add DB migration (map 0→1, 1-25→2, 26-50→3, 51-75→4, 76-100→5). Update TopicList priority badge UI, recommendation hook, dashboard allocation charts, and weekly reports.
 
 ### Spaced Repetition & Study Queue
-- [ ] **LT-20**: Add SR state to Topic model — `lastActivityDate`, `currentInterval` fields. DB migration.
+- [x] **LT-20**: Add SR state to Topic model — `lastActivityDate`, `currentInterval` fields. DB migration.
 - [ ] **LT-21**: Reset SR clock on any topic activity — wire into `logTime`, `completeTopic`, and item done handler.
 - [ ] **LT-22**: Implement priority-scaled max intervals (P5=3d, P4=7d, P3=14d, P2=21d, P1=30d).
 - [ ] **LT-23**: Build `useStudyQueue` hook — rank active topics by `urgency = daysSinceLastActivity / maxInterval(priority)`. Replace existing recommendation hook.

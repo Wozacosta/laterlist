@@ -16,6 +16,7 @@ export function useTopics() {
       status: "active",
       timeSpent: 0,
       priority: 3,
+      currentInterval: 1,
     });
   }, []);
 

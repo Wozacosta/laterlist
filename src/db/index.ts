@@ -53,6 +53,8 @@ export interface Topic {
   timeSpent: number; // seconds of learning time logged
   priority: number; // 1-5 priority score (1=lowest, 5=critical)
   estimatedSeconds?: number; // total time budget for this topic (e.g. 30h = 108000)
+  lastActivityDate?: string; // ISO datetime — last time user engaged with this topic (SR clock)
+  currentInterval: number; // days until next review (SR interval, starts at 1)
 }
 
 export interface TimeLog {
@@ -188,6 +190,26 @@ db.version(9)
         else if (old <= 50) topic.priority = 3;
         else if (old <= 75) topic.priority = 4;
         else topic.priority = 5;
+      });
+  });
+
+db.version(10)
+  .stores({
+    items: "id, url, category, status, sortOrder, addedAt, groupId, *topicIds",
+    groups: "id, sortOrder",
+    topics: "id, sortOrder, status",
+    timeLogs: "id, topicId, loggedAt",
+    settings: "id",
+  })
+  .upgrade((tx) => {
+    return tx
+      .table("topics")
+      .toCollection()
+      .modify((topic: Record<string, unknown>) => {
+        if (topic.currentInterval === undefined) {
+          topic.currentInterval = 1;
+        }
+        // lastActivityDate left undefined — will be set on first activity
       });
   });
 
