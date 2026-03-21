@@ -54,10 +54,25 @@ export interface Topic {
   priority: number; // 0-100 weighted percentage
 }
 
+export interface TimeLog {
+  id: string; // "log" + crypto.randomUUID()
+  topicId: string;
+  seconds: number;
+  loggedAt: string; // ISO datetime string
+  source: "manual" | "done"; // how time was logged
+}
+
+export interface Settings {
+  id: string; // singleton "settings"
+  dailyGoalMinutes: number; // 0 = no goal set
+}
+
 const db = new Dexie("LaterlistDB", { addons: [dexieCloud] }) as Dexie & {
   items: DexieCloudTable<Item, "id">;
   groups: DexieCloudTable<Group, "id">;
   topics: DexieCloudTable<Topic, "id">;
+  timeLogs: DexieCloudTable<TimeLog, "id">;
+  settings: DexieCloudTable<Settings, "id">;
 };
 
 db.version(1).stores({
@@ -125,6 +140,14 @@ db.version(6)
         }
       });
   });
+
+db.version(7).stores({
+  items: "id, url, category, status, sortOrder, addedAt, groupId, *topicIds",
+  groups: "id, sortOrder",
+  topics: "id, sortOrder, status",
+  timeLogs: "id, topicId, loggedAt",
+  settings: "id",
+});
 
 db.cloud.configure({
   databaseUrl: process.env.NEXT_PUBLIC_DEXIE_CLOUD_URL || "",

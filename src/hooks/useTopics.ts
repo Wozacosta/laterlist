@@ -54,10 +54,19 @@ export function useTopics() {
 
   const logTime = useCallback(async (id: string, seconds: number) => {
     if (seconds <= 0) return;
-    const topic = await db.topics.get(id);
-    if (!topic) return;
-    await db.topics.update(id, {
-      timeSpent: topic.timeSpent + seconds,
+    await db.transaction("rw", [db.topics, db.timeLogs], async () => {
+      const topic = await db.topics.get(id);
+      if (!topic) return;
+      await db.topics.update(id, {
+        timeSpent: topic.timeSpent + seconds,
+      });
+      await db.timeLogs.add({
+        id: `log${crypto.randomUUID()}`,
+        topicId: id,
+        seconds,
+        loggedAt: new Date().toISOString(),
+        source: "manual",
+      });
     });
   }, []);
 

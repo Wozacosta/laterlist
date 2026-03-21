@@ -62,8 +62,17 @@
 - [x] Purple highlight when priority > 0, gray when 0%
 - [x] Total allocation display in summary row (green=100%, red=>100%, purple=<100%)
 
+### LT-21: Daily learning goal ✓
+- [x] Add `TimeLog` interface (id, topicId, seconds, loggedAt, source) and `timeLogs` table
+- [x] Add `Settings` interface (id, dailyGoalMinutes) and `settings` table
+- [x] DB v7 migration with both new tables
+- [x] `useSettings` hook: get/set daily goal (0-1440 minutes)
+- [x] `useTodayTime` hook: sum today's time logs
+- [x] Modified `logTime` and `markDone` to create TimeLog entries (source: manual/done)
+- [x] `DailyGoal` component: clickable goal badge, progress bar, today's total, goal-met state
+- [x] Renders in Learn view above TopicList
+
 ### Remaining
-- [ ] LT-21: Daily learning goal
 - [ ] LT-22: Streak tracking
 - [ ] LT-23: Smart recommendations
 - [ ] LT-24: Velocity & projections

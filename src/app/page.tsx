@@ -6,10 +6,13 @@ import { db } from "@/db";
 import { useItems } from "@/hooks/useItems";
 import { useGroups } from "@/hooks/useGroups";
 import { useTopics } from "@/hooks/useTopics";
+import { useSettings } from "@/hooks/useSettings";
+import { useTodayTime } from "@/hooks/useTodayTime";
 import { AddItemInput } from "@/components/AddItemInput";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
 import { TopicList } from "@/components/TopicList";
+import { DailyGoal } from "@/components/DailyGoal";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SkeletonList } from "@/components/SkeletonList";
@@ -67,6 +70,9 @@ export default function Page() {
     logTime,
     setPriority,
   } = useTopics();
+
+  const { dailyGoalMinutes, setDailyGoal } = useSettings();
+  const todaySeconds = useTodayTime();
 
   const { toast } = useToast();
   const currentUser = useObservable(db.cloud.currentUser);
@@ -292,17 +298,24 @@ export default function Page() {
           )}
         </>
       ) : (
-        <TopicList
-          topics={topics}
-          items={items}
-          onAdd={handleAddTopic}
-          onRename={renameTopic}
-          onDelete={handleDeleteTopic}
-          onComplete={completeTopic}
-          onReopen={reopenTopic}
-          onLogTime={handleLogTime}
-          onSetPriority={setPriority}
-        />
+        <>
+          <DailyGoal
+            dailyGoalMinutes={dailyGoalMinutes}
+            todaySeconds={todaySeconds}
+            onSetGoal={setDailyGoal}
+          />
+          <TopicList
+            topics={topics}
+            items={items}
+            onAdd={handleAddTopic}
+            onRename={renameTopic}
+            onDelete={handleDeleteTopic}
+            onComplete={completeTopic}
+            onReopen={reopenTopic}
+            onLogTime={handleLogTime}
+            onSetPriority={setPriority}
+          />
+        </>
       )}
     </main>
   );

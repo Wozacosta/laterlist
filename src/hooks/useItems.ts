@@ -42,12 +42,13 @@ export function useItems() {
   );
 
   const markDone = useCallback(async (id: string) => {
-    await db.transaction("rw", [db.items, db.topics], async () => {
+    await db.transaction("rw", [db.items, db.topics, db.timeLogs], async () => {
       const item = await db.items.get(id);
       if (!item) return;
+      const now = new Date().toISOString();
       await db.items.update(id, {
         status: "done",
-        doneAt: new Date().toISOString(),
+        doneAt: now,
       });
       // Auto-log duration to linked topics (LT-10)
       if (item.duration && item.topicIds?.length) {
@@ -56,6 +57,13 @@ export function useItems() {
           if (topic) {
             await db.topics.update(topicId, {
               timeSpent: (topic.timeSpent ?? 0) + item.duration,
+            });
+            await db.timeLogs.add({
+              id: `log${crypto.randomUUID()}`,
+              topicId,
+              seconds: item.duration,
+              loggedAt: now,
+              source: "done",
             });
           }
         }
