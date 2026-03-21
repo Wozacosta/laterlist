@@ -44,6 +44,8 @@ export default function Page() {
     deleteItem,
     reorderItems,
     assignToGroup,
+    assignToTopic,
+    unassignFromTopic,
   } = useItems();
 
   const {
@@ -246,6 +248,7 @@ export default function Page() {
             <ItemList
               items={filteredItems}
               groups={groups}
+              topics={topics}
               filtered={isFiltered}
               onMarkDone={handleMarkDone}
               onUnmarkDone={unmarkDone}
@@ -254,6 +257,8 @@ export default function Page() {
               onDelete={handleDelete}
               onReorder={reorderItems}
               onAssignToGroup={assignToGroup}
+              onAssignTopic={assignToTopic}
+              onUnassignTopic={unassignFromTopic}
               onRenameGroup={renameGroup}
               onSetGroupColor={setColor}
               onToggleGroupCollapse={toggleCollapse}

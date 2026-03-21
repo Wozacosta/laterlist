@@ -40,7 +40,7 @@ export interface Item {
   doneAt?: string; // ISO datetime string
   notes?: string;
   groupId?: string; // optional group membership
-  topicId?: string; // optional learning topic
+  topicIds?: string[]; // optional learning topics (multi-select)
 }
 
 export interface Topic {
@@ -72,6 +72,23 @@ db.version(3).stores({
   groups: "id, sortOrder",
   topics: "id, sortOrder, status",
 });
+
+db.version(4)
+  .stores({
+    items: "id, url, category, status, sortOrder, addedAt, groupId, *topicIds",
+    groups: "id, sortOrder",
+    topics: "id, sortOrder, status",
+  })
+  .upgrade((tx) => {
+    return tx
+      .table("items")
+      .toCollection()
+      .modify((item: Record<string, unknown>) => {
+        const oldId = item.topicId as string | undefined;
+        item.topicIds = oldId ? [oldId] : [];
+        delete item.topicId;
+      });
+  });
 
 db.cloud.configure({
   databaseUrl: process.env.NEXT_PUBLIC_DEXIE_CLOUD_URL || "",

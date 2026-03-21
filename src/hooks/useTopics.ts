@@ -25,8 +25,13 @@ export function useTopics() {
 
   const deleteTopic = useCallback(async (id: string) => {
     await db.transaction("rw", [db.topics, db.items], async () => {
-      // Unlink all items from this topic
-      await db.items.where("topicId").equals(id).modify({ topicId: undefined });
+      // Remove this topic from all items' topicIds arrays
+      await db.items
+        .where("topicIds")
+        .equals(id)
+        .modify((item: { topicIds?: string[] }) => {
+          item.topicIds = (item.topicIds ?? []).filter((t) => t !== id);
+        });
       await db.topics.delete(id);
     });
   }, []);

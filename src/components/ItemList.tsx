@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useState } from "react";
-import type { Item, Group, GroupColor } from "@/db";
+import type { Item, Group, GroupColor, Topic } from "@/db";
 import { ItemRow } from "./ItemRow";
 import { GroupSection } from "./GroupSection";
 import { EmptyState } from "./EmptyState";
@@ -52,6 +52,7 @@ function UngroupedZone({ children, showZone }: { children: React.ReactNode; show
 interface ItemListProps {
   items: Item[];
   groups: Group[];
+  topics: Topic[];
   filtered: boolean;
   onMarkDone: (id: string) => void;
   onUnmarkDone: (id: string) => void;
@@ -60,6 +61,8 @@ interface ItemListProps {
   onDelete: (id: string) => void;
   onReorder: (updates: Array<{ id: string; sortOrder: number }>) => void;
   onAssignToGroup: (itemId: string, groupId: string | undefined) => void;
+  onAssignTopic: (itemId: string, topicId: string) => void;
+  onUnassignTopic: (itemId: string, topicId: string) => void;
   onRenameGroup: (id: string, name: string) => void;
   onSetGroupColor: (id: string, color: GroupColor) => void;
   onToggleGroupCollapse: (id: string, collapsed: boolean) => void;
@@ -70,6 +73,7 @@ interface ItemListProps {
 export const ItemList = memo(function ItemList({
   items,
   groups,
+  topics,
   filtered,
   onMarkDone,
   onUnmarkDone,
@@ -78,6 +82,8 @@ export const ItemList = memo(function ItemList({
   onDelete,
   onReorder,
   onAssignToGroup,
+  onAssignTopic,
+  onUnassignTopic,
   onRenameGroup,
   onSetGroupColor,
   onToggleGroupCollapse,
@@ -166,11 +172,14 @@ export const ItemList = memo(function ItemList({
               <ItemRow
                 key={item.id}
                 item={item}
+                topics={topics}
                 onMarkDone={onMarkDone}
                 onUnmarkDone={onUnmarkDone}
                 onUpdateTags={onUpdateTags}
                 onUpdateNotes={onUpdateNotes}
                 onDelete={onDelete}
+                onAssignTopic={onAssignTopic}
+                onUnassignTopic={onUnassignTopic}
               />
             ))}
           </div>
@@ -184,6 +193,7 @@ export const ItemList = memo(function ItemList({
             key={group.id}
             group={group}
             items={items.filter((i) => i.groupId === group.id)}
+            topics={topics}
             onRename={onRenameGroup}
             onSetColor={onSetGroupColor}
             onToggleCollapse={onToggleGroupCollapse}
@@ -193,6 +203,8 @@ export const ItemList = memo(function ItemList({
             onUpdateTags={onUpdateTags}
             onUpdateNotes={onUpdateNotes}
             onDeleteItem={onDelete}
+            onAssignTopic={onAssignTopic}
+            onUnassignTopic={onUnassignTopic}
           />
         ))}
       </div>

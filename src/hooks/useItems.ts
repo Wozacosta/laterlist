@@ -75,6 +75,27 @@ export function useItems() {
     []
   );
 
+  const assignToTopic = useCallback(
+    async (id: string, topicId: string) => {
+      const item = await db.items.get(id);
+      if (!item) return;
+      const current = item.topicIds ?? [];
+      if (current.includes(topicId)) return;
+      await db.items.update(id, { topicIds: [...current, topicId] });
+    },
+    []
+  );
+
+  const unassignFromTopic = useCallback(
+    async (id: string, topicId: string) => {
+      const item = await db.items.get(id);
+      if (!item) return;
+      const updated = (item.topicIds ?? []).filter((t) => t !== topicId);
+      await db.items.update(id, { topicIds: updated });
+    },
+    []
+  );
+
   return {
     items,
     archivedItems,
@@ -86,5 +107,7 @@ export function useItems() {
     deleteItem,
     reorderItems,
     assignToGroup,
+    assignToTopic,
+    unassignFromTopic,
   };
 }

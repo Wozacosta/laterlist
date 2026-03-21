@@ -3,16 +3,20 @@
 import { memo, useState, useCallback } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { Item } from "@/db";
+import type { Item, Topic } from "@/db";
 import { TagChips } from "./TagChips";
+import { TopicPicker } from "./TopicPicker";
 
 interface ItemRowProps {
   item: Item;
+  topics: Topic[];
   onMarkDone: (id: string) => void;
   onUnmarkDone: (id: string) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateNotes: (id: string, notes: string) => void;
   onDelete: (id: string) => void;
+  onAssignTopic: (itemId: string, topicId: string) => void;
+  onUnassignTopic: (itemId: string, topicId: string) => void;
 }
 
 function formatDuration(seconds: number | undefined, category: string): string {
@@ -35,11 +39,14 @@ function formatDate(isoString: string): string {
 
 export const ItemRow = memo(function ItemRow({
   item,
+  topics,
   onMarkDone,
   onUnmarkDone,
   onUpdateTags,
   onUpdateNotes,
   onDelete,
+  onAssignTopic,
+  onUnassignTopic,
 }: ItemRowProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -79,6 +86,16 @@ export const ItemRow = memo(function ItemRow({
       onUpdateNotes(item.id, e.target.value);
     },
     [item.id, onUpdateNotes]
+  );
+
+  const handleAssignTopic = useCallback(
+    (topicId: string) => onAssignTopic(item.id, topicId),
+    [item.id, onAssignTopic]
+  );
+
+  const handleUnassignTopic = useCallback(
+    (topicId: string) => onUnassignTopic(item.id, topicId),
+    [item.id, onUnassignTopic]
   );
 
   const handleRowClick = useCallback(
@@ -187,9 +204,20 @@ export const ItemRow = memo(function ItemRow({
         </button>
       </div>
 
-      {/* Notes (expanded) */}
+      {/* Notes & Topics (expanded) */}
       {expanded && (
-        <div className="border-t border-gray-100 px-3 pb-3 pt-2 dark:border-gray-800">
+        <div className="border-t border-gray-100 px-3 pb-3 pt-2 dark:border-gray-800 space-y-2">
+          {topics.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400 dark:text-gray-600 shrink-0">Topics</span>
+              <TopicPicker
+                topicIds={item.topicIds ?? []}
+                topics={topics}
+                onAssign={handleAssignTopic}
+                onUnassign={handleUnassignTopic}
+              />
+            </div>
+          )}
           <textarea
             defaultValue={item.notes ?? ""}
             onBlur={handleNotesBlur}

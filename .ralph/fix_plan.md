@@ -2,7 +2,7 @@
 
 ## High Priority
 - [x] **LT-01**: User can create learning topics with a name
-- [ ] **LT-02**: User can assign saved items to one or more topics
+- [x] **LT-02**: User can assign saved items to one or more topics
 - [ ] **LT-03**: User can add learning items that aren't URLs (e.g. "build a shell in Rust ~20h")
 - [ ] **LT-04**: User can set estimated duration on non-URL items
 - [ ] **LT-05**: All learning data persists locally and syncs via Dexie Cloud
@@ -35,6 +35,7 @@
 ## Completed
 - [x] Project enabled for Ralph
 - [x] **LT-01**: User can create learning topics with a name — Added Topic model (db v3), useTopics hook, TopicList component, List/Learn view toggle
+- [x] **LT-02**: User can assign saved items to one or more topics — Migrated topicId→topicIds (db v4 with *multiEntry index), added assignToTopic/unassignFromTopic to useItems, created TopicPicker component with dropdown, wired through ItemRow expanded section
 
 ## Notes
 - Focus on MVP functionality first

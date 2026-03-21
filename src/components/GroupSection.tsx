@@ -6,7 +6,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import type { Group, Item, GroupColor } from "@/db";
+import type { Group, Item, GroupColor, Topic } from "@/db";
 import { colorStyles } from "@/lib/groupColors";
 import { GroupHeader } from "./GroupHeader";
 import { ItemRow } from "./ItemRow";
@@ -14,6 +14,7 @@ import { ItemRow } from "./ItemRow";
 interface GroupSectionProps {
   group: Group;
   items: Item[];
+  topics: Topic[];
   onRename: (id: string, name: string) => void;
   onSetColor: (id: string, color: GroupColor) => void;
   onToggleCollapse: (id: string, collapsed: boolean) => void;
@@ -23,11 +24,14 @@ interface GroupSectionProps {
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateNotes: (id: string, notes: string) => void;
   onDeleteItem: (id: string) => void;
+  onAssignTopic: (itemId: string, topicId: string) => void;
+  onUnassignTopic: (itemId: string, topicId: string) => void;
 }
 
 export const GroupSection = memo(function GroupSection({
   group,
   items,
+  topics,
   onRename,
   onSetColor,
   onToggleCollapse,
@@ -37,6 +41,8 @@ export const GroupSection = memo(function GroupSection({
   onUpdateTags,
   onUpdateNotes,
   onDeleteItem,
+  onAssignTopic,
+  onUnassignTopic,
 }: GroupSectionProps) {
   const { setNodeRef, isOver } = useDroppable({ id: `group-${group.id}` });
   const { border, bg } = colorStyles[group.color];
@@ -73,11 +79,14 @@ export const GroupSection = memo(function GroupSection({
                   <ItemRow
                     key={item.id}
                     item={item}
+                    topics={topics}
                     onMarkDone={onMarkDone}
                     onUnmarkDone={onUnmarkDone}
                     onUpdateTags={onUpdateTags}
                     onUpdateNotes={onUpdateNotes}
                     onDelete={onDeleteItem}
+                    onAssignTopic={onAssignTopic}
+                    onUnassignTopic={onUnassignTopic}
                   />
                 ))}
               </div>
