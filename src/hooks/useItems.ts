@@ -42,16 +42,46 @@ export function useItems() {
   );
 
   const markDone = useCallback(async (id: string) => {
-    await db.items.update(id, {
-      status: "done",
-      doneAt: new Date().toISOString(),
+    await db.transaction("rw", [db.items, db.topics], async () => {
+      const item = await db.items.get(id);
+      if (!item) return;
+      await db.items.update(id, {
+        status: "done",
+        doneAt: new Date().toISOString(),
+      });
+      // Auto-log duration to linked topics (LT-10)
+      if (item.duration && item.topicIds?.length) {
+        for (const topicId of item.topicIds) {
+          const topic = await db.topics.get(topicId);
+          if (topic) {
+            await db.topics.update(topicId, {
+              timeSpent: (topic.timeSpent ?? 0) + item.duration,
+            });
+          }
+        }
+      }
     });
   }, []);
 
   const unmarkDone = useCallback(async (id: string) => {
-    await db.items.update(id, {
-      status: "unread",
-      doneAt: undefined,
+    await db.transaction("rw", [db.items, db.topics], async () => {
+      const item = await db.items.get(id);
+      if (!item) return;
+      await db.items.update(id, {
+        status: "unread",
+        doneAt: undefined,
+      });
+      // Reverse time log from linked topics (LT-10)
+      if (item.duration && item.topicIds?.length) {
+        for (const topicId of item.topicIds) {
+          const topic = await db.topics.get(topicId);
+          if (topic) {
+            await db.topics.update(topicId, {
+              timeSpent: Math.max(0, (topic.timeSpent ?? 0) - item.duration),
+            });
+          }
+        }
+      }
     });
   }, []);
 

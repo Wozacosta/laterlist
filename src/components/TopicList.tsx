@@ -1,21 +1,35 @@
 "use client";
 
-import { memo, useState, useCallback, useRef, useEffect } from "react";
-import type { Topic } from "@/db";
+import { memo, useState, useCallback, useRef, useEffect, useMemo } from "react";
+import type { Topic, Item } from "@/db";
 
 interface TopicListProps {
   topics: Topic[];
+  items: Item[];
   onAdd: (name: string) => void;
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
 }
 
+function formatTime(seconds: number): string {
+  if (seconds <= 0) return "0m";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.round((seconds % 3600) / 60);
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
 const TopicRow = memo(function TopicRow({
   topic,
+  remainingSeconds,
+  itemCount,
   onRename,
   onDelete,
 }: {
   topic: Topic;
+  remainingSeconds: number;
+  itemCount: number;
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
 }) {
@@ -82,6 +96,17 @@ const TopicRow = memo(function TopicRow({
         </button>
       )}
 
+      {/* Stats */}
+      <div className="shrink-0 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+        <span>{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
+        {topic.timeSpent > 0 && (
+          <span className="text-green-600 dark:text-green-400">{formatTime(topic.timeSpent)} done</span>
+        )}
+        {remainingSeconds > 0 && (
+          <span>{formatTime(remainingSeconds)} left</span>
+        )}
+      </div>
+
       {/* Delete */}
       <button
         type="button"
@@ -102,12 +127,32 @@ const TopicRow = memo(function TopicRow({
 
 export const TopicList = memo(function TopicList({
   topics,
+  items,
   onAdd,
   onRename,
   onDelete,
 }: TopicListProps) {
   const [newName, setNewName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Compute per-topic stats: item count and remaining unread time
+  const topicStats = useMemo(() => {
+    const stats = new Map<string, { itemCount: number; remainingSeconds: number }>();
+    for (const topic of topics) {
+      stats.set(topic.id, { itemCount: 0, remainingSeconds: 0 });
+    }
+    for (const item of items) {
+      for (const topicId of item.topicIds ?? []) {
+        const s = stats.get(topicId);
+        if (!s) continue;
+        s.itemCount++;
+        if (item.status === "unread" && item.duration) {
+          s.remainingSeconds += item.duration;
+        }
+      }
+    }
+    return stats;
+  }, [topics, items]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -165,14 +210,19 @@ export const TopicList = memo(function TopicList({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {topics.map((topic) => (
-            <TopicRow
-              key={topic.id}
-              topic={topic}
-              onRename={onRename}
-              onDelete={onDelete}
-            />
-          ))}
+          {topics.map((topic) => {
+            const s = topicStats.get(topic.id);
+            return (
+              <TopicRow
+                key={topic.id}
+                topic={topic}
+                itemCount={s?.itemCount ?? 0}
+                remainingSeconds={s?.remainingSeconds ?? 0}
+                onRename={onRename}
+                onDelete={onDelete}
+              />
+            );
+          })}
         </div>
       )}
     </div>

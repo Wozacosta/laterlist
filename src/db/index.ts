@@ -50,6 +50,7 @@ export interface Topic {
   sortOrder: number; // Date.now() on creation
   status: "active" | "completed";
   completedAt?: string; // ISO datetime string
+  timeSpent: number; // seconds of learning time logged
 }
 
 const db = new Dexie("LaterlistDB", { addons: [dexieCloud] }) as Dexie & {
@@ -87,6 +88,23 @@ db.version(4)
         const oldId = item.topicId as string | undefined;
         item.topicIds = oldId ? [oldId] : [];
         delete item.topicId;
+      });
+  });
+
+db.version(5)
+  .stores({
+    items: "id, url, category, status, sortOrder, addedAt, groupId, *topicIds",
+    groups: "id, sortOrder",
+    topics: "id, sortOrder, status",
+  })
+  .upgrade((tx) => {
+    return tx
+      .table("topics")
+      .toCollection()
+      .modify((topic: Record<string, unknown>) => {
+        if (topic.timeSpent === undefined) {
+          topic.timeSpent = 0;
+        }
       });
   });
 

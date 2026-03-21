@@ -14,6 +14,7 @@ export function useTopics() {
       createdAt: new Date().toISOString(),
       sortOrder: Date.now(),
       status: "active",
+      timeSpent: 0,
     });
   }, []);
 

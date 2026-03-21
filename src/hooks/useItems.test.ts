@@ -133,6 +133,101 @@ describe("useItems", () => {
     });
   });
 
+  it("markDone auto-logs duration to linked topics", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Create a topic
+    const topicId = `top${crypto.randomUUID()}`;
+    await act(async () => {
+      await db.topics.add({
+        id: topicId,
+        name: "Rust",
+        createdAt: new Date().toISOString(),
+        sortOrder: Date.now(),
+        status: "active",
+        timeSpent: 0,
+      });
+    });
+
+    // Add item with duration linked to that topic
+    await act(async () => {
+      await result.current.addItem({
+        url: "https://example.com/rust-video",
+        title: "Rust Tutorial",
+        category: "video",
+        tags: ["rust"],
+        duration: 1800, // 30 minutes
+        topicIds: [topicId],
+      });
+    });
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    const itemId = result.current.items[0].id;
+
+    // Mark done → should add 1800s to topic.timeSpent
+    await act(async () => {
+      await result.current.markDone(itemId);
+    });
+    await waitFor(() =>
+      expect(result.current.items.find((i) => i.id === itemId)?.status).toBe("done")
+    );
+
+    const topic = await db.topics.get(topicId);
+    expect(topic?.timeSpent).toBe(1800);
+  });
+
+  it("unmarkDone reverses time logged to linked topics", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Create a topic with some existing time
+    const topicId = `top${crypto.randomUUID()}`;
+    await act(async () => {
+      await db.topics.add({
+        id: topicId,
+        name: "Go",
+        createdAt: new Date().toISOString(),
+        sortOrder: Date.now(),
+        status: "active",
+        timeSpent: 3600, // 1 hour already logged
+      });
+    });
+
+    // Add item with duration linked to that topic
+    await act(async () => {
+      await result.current.addItem({
+        url: "https://example.com/go-article",
+        title: "Go Article",
+        category: "article",
+        tags: ["go"],
+        duration: 600, // 10 minutes
+        topicIds: [topicId],
+      });
+    });
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    const itemId = result.current.items[0].id;
+
+    // Mark done → timeSpent should be 3600 + 600 = 4200
+    await act(async () => {
+      await result.current.markDone(itemId);
+    });
+    await waitFor(() =>
+      expect(result.current.items.find((i) => i.id === itemId)?.status).toBe("done")
+    );
+    let topic = await db.topics.get(topicId);
+    expect(topic?.timeSpent).toBe(4200);
+
+    // Unmark → timeSpent should go back to 3600
+    await act(async () => {
+      await result.current.unmarkDone(itemId);
+    });
+    await waitFor(() =>
+      expect(result.current.items.find((i) => i.id === itemId)?.status).toBe("unread")
+    );
+    topic = await db.topics.get(topicId);
+    expect(topic?.timeSpent).toBe(3600);
+  });
+
   it("archived item appears in archivedItems not in items", async () => {
     const { result } = renderHook(() => useItems());
     await waitFor(() => expect(result.current.isLoading).toBe(false));

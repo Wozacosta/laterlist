@@ -276,6 +276,7 @@ export default function Page() {
       ) : (
         <TopicList
           topics={topics}
+          items={items}
           onAdd={handleAddTopic}
           onRename={renameTopic}
           onDelete={handleDeleteTopic}
