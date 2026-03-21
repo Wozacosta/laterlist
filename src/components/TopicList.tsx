@@ -129,14 +129,24 @@ const TopicRow = memo(function TopicRow({
         </button>
       )}
 
-      {/* Stats */}
-      <div className="shrink-0 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+      {/* Stats + Progress */}
+      <div className="shrink-0 flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
         <span>{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
-        {topic.timeSpent > 0 && (
-          <span className="text-green-600 dark:text-green-400">{formatTime(topic.timeSpent)} done</span>
-        )}
-        {remainingSeconds > 0 && (
-          <span>{formatTime(remainingSeconds)} left</span>
+        {(topic.timeSpent > 0 || remainingSeconds > 0) && (
+          <div className="flex items-center gap-2">
+            {topic.timeSpent > 0 && (
+              <span className="text-green-600 dark:text-green-400">{formatTime(topic.timeSpent)}</span>
+            )}
+            <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden" title={`${topic.timeSpent > 0 ? formatTime(topic.timeSpent) + " done" : ""}${remainingSeconds > 0 ? (topic.timeSpent > 0 ? ", " : "") + formatTime(remainingSeconds) + " left" : ""}`}>
+              <div
+                className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all"
+                style={{ width: `${topic.timeSpent + remainingSeconds > 0 ? Math.round((topic.timeSpent / (topic.timeSpent + remainingSeconds)) * 100) : 0}%` }}
+              />
+            </div>
+            {remainingSeconds > 0 && (
+              <span>{formatTime(remainingSeconds)} left</span>
+            )}
+          </div>
         )}
       </div>
 
@@ -188,6 +198,19 @@ export const TopicList = memo(function TopicList({
     }
     return stats;
   }, [topics, items]);
+
+  // Compute totals across all active topics
+  const totals = useMemo(() => {
+    let totalSpent = 0;
+    let totalRemaining = 0;
+    for (const topic of topics) {
+      if (topic.status === "completed") continue;
+      totalSpent += topic.timeSpent;
+      const s = topicStats.get(topic.id);
+      totalRemaining += s?.remainingSeconds ?? 0;
+    }
+    return { totalSpent, totalRemaining };
+  }, [topics, topicStats]);
 
   // Sort: active topics first (preserving sortOrder), completed at bottom
   const sortedTopics = useMemo(() => {
@@ -269,6 +292,29 @@ export const TopicList = memo(function TopicList({
               />
             );
           })}
+
+          {/* Totals summary */}
+          {(totals.totalSpent > 0 || totals.totalRemaining > 0) && (
+            <div className="mt-2 flex items-center justify-between rounded-lg border border-dashed border-gray-200 px-4 py-2.5 dark:border-gray-800">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">All topics</span>
+              <div className="flex items-center gap-3 text-xs">
+                {totals.totalSpent > 0 && (
+                  <span className="text-green-600 dark:text-green-400">{formatTime(totals.totalSpent)} done</span>
+                )}
+                {(totals.totalSpent > 0 || totals.totalRemaining > 0) && (
+                  <div className="w-20 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all"
+                      style={{ width: `${totals.totalSpent + totals.totalRemaining > 0 ? Math.round((totals.totalSpent / (totals.totalSpent + totals.totalRemaining)) * 100) : 0}%` }}
+                    />
+                  </div>
+                )}
+                {totals.totalRemaining > 0 && (
+                  <span className="text-gray-400 dark:text-gray-500">{formatTime(totals.totalRemaining)} left</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

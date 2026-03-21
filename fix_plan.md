@@ -25,10 +25,10 @@
 - [x] Visual distinction for completed topics (faded, strikethrough, opacity)
 - [x] Filter completed topics to bottom of list
 
-### LT-12: Remaining time per topic
-- [ ] Compute: sum of unread items' durations per topic
-- [ ] Show remaining time + progress bar in TopicList
-- [ ] Show total across all topics
+### LT-12: Remaining time per topic ✓
+- [x] Compute: sum of unread items' durations per topic
+- [x] Show remaining time + progress bar in TopicList
+- [x] Show total across all topics
 
 ## Phase 2: Data Model Extensions
 
