@@ -10,12 +10,14 @@ import { useSettings } from "@/hooks/useSettings";
 import { useTodayTime } from "@/hooks/useTodayTime";
 import { useStreak } from "@/hooks/useStreak";
 import { useRecommendation } from "@/hooks/useRecommendation";
+import { useWeeklyActivity } from "@/hooks/useWeeklyActivity";
 import { AddItemInput } from "@/components/AddItemInput";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
 import { TopicList } from "@/components/TopicList";
 import { DailyGoal } from "@/components/DailyGoal";
 import { Recommendation } from "@/components/Recommendation";
+import { LearningDashboard } from "@/components/LearningDashboard";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SkeletonList } from "@/components/SkeletonList";
@@ -78,6 +80,7 @@ export default function Page() {
   const todaySeconds = useTodayTime();
   const streak = useStreak();
   const recommendation = useRecommendation(topics, items);
+  const { days, topicTotals, weekTotal } = useWeeklyActivity();
 
   const { toast } = useToast();
   const currentUser = useObservable(db.cloud.currentUser);
@@ -309,6 +312,14 @@ export default function Page() {
             todaySeconds={todaySeconds}
             streak={streak}
             onSetGoal={setDailyGoal}
+          />
+          <LearningDashboard
+            days={days}
+            topicTotals={topicTotals}
+            weekTotal={weekTotal}
+            topics={topics}
+            streak={streak}
+            totalVelocitySecsPerDay={weekTotal / 7}
           />
           {recommendation && (
             <Recommendation recommendation={recommendation} />

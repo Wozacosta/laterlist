@@ -94,8 +94,18 @@
 - [x] Overall velocity in totals summary row (e.g., "45m/d")
 - [x] Called inside TopicList using remainingByTopic map from topicStats
 
-## Phase 4: UX (future)
-- [ ] LT-30: Learning dashboard
+## Phase 4: UX
+
+### LT-30: Learning dashboard ✓
+- [x] `useWeeklyActivity` hook: last 7 days of timeLogs grouped by day and topic
+- [x] Weekly bar chart: stacked topic colors, day labels, proportional heights
+- [x] Topic allocation bar: stacked horizontal bar showing actual time % per topic
+- [x] Legend with topic names, percentages, and target priority comparison
+- [x] Header with weekly total and average velocity
+- [x] Auto-hides when no data exists
+- [x] Renders in Learn view between DailyGoal and Recommendation
+
+### Remaining
 - [ ] LT-31: Topic detail view
 - [ ] LT-32: Weekly/monthly report
 - [ ] LT-33: Export learning data
