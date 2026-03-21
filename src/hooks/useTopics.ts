@@ -93,6 +93,10 @@ export function useTopics() {
     });
   }, []);
 
+  const setNotes = useCallback(async (id: string, notes: string) => {
+    await db.topics.update(id, { notes: notes || undefined });
+  }, []);
+
   return {
     topics: topics ?? [],
     isLoading: topics === undefined,
@@ -105,5 +109,6 @@ export function useTopics() {
     setPriority,
     setEstimate,
     markStudied,
+    setNotes,
   };
 }

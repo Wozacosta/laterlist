@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Topic, type Item } from "@/db";
 import { maxInterval, urgency } from "@/lib/spacedRepetition";
@@ -11,6 +11,7 @@ interface TopicDetailProps {
   onBack: () => void;
   onMarkDone: (id: string) => void;
   onUnmarkDone: (id: string) => void;
+  onSetNotes?: (id: string, notes: string) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -43,6 +44,7 @@ export const TopicDetail = memo(function TopicDetail({
   onBack,
   onMarkDone,
   onUnmarkDone,
+  onSetNotes,
 }: TopicDetailProps) {
   // Filter items for this topic
   const topicItems = useMemo(() => {
@@ -229,6 +231,9 @@ export const TopicDetail = memo(function TopicDetail({
         </div>
       )}
 
+      {/* Notes */}
+      {onSetNotes && <TopicNotes topic={topic} onSetNotes={onSetNotes} />}
+
       {/* Unread items */}
       {unreadItems.length > 0 && (
         <div className="mb-4">
@@ -359,6 +364,103 @@ export const TopicDetail = memo(function TopicDetail({
           </div>
         </div>
       )}
+    </div>
+  );
+});
+
+/** Inline notes editor for a topic. */
+const TopicNotes = memo(function TopicNotes({
+  topic,
+  onSetNotes,
+}: {
+  topic: Topic;
+  onSetNotes: (id: string, notes: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(topic.notes ?? "");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (editing && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.selectionStart = textareaRef.current.value.length;
+    }
+  }, [editing]);
+
+  const commitNotes = useCallback(() => {
+    setEditing(false);
+    const trimmed = draft.trim();
+    if (trimmed !== (topic.notes ?? "").trim()) {
+      onSetNotes(topic.id, trimmed);
+    }
+  }, [draft, topic.id, topic.notes, onSetNotes]);
+
+  return (
+    <div className="mb-4">
+      <div className="mb-1 flex items-center justify-between">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+          Notes
+        </h3>
+        {!editing && (
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(topic.notes ?? "");
+              setEditing(true);
+            }}
+            className="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            {topic.notes ? "Edit" : "Add note"}
+          </button>
+        )}
+      </div>
+      {editing ? (
+        <div>
+          <textarea
+            ref={textareaRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setDraft(topic.notes ?? "");
+                setEditing(false);
+              }
+            }}
+            rows={5}
+            placeholder="Write notes in markdown..."
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:placeholder-gray-500"
+          />
+          <div className="mt-1 flex gap-2">
+            <button
+              type="button"
+              onClick={commitNotes}
+              className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(topic.notes ?? "");
+                setEditing(false);
+              }}
+              className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : topic.notes ? (
+        <div
+          className="whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 cursor-pointer"
+          onClick={() => {
+            setDraft(topic.notes ?? "");
+            setEditing(true);
+          }}
+        >
+          {topic.notes}
+        </div>
+      ) : null}
     </div>
   );
 });

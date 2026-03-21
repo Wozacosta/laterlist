@@ -19,7 +19,7 @@
 - [x] **LT-31** (update): Add SR status to topic detail view — next review date, urgency score, days since last activity.
 
 ### Learning Notes
-- [ ] **LT-34**: Add markdown notes field to topics and items. DB migration. Notes stored as plain markdown strings.
+- [x] **LT-34**: Add markdown notes field to topics and items. DB migration. Notes stored as plain markdown strings.
 - [ ] **LT-35**: Add optional "what did you learn?" prompt when completing a subtask — saves note on the item.
 - [ ] **LT-36**: Show most recent notes when study queue surfaces a topic (inline preview in queue card).
 - [ ] **LT-37**: Markdown rendering for notes — support headings, lists, code blocks, links (use react-markdown or similar).

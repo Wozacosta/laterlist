@@ -55,6 +55,7 @@ export interface Topic {
   estimatedSeconds?: number; // total time budget for this topic (e.g. 30h = 108000)
   lastActivityDate?: string; // ISO datetime — last time user engaged with this topic (SR clock)
   currentInterval: number; // days until next review (SR interval, starts at 1)
+  notes?: string; // markdown notes for the topic
 }
 
 export interface TimeLog {

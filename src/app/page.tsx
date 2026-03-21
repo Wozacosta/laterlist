@@ -78,6 +78,7 @@ export default function Page() {
     setPriority,
     setEstimate,
     markStudied,
+    setNotes,
   } = useTopics();
 
   const { dailyGoalMinutes, setDailyGoal } = useSettings();
@@ -336,6 +337,7 @@ export default function Page() {
           onBack={() => setSelectedTopicId(null)}
           onMarkDone={handleMarkDone}
           onUnmarkDone={unmarkDone}
+          onSetNotes={setNotes}
         />
       ) : (
         <>
