@@ -40,11 +40,22 @@ export interface Item {
   doneAt?: string; // ISO datetime string
   notes?: string;
   groupId?: string; // optional group membership
+  topicId?: string; // optional learning topic
+}
+
+export interface Topic {
+  id: string; // "top" + crypto.randomUUID()
+  name: string;
+  createdAt: string; // ISO datetime string
+  sortOrder: number; // Date.now() on creation
+  status: "active" | "completed";
+  completedAt?: string; // ISO datetime string
 }
 
 const db = new Dexie("LaterlistDB", { addons: [dexieCloud] }) as Dexie & {
   items: DexieCloudTable<Item, "id">;
   groups: DexieCloudTable<Group, "id">;
+  topics: DexieCloudTable<Topic, "id">;
 };
 
 db.version(1).stores({
@@ -54,6 +65,12 @@ db.version(1).stores({
 db.version(2).stores({
   items: "id, url, category, status, sortOrder, addedAt, groupId",
   groups: "id, sortOrder",
+});
+
+db.version(3).stores({
+  items: "id, url, category, status, sortOrder, addedAt, groupId, topicId",
+  groups: "id, sortOrder",
+  topics: "id, sortOrder, status",
 });
 
 db.cloud.configure({

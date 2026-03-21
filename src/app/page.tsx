@@ -5,15 +5,19 @@ import { useObservable } from "dexie-react-hooks";
 import { db } from "@/db";
 import { useItems } from "@/hooks/useItems";
 import { useGroups } from "@/hooks/useGroups";
+import { useTopics } from "@/hooks/useTopics";
 import { AddItemInput } from "@/components/AddItemInput";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
+import { TopicList } from "@/components/TopicList";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SkeletonList } from "@/components/SkeletonList";
 import { DataManager } from "@/components/DataManager";
 import { useToast } from "@/components/Toast";
 import type { Category, Item, GroupColor } from "@/db";
+
+type View = "list" | "learn";
 
 type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
 
@@ -51,10 +55,18 @@ export default function Page() {
     deleteGroup,
   } = useGroups();
 
+  const {
+    topics,
+    addTopic,
+    renameTopic,
+    deleteTopic,
+  } = useTopics();
+
   const { toast } = useToast();
   const currentUser = useObservable(db.cloud.currentUser);
   const isLoggedIn = currentUser?.isLoggedIn ?? false;
 
+  const [view, setView] = useState<View>("list");
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [hideDone, setHideDone] = useState(false);
@@ -154,6 +166,22 @@ export default function Page() {
     [deleteGroup, toast]
   );
 
+  const handleAddTopic = useCallback(
+    async (name: string) => {
+      await addTopic(name);
+      toast("Topic created");
+    },
+    [addTopic, toast]
+  );
+
+  const handleDeleteTopic = useCallback(
+    async (id: string) => {
+      await deleteTopic(id);
+      toast("Topic deleted", "error");
+    },
+    [deleteTopic, toast]
+  );
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
@@ -165,51 +193,88 @@ export default function Page() {
         </div>
       </div>
 
-      <AddItemInput onAdd={handleAdd} isLoggedIn={isLoggedIn} />
+      {/* View toggle */}
+      <div className="mb-4 flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-900">
+        <button
+          type="button"
+          onClick={() => setView("list")}
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            view === "list"
+              ? "bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          }`}
+        >
+          List
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("learn")}
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            view === "learn"
+              ? "bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          }`}
+        >
+          Learn
+        </button>
+      </div>
 
-      <FilterBar
-        categories={categories}
-        allTags={allTags}
-        selectedCategory={selectedCategory}
-        selectedTags={selectedTags}
-        hideDone={hideDone}
-        onCategoryChange={setSelectedCategory}
-        onTagToggle={handleTagToggle}
-        onToggleHideDone={() => setHideDone((v) => !v)}
-      />
+      {view === "list" ? (
+        <>
+          <AddItemInput onAdd={handleAdd} isLoggedIn={isLoggedIn} />
 
-      {!isLoading && totalUnreadSeconds > 0 && (
-        <p className="mb-3 text-xs text-gray-400 dark:text-gray-600">
-          {formatTotalTime(totalUnreadSeconds)}
-        </p>
-      )}
+          <FilterBar
+            categories={categories}
+            allTags={allTags}
+            selectedCategory={selectedCategory}
+            selectedTags={selectedTags}
+            hideDone={hideDone}
+            onCategoryChange={setSelectedCategory}
+            onTagToggle={handleTagToggle}
+            onToggleHideDone={() => setHideDone((v) => !v)}
+          />
 
-      {isLoading ? (
-        <SkeletonList />
+          {!isLoading && totalUnreadSeconds > 0 && (
+            <p className="mb-3 text-xs text-gray-400 dark:text-gray-600">
+              {formatTotalTime(totalUnreadSeconds)}
+            </p>
+          )}
+
+          {isLoading ? (
+            <SkeletonList />
+          ) : (
+            <ItemList
+              items={filteredItems}
+              groups={groups}
+              filtered={isFiltered}
+              onMarkDone={handleMarkDone}
+              onUnmarkDone={unmarkDone}
+              onUpdateTags={handleUpdateTags}
+              onUpdateNotes={handleUpdateNotes}
+              onDelete={handleDelete}
+              onReorder={reorderItems}
+              onAssignToGroup={assignToGroup}
+              onRenameGroup={renameGroup}
+              onSetGroupColor={setColor}
+              onToggleGroupCollapse={toggleCollapse}
+              onDeleteGroup={handleDeleteGroup}
+              onAddGroup={handleAddGroup}
+            />
+          )}
+
+          {archivedItems.length > 0 && (
+            <p className="mt-4 text-center text-xs text-gray-400 dark:text-gray-600">
+              {archivedItems.length} archived item{archivedItems.length !== 1 ? "s" : ""}
+            </p>
+          )}
+        </>
       ) : (
-        <ItemList
-          items={filteredItems}
-          groups={groups}
-          filtered={isFiltered}
-          onMarkDone={handleMarkDone}
-          onUnmarkDone={unmarkDone}
-          onUpdateTags={handleUpdateTags}
-          onUpdateNotes={handleUpdateNotes}
-          onDelete={handleDelete}
-          onReorder={reorderItems}
-          onAssignToGroup={assignToGroup}
-          onRenameGroup={renameGroup}
-          onSetGroupColor={setColor}
-          onToggleGroupCollapse={toggleCollapse}
-          onDeleteGroup={handleDeleteGroup}
-          onAddGroup={handleAddGroup}
+        <TopicList
+          topics={topics}
+          onAdd={handleAddTopic}
+          onRename={renameTopic}
+          onDelete={handleDeleteTopic}
         />
-      )}
-
-      {archivedItems.length > 0 && (
-        <p className="mt-4 text-center text-xs text-gray-400 dark:text-gray-600">
-          {archivedItems.length} archived item{archivedItems.length !== 1 ? "s" : ""}
-        </p>
       )}
     </main>
   );
