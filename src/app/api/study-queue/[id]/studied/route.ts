@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { getTopicById, updateTopic } from "@/lib/server/store";
+import { requireAuth } from "@/lib/server/authMiddleware";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -9,9 +10,12 @@ type RouteContext = { params: Promise<{ id: string }> };
  * Returns: the updated Topic
  */
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext
 ) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
 
   const topic = getTopicById(id);

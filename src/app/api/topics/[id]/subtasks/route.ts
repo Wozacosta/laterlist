@@ -6,6 +6,7 @@ import {
   deleteItem,
   getItemById,
 } from "@/lib/server/store";
+import { requireAuth } from "@/lib/server/authMiddleware";
 import type { Category } from "@/db";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -19,9 +20,12 @@ const VALID_CATEGORIES: Category[] = [
  * Returns: Item[] assigned to this topic
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext
 ) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
 
   if (!getTopicById(id)) {
@@ -40,6 +44,9 @@ export async function POST(
   request: NextRequest,
   context: RouteContext
 ) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const { id: topicId } = await context.params;
 
   if (!getTopicById(topicId)) {
@@ -89,6 +96,9 @@ export async function DELETE(
   request: NextRequest,
   context: RouteContext
 ) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const { id: topicId } = await context.params;
 
   if (!getTopicById(topicId)) {

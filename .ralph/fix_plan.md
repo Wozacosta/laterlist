@@ -42,7 +42,7 @@
 - [x] **LT-52**: `POST /api/topics/:id/time` — log time, `GET /api/topics/:id/timelogs` — query logs
 - [x] **LT-53**: `GET/POST/PUT /api/notes` — notes CRUD on topics and items
 - [x] **LT-54**: `GET /api/study-queue` — ranked queue, `POST /api/study-queue/:id/studied` — mark session
-- [ ] **LT-55**: API key auth — generate/revoke keys in settings, middleware to validate on all `/api/` routes
+- [x] **LT-55**: API key auth — generate/revoke keys in settings, middleware to validate on all `/api/` routes
 - [ ] **LT-56**: Document API endpoints (OpenAPI spec or equivalent)
 
 ### MCP Server

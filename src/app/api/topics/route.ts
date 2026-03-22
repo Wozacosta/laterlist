@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { readTopics, addTopic } from "@/lib/server/store";
+import { requireAuth } from "@/lib/server/authMiddleware";
 
 /**
  * GET /api/topics
@@ -7,6 +8,9 @@ import { readTopics, addTopic } from "@/lib/server/store";
  * Returns: Topic[]
  */
 export async function GET(request: NextRequest) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const { searchParams } = request.nextUrl;
   const status = searchParams.get("status");
 
@@ -25,6 +29,9 @@ export async function GET(request: NextRequest) {
  * Returns: the created Topic
  */
 export async function POST(request: NextRequest) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   try {
     const body = await request.json();
     const { name, priority, estimatedSeconds } = body;

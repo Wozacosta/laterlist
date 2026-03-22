@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { getTopicById, logTimeToTopic } from "@/lib/server/store";
+import { requireAuth } from "@/lib/server/authMiddleware";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -13,6 +14,8 @@ export async function POST(
   request: NextRequest,
   context: RouteContext
 ) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
   const { id } = await context.params;
 
   if (!getTopicById(id)) {

@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { getItemById, updateItem } from "@/lib/server/store";
+import { requireAuth } from "@/lib/server/authMiddleware";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -8,9 +9,12 @@ type RouteContext = { params: Promise<{ id: string }> };
  * Returns: { notes: string | null }
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext
 ) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
   const item = getItemById(id);
 
@@ -30,6 +34,9 @@ export async function PUT(
   request: NextRequest,
   context: RouteContext
 ) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
 
   try {

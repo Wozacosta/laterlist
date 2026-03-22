@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { getTopicById, updateTopic, deleteTopic } from "@/lib/server/store";
+import { requireAuth } from "@/lib/server/authMiddleware";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -8,9 +9,12 @@ type RouteContext = { params: Promise<{ id: string }> };
  * Returns: a single Topic, or 404
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext
 ) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
   const topic = getTopicById(id);
 
@@ -30,6 +34,9 @@ export async function PUT(
   request: NextRequest,
   context: RouteContext
 ) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
 
   try {
@@ -86,9 +93,12 @@ export async function PUT(
  * Returns: 204 on success, 404 if not found
  */
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext
 ) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
   const deleted = deleteTopic(id);
 

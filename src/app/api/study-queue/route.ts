@@ -1,4 +1,6 @@
+import { type NextRequest } from "next/server";
 import { readTopics } from "@/lib/server/store";
+import { requireAuth } from "@/lib/server/authMiddleware";
 import { maxInterval, urgency } from "@/lib/spacedRepetition";
 
 const DAY_MS = 86_400_000;
@@ -19,7 +21,10 @@ interface StudyQueueEntry {
  * Returns the ranked study queue — active topics sorted by SR urgency.
  * Topics with unmet prerequisites are filtered out.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authErr = requireAuth(request);
+  if (authErr) return authErr;
+
   const topics = readTopics();
   const now = Date.now();
 
