@@ -44,6 +44,14 @@ function formatTotalTime(seconds: number): string {
   return `${m}m to go`;
 }
 
+function formatElapsed(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
 const DEFAULT_COLORS: GroupColor[] = ["blue", "purple", "green", "orange", "pink", "gray"];
 let colorIndex = 0;
 
@@ -325,6 +333,21 @@ export default function Page() {
           <CloudSyncButton />
         </div>
       </div>
+
+      {/* Persistent timer display (LT-3G) */}
+      {timerState.active && (
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-green-300 bg-green-50 px-4 py-2 dark:border-green-800 dark:bg-green-950">
+          <div className="flex items-center gap-2">
+            <span className="text-green-600 dark:text-green-400 animate-pulse">●</span>
+            <span className="text-sm font-medium text-green-800 dark:text-green-200 truncate">
+              {timerState.active.topicName}
+            </span>
+          </div>
+          <span className="shrink-0 font-mono text-sm font-semibold text-green-700 dark:text-green-300">
+            {formatElapsed(timerState.elapsed)}
+          </span>
+        </div>
+      )}
 
       {/* View toggle */}
       <div className="mb-4 flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-900">
