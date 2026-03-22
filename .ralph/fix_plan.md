@@ -56,7 +56,7 @@ Depends on: REST API (LT-50–55)
 - [x] **LT-76**: Tool: `add_note` — markdown note on topic or subtask
 - [x] **LT-77**: Tool: `get_study_queue` — ranked queue with urgency
 - [x] **LT-78**: Tool: `mark_studied` — reset SR clock
-- [ ] **LT-79**: Tool: `search` — keyword search across topics, subtasks, notes
+- [x] **LT-79**: Tool: `search` — keyword search across topics, subtasks, notes
 - [x] **LT-7A**: Tool: `get_topic_detail` — full topic with subtasks, notes, logs, SR, deps
 - [ ] **LT-7B**: Tool: `bulk_import` — multiple subtasks at once
 - [x] **LT-7C**: Resource: `laterlist://study-queue`

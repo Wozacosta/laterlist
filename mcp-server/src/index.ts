@@ -271,6 +271,29 @@ server.tool(
   }
 );
 
+// ── Tool: search ────────────────────────────────────────────────────────
+
+server.tool(
+  "search",
+  "Search across all topics, subtasks, and notes by keyword",
+  {
+    query: z.string().describe("Search keyword"),
+  },
+  async ({ query }) => {
+    const res = await client.search(query);
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: res.ok
+            ? JSON.stringify(res.data, null, 2)
+            : `Error ${res.status}: ${JSON.stringify(res.data)}`,
+        },
+      ],
+    };
+  }
+);
+
 // ── Resource: laterlist://study-queue ────────────────────────────────────
 
 server.resource(

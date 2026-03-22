@@ -123,4 +123,9 @@ export class LaterlistClient {
   async markStudied(topicId: string) {
     return this.request("POST", `/api/study-queue/${topicId}/studied`);
   }
+
+  // Search
+  async search(query: string) {
+    return this.request("GET", `/api/search?q=${encodeURIComponent(query)}`);
+  }
 }
