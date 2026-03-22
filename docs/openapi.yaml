@@ -1,0 +1,687 @@
+openapi: 3.0.3
+info:
+  title: Laterlist API
+  description: |
+    REST API for the Laterlist learning tracker.
+
+    ## Authentication
+    API key authentication via Bearer token.
+    - When no API keys exist: all endpoints are open (no auth required).
+    - Once a key is generated via `POST /api/auth/keys`, all protected
+      endpoints require `Authorization: Bearer <api-key>`.
+    - Key management endpoints (`/api/auth/keys`) are always public.
+    - Client-side endpoints (`/api/enrich`, `/api/playlist`) are always public.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: API key prefixed with "ll_". Generate via POST /api/auth/keys.
+
+  schemas:
+    Topic:
+      type: object
+      properties:
+        id:
+          type: string
+          example: top550e8400-e29b-41d4-a716-446655440000
+        name:
+          type: string
+          example: Learn Rust
+        createdAt:
+          type: string
+          format: date-time
+        sortOrder:
+          type: number
+        status:
+          type: string
+          enum: [active, completed]
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        timeSpent:
+          type: number
+          description: Seconds of learning time logged
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "1=lowest, 5=critical"
+        estimatedSeconds:
+          type: number
+          description: Total time budget in seconds
+          nullable: true
+        lastActivityDate:
+          type: string
+          format: date-time
+          nullable: true
+        currentInterval:
+          type: integer
+          description: Days until next SR review
+        notes:
+          type: string
+          nullable: true
+          description: Markdown notes
+        dependsOn:
+          type: array
+          items:
+            type: string
+          description: Topic IDs this topic depends on (prerequisites)
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+        category:
+          type: string
+          enum: [video, article, paper, repo, podcast, doc, other]
+        tags:
+          type: array
+          items:
+            type: string
+        duration:
+          type: number
+          nullable: true
+          description: Duration in seconds
+        addedAt:
+          type: string
+          format: date-time
+        sortOrder:
+          type: number
+        status:
+          type: string
+          enum: [unread, done]
+        doneAt:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        topicIds:
+          type: array
+          items:
+            type: string
+
+    TimeLog:
+      type: object
+      properties:
+        id:
+          type: string
+        topicId:
+          type: string
+        seconds:
+          type: number
+        loggedAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum: [manual, done]
+
+    StudyQueueEntry:
+      type: object
+      properties:
+        topicId:
+          type: string
+        topicName:
+          type: string
+        priority:
+          type: integer
+        urgencyScore:
+          type: number
+          description: ">=1.0 means overdue"
+        daysSinceActivity:
+          type: number
+        maxIntervalDays:
+          type: integer
+        isOverdue:
+          type: boolean
+        reason:
+          type: string
+
+    ApiKeyInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        keyPrefix:
+          type: string
+          description: First 8 characters of the key
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+paths:
+  # ── Auth ──────────────────────────────────────────────────────────────
+  /api/auth/keys:
+    get:
+      tags: [Auth]
+      summary: List API keys
+      description: Returns all API keys (prefix only, no secrets). Always public.
+      security: []
+      responses:
+        "200":
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiKeyInfo"
+
+    post:
+      tags: [Auth]
+      summary: Generate a new API key
+      description: |
+        Creates a new API key. The full key is returned ONLY in this response.
+        Store it securely — it cannot be retrieved again.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: My MCP Server
+      responses:
+        "201":
+          description: Key created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  key:
+                    type: string
+                    description: Full API key (shown once)
+                  name:
+                    type: string
+                  createdAt:
+                    type: string
+                  keyPrefix:
+                    type: string
+
+    delete:
+      tags: [Auth]
+      summary: Revoke an API key
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "204":
+          description: Key revoked
+        "404":
+          description: Key not found
+
+  # ── Topics ────────────────────────────────────────────────────────────
+  /api/topics:
+    get:
+      tags: [Topics]
+      summary: List all topics
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, completed]
+          description: Filter by status
+      responses:
+        "200":
+          description: List of topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Topic"
+
+    post:
+      tags: [Topics]
+      summary: Create a topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                priority:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  default: 3
+                estimatedSeconds:
+                  type: number
+      responses:
+        "201":
+          description: Topic created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+
+  /api/topics/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags: [Topics]
+      summary: Get a topic
+      responses:
+        "200":
+          description: Topic found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+        "404":
+          description: Topic not found
+
+    put:
+      tags: [Topics]
+      summary: Update a topic
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                priority:
+                  type: integer
+                status:
+                  type: string
+                  enum: [active, completed]
+                estimatedSeconds:
+                  type: number
+                notes:
+                  type: string
+                dependsOn:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Topic updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+        "404":
+          description: Topic not found
+
+    delete:
+      tags: [Topics]
+      summary: Delete a topic
+      responses:
+        "204":
+          description: Topic deleted
+        "404":
+          description: Topic not found
+
+  # ── Subtasks (Items) ──────────────────────────────────────────────────
+  /api/topics/{id}/subtasks:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags: [Subtasks]
+      summary: List items assigned to a topic
+      responses:
+        "200":
+          description: Items for this topic
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+        "404":
+          description: Topic not found
+
+    post:
+      tags: [Subtasks]
+      summary: Create an item assigned to a topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                url:
+                  type: string
+                category:
+                  type: string
+                  enum: [video, article, paper, repo, podcast, doc, other]
+                  default: other
+                duration:
+                  type: number
+                  description: Duration in seconds
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "404":
+          description: Topic not found
+
+    delete:
+      tags: [Subtasks]
+      summary: Remove an item from a topic
+      description: |
+        If the item belongs only to this topic, it is deleted entirely.
+        If it belongs to other topics too, it is just unassigned from this one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemId]
+              properties:
+                itemId:
+                  type: string
+      responses:
+        "204":
+          description: Item removed
+        "404":
+          description: Topic or item not found
+
+  /api/items/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+    patch:
+      tags: [Subtasks]
+      summary: Update item status (mark done/unread)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [done, unread]
+      responses:
+        "200":
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "404":
+          description: Item not found
+
+  # ── Time Tracking ─────────────────────────────────────────────────────
+  /api/topics/{id}/time:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      tags: [Time Tracking]
+      summary: Log time to a topic
+      description: Creates a TimeLog, updates timeSpent, and resets the SR clock.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seconds]
+              properties:
+                seconds:
+                  type: number
+                  minimum: 1
+                source:
+                  type: string
+                  enum: [manual, done]
+                  default: manual
+      responses:
+        "201":
+          description: Time logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeLog"
+        "404":
+          description: Topic not found
+
+  /api/topics/{id}/timelogs:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags: [Time Tracking]
+      summary: Query time logs for a topic
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: Max number of logs to return
+      responses:
+        "200":
+          description: Time logs (newest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeLog"
+        "404":
+          description: Topic not found
+
+  # ── Notes ──────────────────────────────────────────────────────────────
+  /api/topics/{id}/notes:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags: [Notes]
+      summary: Get topic notes
+      responses:
+        "200":
+          description: Topic notes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notes:
+                    type: string
+                    nullable: true
+        "404":
+          description: Topic not found
+
+    put:
+      tags: [Notes]
+      summary: Update topic notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [notes]
+              properties:
+                notes:
+                  type: string
+                  description: Markdown content. Empty string clears notes.
+      responses:
+        "200":
+          description: Notes updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notes:
+                    type: string
+                    nullable: true
+        "404":
+          description: Topic not found
+
+  /api/items/{id}/notes:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags: [Notes]
+      summary: Get item notes
+      responses:
+        "200":
+          description: Item notes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notes:
+                    type: string
+                    nullable: true
+        "404":
+          description: Item not found
+
+    put:
+      tags: [Notes]
+      summary: Update item notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [notes]
+              properties:
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Notes updated
+        "404":
+          description: Item not found
+
+  # ── Study Queue ────────────────────────────────────────────────────────
+  /api/study-queue:
+    get:
+      tags: [Study Queue]
+      summary: Get ranked study queue
+      description: |
+        Returns active topics ranked by spaced-repetition urgency (highest first).
+        Topics with unmet prerequisites are filtered out.
+      responses:
+        "200":
+          description: Ranked queue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudyQueueEntry"
+
+  /api/study-queue/{id}/studied:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      tags: [Study Queue]
+      summary: Mark topic as studied
+      description: Resets the SR clock (lastActivityDate + currentInterval) without logging time.
+      responses:
+        "200":
+          description: Topic updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+        "404":
+          description: Topic not found
