@@ -87,7 +87,7 @@ export function useDailyPlan(
       }
 
       const topic = topicMap.get(entry.topicId);
-      const rationale = buildRationale(entry, topic, topicItems.length);
+      const rationale = buildRationale(entry, topic, topicItems, suggestedItems);
 
       recommendations.push({
         topicId: entry.topicId,
@@ -105,48 +105,83 @@ export function useDailyPlan(
   }, [studyQueue, topics, items, dailyGoalMinutes, todaySeconds]);
 }
 
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.round((seconds % 3600) / 60);
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
+/** Category labels for item descriptions */
+const CATEGORY_LABEL: Record<string, string> = {
+  video: "video",
+  article: "article",
+  paper: "paper",
+  repo: "repo",
+  podcast: "podcast",
+  doc: "doc",
+};
+
+/**
+ * Builds a natural-language rationale for a daily recommendation.
+ * References specific items by duration and type to create personalised
+ * messages like: "You haven't touched Rust in 5 days and you have a
+ * 45-min video queued up".
+ */
 function buildRationale(
   entry: StudyQueueEntry,
   topic: Topic | undefined,
-  pendingCount: number
+  allPendingItems: Item[],
+  suggestedItems: Item[]
 ): string {
-  const parts: string[] = [];
+  // --- Part 1: Urgency / timing opener ---
+  let opener: string;
+  const days = Math.round(entry.daysSinceActivity);
 
-  // Urgency-based opening
   if (!topic?.lastActivityDate) {
-    parts.push("You haven't started this topic yet");
+    opener = `You haven't started ${entry.topicName} yet`;
   } else if (entry.isOverdue) {
-    parts.push(
-      `${Math.round(entry.daysSinceActivity)}d since your last session — overdue for review`
-    );
+    opener = `You haven't touched ${entry.topicName} in ${days} days`;
   } else if (entry.daysSinceActivity >= 2) {
-    parts.push(
-      `${Math.round(entry.daysSinceActivity)}d since your last session`
-    );
+    opener = `It's been ${days} days since you studied ${entry.topicName}`;
   } else {
-    parts.push("Reviewed recently — keep the momentum");
+    opener = "You studied this recently — keep the momentum going";
   }
 
-  // Pending items context
-  if (pendingCount > 0) {
-    parts.push(`${pendingCount} item${pendingCount !== 1 ? "s" : ""} queued up`);
+  // --- Part 2: Item-specific detail ---
+  let itemDetail = "";
+  if (suggestedItems.length > 0) {
+    const top = suggestedItems[0];
+    const catLabel = CATEGORY_LABEL[top.category] ?? "item";
+    if (top.duration && top.duration > 0) {
+      itemDetail = ` and you have a ${formatDuration(top.duration)} ${catLabel} queued up`;
+    } else {
+      itemDetail = ` and you have a ${catLabel} queued up`;
+    }
+    if (suggestedItems.length > 1) {
+      const more = suggestedItems.length - 1;
+      itemDetail += ` (+${more} more)`;
+    }
+  } else if (allPendingItems.length > 0) {
+    itemDetail = ` with ${allPendingItems.length} item${allPendingItems.length !== 1 ? "s" : ""} waiting`;
   }
 
-  // Priority context
+  // --- Part 3: Priority / remaining context suffix ---
+  const suffixes: string[] = [];
   if (entry.priority >= 4) {
-    parts.push("high priority");
+    suffixes.push("high priority");
   }
-
-  // Remaining time context
   if (topic && topic.estimatedSeconds && topic.estimatedSeconds > 0) {
     const remaining = Math.max(0, topic.estimatedSeconds - topic.timeSpent);
     if (remaining > 0) {
-      const h = Math.floor(remaining / 3600);
-      const m = Math.round((remaining % 3600) / 60);
-      const label = h > 0 ? `${h}h ${m}m` : `${m}m`;
-      parts.push(`${label} remaining`);
+      suffixes.push(`${formatDuration(remaining)} remaining overall`);
     }
   }
 
-  return parts.join(" · ");
+  let result = opener + itemDetail;
+  if (suffixes.length > 0) {
+    result += ` · ${suffixes.join(" · ")}`;
+  }
+  return result;
 }
