@@ -28,6 +28,7 @@ import { SkeletonList } from "@/components/SkeletonList";
 import { DataManager } from "@/components/DataManager";
 import { useToast } from "@/components/Toast";
 import type { Category, Item, GroupColor } from "@/db";
+import type { PlaylistVideo } from "@/app/api/playlist/route";
 
 type View = "list" | "learn";
 
@@ -102,6 +103,11 @@ export default function Page() {
   const [hideDone, setHideDone] = useState(false);
   // LT-43: track newly-added item for optional topic assignment
   const [pendingAssignItemId, setPendingAssignItemId] = useState<string | null>(null);
+  // LT-38: playlist import data for review step
+  const [pendingPlaylist, setPendingPlaylist] = useState<{
+    title: string;
+    videos: PlaylistVideo[];
+  } | null>(null);
 
   const selectedTopic = useMemo(
     () => selectedTopicId ? topics.find((t) => t.id === selectedTopicId) ?? null : null,
@@ -177,6 +183,15 @@ export default function Page() {
       setPendingAssignItemId(null);
     },
     [pendingAssignItemId, assignToTopic, topics, toast]
+  );
+
+  // LT-38: playlist import handler
+  const handlePlaylistLoaded = useCallback(
+    (title: string, videos: PlaylistVideo[]) => {
+      setPendingPlaylist({ title, videos });
+      toast(`Loaded ${videos.length} videos from "${title}"`);
+    },
+    [toast]
   );
 
   const handleAddToTopic = useCallback(
@@ -378,6 +393,7 @@ export default function Page() {
           onSetNotes={setNotes}
           onUpdateItemNotes={handleUpdateNotes}
           onAddItem={handleAddToTopic}
+          onPlaylistLoaded={handlePlaylistLoaded}
           isLoggedIn={isLoggedIn}
         />
       ) : (

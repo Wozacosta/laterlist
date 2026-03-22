@@ -17,7 +17,7 @@
 ## Medium Priority — Content & Workflow
 
 ### YouTube Playlist Import
-- [ ] **LT-38**: Add playlist import UI — input field for YouTube playlist URL, triggers server-side fetch.
+- [x] **LT-38**: Add playlist import UI — input field for YouTube playlist URL, triggers server-side fetch.
 - [ ] **LT-39**: Parse playlist via YouTube API/scraping — extract video titles and durations.
 - [ ] **LT-3A**: Review step — show list of videos with checkboxes, user deselects unwanted ones, then confirm to bulk-create items assigned to topic.
 

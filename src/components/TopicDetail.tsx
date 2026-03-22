@@ -6,6 +6,8 @@ import { db, type Topic, type Item } from "@/db";
 import { maxInterval, urgency } from "@/lib/spacedRepetition";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { AddItemInput } from "@/components/AddItemInput";
+import { PlaylistImport } from "@/components/PlaylistImport";
+import type { PlaylistVideo } from "@/app/api/playlist/route";
 
 type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
 
@@ -18,6 +20,7 @@ interface TopicDetailProps {
   onSetNotes?: (id: string, notes: string) => void;
   onUpdateItemNotes?: (id: string, notes: string) => void;
   onAddItem?: (data: EnrichedData) => void;
+  onPlaylistLoaded?: (title: string, videos: PlaylistVideo[]) => void;
   isLoggedIn?: boolean;
 }
 
@@ -54,6 +57,7 @@ export const TopicDetail = memo(function TopicDetail({
   onSetNotes,
   onUpdateItemNotes,
   onAddItem,
+  onPlaylistLoaded,
   isLoggedIn = false,
 }: TopicDetailProps) {
   // Filter items for this topic
@@ -135,6 +139,9 @@ export const TopicDetail = memo(function TopicDetail({
           <AddItemInput onAdd={onAddItem} isLoggedIn={isLoggedIn} />
         </div>
       )}
+
+      {/* YouTube playlist import */}
+      {onPlaylistLoaded && <PlaylistImport onPlaylistLoaded={onPlaylistLoaded} />}
 
       {/* Stats cards */}
       <div className="mb-4 grid grid-cols-3 gap-2">
