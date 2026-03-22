@@ -1,5 +1,5 @@
 /**
- * Mock data seed generator (LT-90)
+ * Mock data seed generator (LT-90, LT-91)
  *
  * Generates realistic mock data for development, demos, and testing:
  * - Topics at various stages (active, completed, overdue, fresh)
@@ -9,6 +9,10 @@
  * - Spaced repetition states (overdue, due soon, recently reviewed)
  * - Topic dependencies
  * - Learning streaks via daily time log distribution
+ *
+ * Fully deterministic (LT-91): given the same `seed` and `referenceTime`,
+ * produces byte-identical output. Default referenceTime anchors to a fixed
+ * date so screenshots and tests are reproducible without passing parameters.
  */
 
 import {
@@ -42,8 +46,14 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(rand() * arr.length)];
 }
 
+// Default reference time: 2026-03-22T12:00:00Z — a fixed anchor so output
+// is deterministic by default. Pass a custom referenceTime to seedMockData()
+// to override (e.g. Date.now() for "relative to right now" behavior).
+const DEFAULT_REFERENCE_TIME = new Date("2026-03-22T12:00:00Z").getTime();
+let referenceTime = DEFAULT_REFERENCE_TIME;
+
 function daysAgo(days: number): string {
-  return new Date(Date.now() - days * DAY_MS).toISOString();
+  return new Date(referenceTime - days * DAY_MS).toISOString();
 }
 
 function id(prefix: string, slug: string): string {
@@ -617,10 +627,11 @@ export interface SeedResult {
   timeLogs: number;
 }
 
-export function seedMockData(seed: number = 42): SeedResult {
+export function seedMockData(seed: number = 42, refTime?: number): SeedResult {
   resetRng(seed);
+  referenceTime = refTime ?? DEFAULT_REFERENCE_TIME;
 
-  const now = Date.now();
+  const now = referenceTime;
 
   // Build topics
   const topics: Topic[] = TOPIC_DEFS.map((def, i) => ({
