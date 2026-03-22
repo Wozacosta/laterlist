@@ -1,14 +1,18 @@
-import { NextResponse } from "next/server";
-import { readItems } from "@/lib/server/store";
-import { readTopics } from "@/lib/server/store";
+import { type NextRequest, NextResponse } from "next/server";
+import { readItems, readTopics } from "@/lib/server/store";
+import { requireAuth } from "@/lib/server/authMiddleware";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Public endpoint returning all "done" articles.
+ * Authenticated endpoint returning all "done" articles.
  * Consumed by woza.ink at build time for the /reading page.
+ * Requires API key: Authorization: Bearer <key>
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = await requireAuth(request);
+  if (authError) return authError;
+
   const [items, topics] = await Promise.all([readItems(), readTopics()]);
 
   const topicMap = new Map(topics.map((t) => [t.id, t.name]));
