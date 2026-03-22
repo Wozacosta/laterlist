@@ -110,6 +110,11 @@ components:
           type: string
           format: date-time
           nullable: true
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When set, item appears on the public reading list
         notes:
           type: string
           nullable: true
@@ -254,12 +259,39 @@ paths:
           description: Key not found
 
   # ── Public / Cross-site ───────────────────────────────────────────────
+  /api/items/sync:
+    put:
+      tags: [Items]
+      summary: Upsert an item into the server store
+      description: |
+        Called by the client when publishing an item. Creates the item
+        if it doesn't exist, or updates it if it does.
+        No auth required (same-origin only).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Item"
+      responses:
+        "200":
+          description: Item synced
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        "400":
+          description: Invalid request (missing id or title)
+
   /api/public/reading-list:
     get:
       tags: [Public]
-      summary: Get all done articles (consumed by woza.ink)
+      summary: Get all published articles
       description: |
-        Returns all items with status "done", sorted newest first.
+        Returns all items with a `publishedAt` timestamp, sorted newest first.
         Used by woza.ink at build time to populate the /reading page.
         Requires API key auth.
       responses:
