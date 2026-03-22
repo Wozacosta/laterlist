@@ -72,7 +72,7 @@ Depends on: REST API (LT-50–55)
 ## Testing & Developer Tooling
 
 ### E2E Tests
-- [ ] **LT-80**: E2E test: create a topic, add subtasks (URL + manual), mark a subtask done, verify time is logged.
+- [x] **LT-80**: E2E test: create a topic, add subtasks (URL + manual), mark a subtask done, verify time is logged.
 - [ ] **LT-81**: E2E test: study queue flow — topic surfaces when overdue, mark as studied, verify it exits the queue.
 - [ ] **LT-82**: E2E test: quick-add from learning page and topic detail view.
 - [ ] **LT-83**: E2E test: learning dashboard renders correctly — study queue, progress bars, streak, recommendations.
