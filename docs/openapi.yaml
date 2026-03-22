@@ -253,6 +253,53 @@ paths:
         "404":
           description: Key not found
 
+  # ── Public / Cross-site ───────────────────────────────────────────────
+  /api/public/reading-list:
+    get:
+      tags: [Public]
+      summary: Get all done articles (consumed by woza.ink)
+      description: |
+        Returns all items with status "done", sorted newest first.
+        Used by woza.ink at build time to populate the /reading page.
+        Requires API key auth.
+      responses:
+        "200":
+          description: List of done articles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    url:
+                      type: string
+                    category:
+                      type: string
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                    doneAt:
+                      type: string
+                      format: date-time
+                    addedAt:
+                      type: string
+                      format: date-time
+                    notes:
+                      type: string
+                      nullable: true
+                    topics:
+                      type: array
+                      items:
+                        type: string
+        "401":
+          description: Missing API key
+        "403":
+          description: Invalid API key
+
   # ── Topics ────────────────────────────────────────────────────────────
   /api/topics:
     get:
