@@ -82,7 +82,7 @@ Depends on: REST API (LT-50–55)
 - [x] **LT-85**: Integration tests for time tracking (LT-10–13) — auto-logging, manual logging, remaining time, topic completion.
 - [x] **LT-86**: Integration tests for SR & study queue (LT-20–24) — SR clock reset, interval scaling, queue ranking.
 - [x] **LT-87**: Integration tests for learning notes (LT-34–37) — markdown notes, "what did you learn?" prompt, rendering.
-- [ ] **LT-88**: Integration test coverage report mapped to PRD requirement IDs — no requirement untested.
+- [x] **LT-88**: Integration test coverage report mapped to PRD requirement IDs — no requirement untested.
 
 ### Developer Tooling
 - [ ] **LT-90**: CLI/UI command to fill the app with realistic mock data — topics at various stages, subtasks (URLs + manual), time logs, notes, SR states, streaks.
