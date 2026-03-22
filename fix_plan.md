@@ -42,7 +42,7 @@
 - [x] Validate and convert to seconds
 
 ### LT-05: Dexie Cloud sync
-- [ ] Already working — all tables sync via dexie-cloud-addon
+- [x] Already working — all tables sync via dexie-cloud-addon
 - [x] Verified: topics table included in cloud config
 
 ## Phase 3: Smart Features

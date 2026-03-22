@@ -7,6 +7,8 @@ export interface LearningExport {
     name: string;
     status: string;
     priority: number;
+    estimatedSeconds?: number;
+    estimatedFormatted?: string;
     timeSpentSeconds: number;
     timeSpentFormatted: string;
     createdAt: string;
@@ -79,6 +81,8 @@ export async function exportLearningJSON(): Promise<number> {
       name: t.name,
       status: t.status,
       priority: t.priority,
+      estimatedSeconds: t.estimatedSeconds || undefined,
+      estimatedFormatted: t.estimatedSeconds ? formatTime(t.estimatedSeconds) : undefined,
       timeSpentSeconds: t.timeSpent,
       timeSpentFormatted: formatTime(t.timeSpent),
       createdAt: t.createdAt,
