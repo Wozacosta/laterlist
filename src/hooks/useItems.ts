@@ -52,6 +52,14 @@ export function useItems() {
         status: "done",
         doneAt: now,
       });
+
+      // Sync to server store (for woza.ink reading-list API) — non-blocking
+      fetch("/api/items/sync", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...item, status: "done", doneAt: now }),
+      }).catch(() => {});
+
       // Auto-log duration to linked topics (LT-10) and reset SR clock (LT-21)
       if (item.topicIds?.length) {
         for (const topicId of item.topicIds) {
