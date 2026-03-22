@@ -18,8 +18,8 @@
 
 ### YouTube Playlist Import
 - [x] **LT-38**: Add playlist import UI — input field for YouTube playlist URL, triggers server-side fetch.
-- [ ] **LT-39**: Parse playlist via YouTube API/scraping — extract video titles and durations.
-- [ ] **LT-3A**: Review step — show list of videos with checkboxes, user deselects unwanted ones, then confirm to bulk-create items assigned to topic.
+- [x] **LT-39**: Parse playlist via YouTube API/scraping — extract video titles and durations.
+- [x] **LT-3A**: Review step — show list of videos with checkboxes, user deselects unwanted ones, then confirm to bulk-create items assigned to topic.
 
 ### Topic Dependencies
 - [ ] **LT-3B**: Add `dependsOn: string[]` (topic IDs) to Topic model. DB migration. UI to set prerequisites (dropdown picker).

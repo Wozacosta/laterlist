@@ -22,6 +22,7 @@ import { DailyPlan } from "@/components/DailyPlan";
 import { LearningDashboard } from "@/components/LearningDashboard";
 import { TopicDetail } from "@/components/TopicDetail";
 import { LearningReport } from "@/components/LearningReport";
+import { PlaylistReview } from "@/components/PlaylistReview";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SkeletonList } from "@/components/SkeletonList";
@@ -192,6 +193,27 @@ export default function Page() {
       toast(`Loaded ${videos.length} videos from "${title}"`);
     },
     [toast]
+  );
+
+  // LT-3A: bulk-import selected videos as items assigned to the current topic
+  const handlePlaylistConfirm = useCallback(
+    async (selectedVideos: PlaylistVideo[]) => {
+      if (!selectedTopicId) return;
+      for (const video of selectedVideos) {
+        await addItem({
+          url: `https://www.youtube.com/watch?v=${video.videoId}`,
+          title: video.title,
+          thumbnail: video.thumbnail || undefined,
+          category: "video",
+          tags: [],
+          duration: video.duration ?? undefined,
+          topicIds: [selectedTopicId],
+        });
+      }
+      toast(`Imported ${selectedVideos.length} video${selectedVideos.length !== 1 ? "s" : ""}`);
+      setPendingPlaylist(null);
+    },
+    [selectedTopicId, addItem, toast]
   );
 
   const handleAddToTopic = useCallback(
@@ -384,18 +406,28 @@ export default function Page() {
           onBack={() => setShowReport(false)}
         />
       ) : selectedTopic ? (
-        <TopicDetail
-          topic={selectedTopic}
-          items={items}
-          onBack={() => setSelectedTopicId(null)}
-          onMarkDone={handleMarkDone}
-          onUnmarkDone={unmarkDone}
-          onSetNotes={setNotes}
-          onUpdateItemNotes={handleUpdateNotes}
-          onAddItem={handleAddToTopic}
-          onPlaylistLoaded={handlePlaylistLoaded}
-          isLoggedIn={isLoggedIn}
-        />
+        <>
+          <TopicDetail
+            topic={selectedTopic}
+            items={items}
+            onBack={() => setSelectedTopicId(null)}
+            onMarkDone={handleMarkDone}
+            onUnmarkDone={unmarkDone}
+            onSetNotes={setNotes}
+            onUpdateItemNotes={handleUpdateNotes}
+            onAddItem={handleAddToTopic}
+            onPlaylistLoaded={handlePlaylistLoaded}
+            isLoggedIn={isLoggedIn}
+          />
+          {pendingPlaylist && (
+            <PlaylistReview
+              title={pendingPlaylist.title}
+              videos={pendingPlaylist.videos}
+              onConfirm={handlePlaylistConfirm}
+              onCancel={() => setPendingPlaylist(null)}
+            />
+          )}
+        </>
       ) : (
         <>
           <AddItemInput onAdd={handleAddFromDashboard} isLoggedIn={isLoggedIn} />
