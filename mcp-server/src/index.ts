@@ -294,6 +294,42 @@ server.tool(
   }
 );
 
+// ── Tool: bulk_import ────────────────────────────────────────────────────
+
+server.tool(
+  "bulk_import",
+  "Import multiple subtasks into a topic at once",
+  {
+    topicId: z.string().describe("Topic ID"),
+    items: z
+      .array(
+        z.object({
+          title: z.string().describe("Item title"),
+          url: z.string().optional().describe("URL"),
+          category: z
+            .enum(["video", "article", "paper", "repo", "podcast", "doc", "other"])
+            .optional(),
+          duration: z.number().optional().describe("Duration in seconds"),
+          tags: z.array(z.string()).optional(),
+        })
+      )
+      .describe("Array of items to import (max 100)"),
+  },
+  async ({ topicId, items }) => {
+    const res = await client.bulkImport(topicId, items);
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: res.ok
+            ? JSON.stringify(res.data, null, 2)
+            : `Error ${res.status}: ${JSON.stringify(res.data)}`,
+        },
+      ],
+    };
+  }
+);
+
 // ── Resource: laterlist://study-queue ────────────────────────────────────
 
 server.resource(

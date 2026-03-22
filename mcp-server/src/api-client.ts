@@ -128,4 +128,12 @@ export class LaterlistClient {
   async search(query: string) {
     return this.request("GET", `/api/search?q=${encodeURIComponent(query)}`);
   }
+
+  // Bulk import
+  async bulkImport(
+    topicId: string,
+    items: Array<{ title: string; url?: string; category?: string; duration?: number; tags?: string[] }>
+  ) {
+    return this.request("POST", `/api/topics/${topicId}/subtasks/bulk`, { items });
+  }
 }
