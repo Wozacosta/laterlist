@@ -68,7 +68,7 @@ export const StudyQueue = memo(function StudyQueue({
               {idx + 1}
             </span>
 
-            {/* Topic name + reason */}
+            {/* Topic name + reason + notes preview */}
             <button
               type="button"
               onClick={() => onSelectTopic(entry.topicId)}
@@ -80,6 +80,13 @@ export const StudyQueue = memo(function StudyQueue({
               <p className="text-[11px] text-gray-400 dark:text-gray-500">
                 {entry.reason}
               </p>
+              {entry.latestNote && (
+                <p className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400 truncate italic">
+                  {entry.latestNote.length > 120
+                    ? entry.latestNote.slice(0, 120) + "…"
+                    : entry.latestNote}
+                </p>
+              )}
             </button>
 
             {/* Priority badge */}

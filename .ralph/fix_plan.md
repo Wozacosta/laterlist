@@ -21,8 +21,18 @@
 ### Learning Notes
 - [x] **LT-34**: Add markdown notes field to topics and items. DB migration. Notes stored as plain markdown strings.
 - [x] **LT-35**: Add optional "what did you learn?" prompt when completing a subtask — saves note on the item.
-- [ ] **LT-36**: Show most recent notes when study queue surfaces a topic (inline preview in queue card).
+- [x] **LT-36**: Show most recent notes when study queue surfaces a topic (inline preview in queue card).
 - [ ] **LT-37**: Markdown rendering for notes — support headings, lists, code blocks, links (use react-markdown or similar).
+
+### Quick Add (Items from Learning Page)
+- [ ] **LT-40**: Add item input on the learning dashboard — same AddItemInput component, items created here enter the global list.
+- [ ] **LT-41**: Add item input in topic detail view — items created here are auto-assigned to that topic.
+- [ ] **LT-42**: Inline quick-add: single text field that auto-detects URL vs plain text title (no mode toggle needed).
+- [ ] **LT-43**: When adding from the learning dashboard (not inside a topic), prompt to optionally assign to a topic immediately.
+
+### AI Daily Recommendations
+- [ ] **LT-28**: Generate a personalized "today's learning plan" — recommended topics and subtasks based on study queue urgency, priority, available time (daily goal), and recent activity patterns.
+- [ ] **LT-29**: Each recommendation includes a brief AI-generated rationale (e.g. "You haven't touched Rust in 5 days and you have a 45-min video queued up").
 
 ## Medium Priority — Content & Workflow
 
@@ -79,6 +89,25 @@ Depends on: REST API (LT-50–55)
 - [ ] **LT-63**: Suggest calendar slots from free time + daily goal
 - [ ] **LT-64**: Bidirectional completion sync
 
+## Testing & Developer Tooling
+
+### E2E Tests
+- [ ] **LT-80**: E2E test: create a topic, add subtasks (URL + manual), mark a subtask done, verify time is logged.
+- [ ] **LT-81**: E2E test: study queue flow — topic surfaces when overdue, mark as studied, verify it exits the queue.
+- [ ] **LT-82**: E2E test: quick-add from learning page and topic detail view.
+- [ ] **LT-83**: E2E test: learning dashboard renders correctly — study queue, progress bars, streak, recommendations.
+
+### Integration Tests (PRD Coverage)
+- [ ] **LT-84**: Integration tests for data model (LT-01–09) — topic CRUD, subtask assignment, priority scores, many-to-many.
+- [ ] **LT-85**: Integration tests for time tracking (LT-10–13) — auto-logging, manual logging, remaining time, topic completion.
+- [ ] **LT-86**: Integration tests for SR & study queue (LT-20–24) — SR clock reset, interval scaling, queue ranking.
+- [ ] **LT-87**: Integration tests for learning notes (LT-34–37) — markdown notes, "what did you learn?" prompt, rendering.
+- [ ] **LT-88**: Integration test coverage report mapped to PRD requirement IDs — no requirement untested.
+
+### Developer Tooling
+- [ ] **LT-90**: CLI/UI command to fill the app with realistic mock data — topics at various stages, subtasks (URLs + manual), time logs, notes, SR states, streaks.
+- [ ] **LT-91**: Mock data is deterministic (seeded) so screenshots and tests are reproducible.
+
 ## Completed
 
 ### Core save-for-later (pre-learning tracker)
@@ -119,3 +148,7 @@ Depends on: REST API (LT-50–55)
 - MCP server depends on REST API — build API first
 - Calendar integration is lowest priority — defer to last
 - Session timer LT-3J (pomodo.ink integration) is v2, skip for now
+- LT-40–43 (quick add) improves daily UX — do before AI recommendations
+- LT-28–29 (AI daily recommendations) depends on study queue being solid (LT-20–24 ✅)
+- LT-90–91 (mock data) useful to build early — speeds up development and testing of all other features
+- E2E and integration tests (LT-80–88) should be written alongside or after the features they cover

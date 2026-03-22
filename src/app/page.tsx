@@ -84,7 +84,7 @@ export default function Page() {
   const { dailyGoalMinutes, setDailyGoal } = useSettings();
   const todaySeconds = useTodayTime();
   const streak = useStreak();
-  const studyQueue = useStudyQueue(topics);
+  const studyQueue = useStudyQueue(topics, items);
   const { days, topicTotals, weekTotal } = useWeeklyActivity();
 
   const { toast } = useToast();
