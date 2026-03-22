@@ -23,6 +23,7 @@ interface TopicDetailProps {
   onAddItem?: (data: EnrichedData) => void;
   onPlaylistLoaded?: (title: string, videos: PlaylistVideo[]) => void;
   onSetDependsOn?: (id: string, dependsOn: string[]) => void;
+  onSelectTopic?: (id: string) => void;
   isLoggedIn?: boolean;
 }
 
@@ -62,6 +63,7 @@ export const TopicDetail = memo(function TopicDetail({
   onAddItem,
   onPlaylistLoaded,
   onSetDependsOn,
+  onSelectTopic,
   isLoggedIn = false,
 }: TopicDetailProps) {
   // Filter items for this topic
@@ -259,12 +261,13 @@ export const TopicDetail = memo(function TopicDetail({
         </div>
       )}
 
-      {/* Prerequisites */}
+      {/* Prerequisites & Dependents (LT-3D) */}
       {onSetDependsOn && (
         <PrerequisitePicker
           topic={topic}
           allTopics={allTopics}
           onSetDependsOn={onSetDependsOn}
+          onSelectTopic={onSelectTopic}
         />
       )}
 
@@ -596,20 +599,22 @@ const TopicNotes = memo(function TopicNotes({
   );
 });
 
-/** Dropdown picker to add/remove prerequisite topics. */
+/** Dropdown picker to add/remove prerequisite topics + show dependents (LT-3D). */
 const PrerequisitePicker = memo(function PrerequisitePicker({
   topic,
   allTopics,
   onSetDependsOn,
+  onSelectTopic,
 }: {
   topic: Topic;
   allTopics: Topic[];
   onSetDependsOn: (id: string, dependsOn: string[]) => void;
+  onSelectTopic?: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const deps = topic.dependsOn ?? [];
 
-  // Topics that can be prerequisites: active or completed, not self, not already a dep
+  // Topics that can be prerequisites: not self, not already a dep
   const available = allTopics.filter(
     (t) => t.id !== topic.id && !deps.includes(t.id)
   );
@@ -617,6 +622,11 @@ const PrerequisitePicker = memo(function PrerequisitePicker({
   const depTopics = deps
     .map((id) => allTopics.find((t) => t.id === id))
     .filter((t): t is Topic => t != null);
+
+  // Dependent topics: topics that have this topic in their dependsOn (LT-3D)
+  const dependentTopics = allTopics.filter(
+    (t) => t.id !== topic.id && (t.dependsOn ?? []).includes(topic.id)
+  );
 
   const handleAdd = useCallback(
     (id: string) => {
@@ -635,8 +645,28 @@ const PrerequisitePicker = memo(function PrerequisitePicker({
     [topic.id, deps, onSetDependsOn]
   );
 
+  const statusIcon = (status: string) =>
+    status === "completed" ? (
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        className="text-green-500 dark:text-green-400"
+      >
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline
+          points="22 4 12 14.01 9 11.01"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+      </svg>
+    ) : null;
+
   return (
     <div className="mb-4">
+      {/* Prerequisites section */}
       <div className="mb-1 flex items-center justify-between">
         <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
           Prerequisites
@@ -652,7 +682,7 @@ const PrerequisitePicker = memo(function PrerequisitePicker({
         )}
       </div>
 
-      {/* Current prerequisites */}
+      {/* Current prerequisites — clickable to navigate */}
       {depTopics.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-2">
           {depTopics.map((t) => (
@@ -660,24 +690,14 @@ const PrerequisitePicker = memo(function PrerequisitePicker({
               key={t.id}
               className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
             >
-              {t.status === "completed" && (
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="text-green-500 dark:text-green-400"
-                >
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline
-                    points="22 4 12 14.01 9 11.01"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                </svg>
-              )}
-              {t.name}
+              {statusIcon(t.status)}
+              <button
+                type="button"
+                onClick={() => onSelectTopic?.(t.id)}
+                className="hover:underline"
+              >
+                {t.name}
+              </button>
               <button
                 type="button"
                 onClick={() => handleRemove(t.id)}
@@ -713,6 +733,28 @@ const PrerequisitePicker = memo(function PrerequisitePicker({
               </span>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Dependent topics — topics that require this one (LT-3D) */}
+      {dependentTopics.length > 0 && (
+        <div className="mt-3">
+          <h3 className="mb-1 text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            Unlocks
+          </h3>
+          <div className="flex flex-wrap gap-1.5">
+            {dependentTopics.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => onSelectTopic?.(t.id)}
+                className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs text-purple-700 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300 dark:hover:bg-purple-900"
+              >
+                {statusIcon(t.status)}
+                {t.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

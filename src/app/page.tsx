@@ -420,6 +420,7 @@ export default function Page() {
             onAddItem={handleAddToTopic}
             onPlaylistLoaded={handlePlaylistLoaded}
             onSetDependsOn={setDependsOn}
+            onSelectTopic={setSelectedTopicId}
             isLoggedIn={isLoggedIn}
           />
           {pendingPlaylist && (

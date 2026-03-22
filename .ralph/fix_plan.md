@@ -24,7 +24,7 @@
 ### Topic Dependencies
 - [x] **LT-3B**: Add `dependsOn: string[]` (topic IDs) to Topic model. DB migration. UI to set prerequisites (dropdown picker).
 - [x] **LT-3C**: Study queue filters out topics whose prerequisites are not completed.
-- [ ] **LT-3D**: Show prerequisite and dependent topics in topic detail view (links, completion status).
+- [x] **LT-3D**: Show prerequisite and dependent topics in topic detail view (links, completion status).
 - [ ] **LT-3E**: Validate no circular dependencies when adding a prerequisite (DFS cycle detection).
 
 ### Session Timer
