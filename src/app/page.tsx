@@ -11,12 +11,14 @@ import { useTodayTime } from "@/hooks/useTodayTime";
 import { useStreak } from "@/hooks/useStreak";
 import { useStudyQueue } from "@/hooks/useStudyQueue";
 import { useWeeklyActivity } from "@/hooks/useWeeklyActivity";
+import { useDailyPlan } from "@/hooks/useDailyPlan";
 import { AddItemInput } from "@/components/AddItemInput";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
 import { TopicList } from "@/components/TopicList";
 import { DailyGoal } from "@/components/DailyGoal";
 import { StudyQueue } from "@/components/StudyQueue";
+import { DailyPlan } from "@/components/DailyPlan";
 import { LearningDashboard } from "@/components/LearningDashboard";
 import { TopicDetail } from "@/components/TopicDetail";
 import { LearningReport } from "@/components/LearningReport";
@@ -86,6 +88,7 @@ export default function Page() {
   const streak = useStreak();
   const studyQueue = useStudyQueue(topics, items);
   const { days, topicTotals, weekTotal } = useWeeklyActivity();
+  const dailyPlan = useDailyPlan(studyQueue, topics, items, dailyGoalMinutes, todaySeconds);
 
   const { toast } = useToast();
   const currentUser = useObservable(db.cloud.currentUser);
@@ -416,6 +419,10 @@ export default function Page() {
             todaySeconds={todaySeconds}
             streak={streak}
             onSetGoal={setDailyGoal}
+          />
+          <DailyPlan
+            recommendations={dailyPlan}
+            onSelectTopic={setSelectedTopicId}
           />
           <LearningDashboard
             days={days}

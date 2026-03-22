@@ -11,7 +11,7 @@
 - [x] **LT-43**: When adding from the learning dashboard (not inside a topic), prompt to optionally assign to a topic immediately.
 
 ### AI Daily Recommendations
-- [ ] **LT-28**: Generate a personalized "today's learning plan" — recommended topics and subtasks based on study queue urgency, priority, available time (daily goal), and recent activity patterns.
+- [x] **LT-28**: Generate a personalized "today's learning plan" — recommended topics and subtasks based on study queue urgency, priority, available time (daily goal), and recent activity patterns.
 - [ ] **LT-29**: Each recommendation includes a brief AI-generated rationale (e.g. "You haven't touched Rust in 5 days and you have a 45-min video queued up").
 
 ## Medium Priority — Content & Workflow
