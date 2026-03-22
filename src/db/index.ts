@@ -38,6 +38,7 @@ export interface Item {
   sortOrder: number; // Date.now() on creation
   status: "unread" | "done";
   doneAt?: string; // ISO datetime string
+  publishedAt?: string; // ISO datetime — item visible on public reading list
   notes?: string;
   groupId?: string; // optional group membership
   topicIds?: string[]; // optional learning topics (multi-select)

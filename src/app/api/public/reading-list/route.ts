@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/server/authMiddleware";
 export const dynamic = "force-dynamic";
 
 /**
- * Authenticated endpoint returning all "done" articles.
+ * Authenticated endpoint returning all published articles.
  * Consumed by woza.ink at build time for the /reading page.
  * Requires API key: Authorization: Bearer <key>
  */
@@ -18,17 +18,17 @@ export async function GET(request: NextRequest) {
   const topicMap = new Map(topics.map((t) => [t.id, t.name]));
 
   const done = items
-    .filter((item) => item.status === "done" && item.doneAt)
+    .filter((item) => item.publishedAt)
     .sort(
       (a, b) =>
-        new Date(b.doneAt!).getTime() - new Date(a.doneAt!).getTime(),
+        new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime(),
     )
     .map((item) => ({
       title: item.title,
       url: item.url,
       category: item.category,
       tags: item.tags,
-      doneAt: item.doneAt,
+      doneAt: item.doneAt ?? item.publishedAt,
       addedAt: item.addedAt,
       notes: item.notes ?? null,
       topics: (item.topicIds ?? [])

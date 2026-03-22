@@ -53,13 +53,6 @@ export function useItems() {
         doneAt: now,
       });
 
-      // Sync to server store (for woza.ink reading-list API) — non-blocking
-      fetch("/api/items/sync", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...item, status: "done", doneAt: now }),
-      }).catch(() => {});
-
       // Auto-log duration to linked topics (LT-10) and reset SR clock (LT-21)
       if (item.topicIds?.length) {
         for (const topicId of item.topicIds) {
@@ -108,6 +101,31 @@ export function useItems() {
         }
       }
     });
+  }, []);
+
+  const publishItem = useCallback(async (id: string) => {
+    const item = await db.items.get(id);
+    if (!item) return;
+    const now = new Date().toISOString();
+    await db.items.update(id, { publishedAt: now });
+
+    // Sync to server store for public reading-list API — non-blocking
+    fetch("/api/items/sync", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...item, publishedAt: now }),
+    }).catch(() => {});
+  }, []);
+
+  const unpublishItem = useCallback(async (id: string) => {
+    await db.items.update(id, { publishedAt: undefined });
+
+    // Remove from server store
+    fetch("/api/items/sync", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, publishedAt: null, status: "unread" }),
+    }).catch(() => {});
   }, []);
 
   const deleteItem = useCallback(async (id: string) => {
@@ -159,6 +177,8 @@ export function useItems() {
     updateItem,
     markDone,
     unmarkDone,
+    publishItem,
+    unpublishItem,
     deleteItem,
     reorderItems,
     assignToGroup,

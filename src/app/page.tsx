@@ -68,6 +68,8 @@ export default function Page() {
     updateItem,
     markDone,
     unmarkDone,
+    publishItem,
+    unpublishItem,
     deleteItem,
     reorderItems,
     assignToGroup,
@@ -527,6 +529,8 @@ export default function Page() {
               filtered={isFiltered}
               onMarkDone={handleMarkDone}
               onUnmarkDone={unmarkDone}
+              onPublish={publishItem}
+              onUnpublish={unpublishItem}
               onUpdateTags={handleUpdateTags}
               onUpdateNotes={handleUpdateNotes}
               onDelete={handleDelete}

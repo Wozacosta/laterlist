@@ -56,6 +56,8 @@ interface ItemListProps {
   filtered: boolean;
   onMarkDone: (id: string) => void;
   onUnmarkDone: (id: string) => void;
+  onPublish: (id: string) => void;
+  onUnpublish: (id: string) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateNotes: (id: string, notes: string) => void;
   onDelete: (id: string) => void;
@@ -77,6 +79,8 @@ export const ItemList = memo(function ItemList({
   filtered,
   onMarkDone,
   onUnmarkDone,
+  onPublish,
+  onUnpublish,
   onUpdateTags,
   onUpdateNotes,
   onDelete,
@@ -175,6 +179,8 @@ export const ItemList = memo(function ItemList({
                 topics={topics}
                 onMarkDone={onMarkDone}
                 onUnmarkDone={onUnmarkDone}
+                onPublish={onPublish}
+                onUnpublish={onUnpublish}
                 onUpdateTags={onUpdateTags}
                 onUpdateNotes={onUpdateNotes}
                 onDelete={onDelete}
@@ -200,6 +206,8 @@ export const ItemList = memo(function ItemList({
             onDeleteGroup={onDeleteGroup}
             onMarkDone={onMarkDone}
             onUnmarkDone={onUnmarkDone}
+            onPublish={onPublish}
+            onUnpublish={onUnpublish}
             onUpdateTags={onUpdateTags}
             onUpdateNotes={onUpdateNotes}
             onDeleteItem={onDelete}

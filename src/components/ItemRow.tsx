@@ -12,6 +12,8 @@ interface ItemRowProps {
   topics: Topic[];
   onMarkDone: (id: string) => void;
   onUnmarkDone: (id: string) => void;
+  onPublish: (id: string) => void;
+  onUnpublish: (id: string) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateNotes: (id: string, notes: string) => void;
   onDelete: (id: string) => void;
@@ -42,6 +44,8 @@ export const ItemRow = memo(function ItemRow({
   topics,
   onMarkDone,
   onUnmarkDone,
+  onPublish,
+  onUnpublish,
   onUpdateTags,
   onUpdateNotes,
   onDelete,
@@ -180,6 +184,26 @@ export const ItemRow = memo(function ItemRow({
           <span>{formatDuration(item.duration, item.category)}</span>
           <span>{formatDate(item.addedAt)}</span>
         </div>
+
+        {/* Publish toggle (only for done items) */}
+        {item.status === "done" && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              item.publishedAt ? onUnpublish(item.id) : onPublish(item.id);
+            }}
+            className={`shrink-0 text-sm transition-colors ${
+              item.publishedAt
+                ? "text-green-500 hover:text-green-600 dark:text-green-400"
+                : "text-gray-300 hover:text-gray-500 dark:text-gray-700 dark:hover:text-gray-400"
+            }`}
+            aria-label={item.publishedAt ? "Unpublish" : "Publish"}
+            title={item.publishedAt ? "Published — click to unpublish" : "Publish to reading list"}
+          >
+            ↗
+          </button>
+        )}
 
         {/* Done checkbox */}
         <input
