@@ -97,6 +97,8 @@ export default function Page() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [hideDone, setHideDone] = useState(false);
+  // LT-43: track newly-added item for optional topic assignment
+  const [pendingAssignItemId, setPendingAssignItemId] = useState<string | null>(null);
 
   const selectedTopic = useMemo(
     () => selectedTopicId ? topics.find((t) => t.id === selectedTopicId) ?? null : null,
@@ -145,10 +147,33 @@ export default function Page() {
           return;
         }
       }
-      await addItem(data);
+      const id = await addItem(data);
       toast("Added to your list");
+      return id;
     },
     [addItem, items, toast]
+  );
+
+  // LT-43: When adding from the dashboard, prompt to optionally assign to a topic
+  const handleAddFromDashboard = useCallback(
+    async (data: EnrichedData) => {
+      const id = await handleAdd(data);
+      if (id && topics.length > 0) {
+        setPendingAssignItemId(id);
+      }
+    },
+    [handleAdd, topics.length]
+  );
+
+  const handleAssignPending = useCallback(
+    async (topicId: string) => {
+      if (!pendingAssignItemId) return;
+      await assignToTopic(pendingAssignItemId, topicId);
+      const topic = topics.find((t) => t.id === topicId);
+      toast(`Assigned to "${topic?.name ?? "topic"}"`);
+      setPendingAssignItemId(null);
+    },
+    [pendingAssignItemId, assignToTopic, topics, toast]
   );
 
   const handleAddToTopic = useCallback(
@@ -354,7 +379,38 @@ export default function Page() {
         />
       ) : (
         <>
-          <AddItemInput onAdd={handleAdd} isLoggedIn={isLoggedIn} />
+          <AddItemInput onAdd={handleAddFromDashboard} isLoggedIn={isLoggedIn} />
+
+          {/* LT-43: Topic assignment prompt after adding from dashboard */}
+          {pendingAssignItemId && topics.length > 0 && (
+            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950">
+              <p className="mb-2 text-xs font-medium text-blue-700 dark:text-blue-300">
+                Assign to a topic?
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {topics
+                  .filter((t) => t.status !== "completed")
+                  .map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => handleAssignPending(t.id)}
+                      className="rounded-full border border-blue-300 bg-white px-3 py-1 text-xs text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-gray-900 dark:text-blue-300 dark:hover:bg-blue-900"
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                <button
+                  type="button"
+                  onClick={() => setPendingAssignItemId(null)}
+                  className="rounded-full px-3 py-1 text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          )}
+
           <DailyGoal
             dailyGoalMinutes={dailyGoalMinutes}
             todaySeconds={todaySeconds}

@@ -19,14 +19,16 @@ export function useItems() {
   );
 
   const addItem = useCallback(
-    async (enriched: Omit<Item, "id" | "sortOrder" | "addedAt" | "status">) => {
+    async (enriched: Omit<Item, "id" | "sortOrder" | "addedAt" | "status">): Promise<string> => {
+      const id = `itm${crypto.randomUUID()}`;
       await db.items.add({
         ...enriched,
-        id: `itm${crypto.randomUUID()}`,
+        id,
         sortOrder: Date.now(),
         addedAt: new Date().toISOString(),
         status: "unread",
       });
+      return id;
     },
     []
   );
