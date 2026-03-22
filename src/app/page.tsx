@@ -342,6 +342,7 @@ export default function Page() {
         />
       ) : (
         <>
+          <AddItemInput onAdd={handleAdd} isLoggedIn={isLoggedIn} />
           <DailyGoal
             dailyGoalMinutes={dailyGoalMinutes}
             todaySeconds={todaySeconds}

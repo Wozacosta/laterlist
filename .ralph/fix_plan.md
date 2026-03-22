@@ -2,30 +2,10 @@
 
 > Synced with PRD: 2026-03-22. Requirement IDs match docs/PRD.md.
 
-## High Priority — Core Learning Loop
+> **⚠️ STATUS: 55 UNCHECKED TASKS REMAIN. DO NOT EXIT. Keep working through the list below.**
 
-### Priority Migration (0-100% → 1-5)
-- [x] **LT-08**: Migrate priority from 0-100 percentage to 1-5 score (default: 3). Update Topic interface, add DB migration (map 0→1, 1-25→2, 26-50→3, 51-75→4, 76-100→5). Update TopicList priority badge UI, recommendation hook, dashboard allocation charts, and weekly reports.
-
-### Spaced Repetition & Study Queue
-- [x] **LT-20**: Add SR state to Topic model — `lastActivityDate`, `currentInterval` fields. DB migration.
-- [x] **LT-21**: Reset SR clock on any topic activity — wire into `logTime`, `completeTopic`, and item done handler.
-- [x] **LT-22**: Implement priority-scaled max intervals (P5=3d, P4=7d, P3=14d, P2=21d, P1=30d).
-- [x] **LT-23**: Build `useStudyQueue` hook — rank active topics by `urgency = daysSinceLastActivity / maxInterval(priority)`. Replace existing recommendation hook.
-- [x] **LT-24**: Add "mark as studied" action in study queue (resets SR clock without logging time — for offline/untracked study).
-
-### Dashboard & Detail Updates
-- [x] **LT-30** (update): Add study queue section at the top of the learning dashboard. Show urgency scores, overdue indicators.
-- [x] **LT-31** (update): Add SR status to topic detail view — next review date, urgency score, days since last activity.
-
-### Learning Notes
-- [x] **LT-34**: Add markdown notes field to topics and items. DB migration. Notes stored as plain markdown strings.
-- [x] **LT-35**: Add optional "what did you learn?" prompt when completing a subtask — saves note on the item.
-- [x] **LT-36**: Show most recent notes when study queue surfaces a topic (inline preview in queue card).
-- [x] **LT-37**: Markdown rendering for notes — support headings, lists, code blocks, links (use react-markdown or similar).
-
-### Quick Add (Items from Learning Page)
-- [ ] **LT-40**: Add item input on the learning dashboard — same AddItemInput component, items created here enter the global list.
+## Next Up — Quick Add (Items from Learning Page)
+- [x] **LT-40**: Add item input on the learning dashboard — same AddItemInput component, items created here enter the global list.
 - [ ] **LT-41**: Add item input in topic detail view — items created here are auto-assigned to that topic.
 - [ ] **LT-42**: Inline quick-add: single text field that auto-detects URL vs plain text title (no mode toggle needed).
 - [ ] **LT-43**: When adding from the learning dashboard (not inside a topic), prompt to optionally assign to a topic immediately.
