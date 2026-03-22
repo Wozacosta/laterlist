@@ -48,3 +48,24 @@ dexie-cloud.key
 
 # server-side data store
 .data/
+
+# ralph runtime state (config and prompts are tracked separately)
+.ralph/.call_count
+.ralph/.circuit_breaker_history
+.ralph/.circuit_breaker_state
+.ralph/.exit_signals
+.ralph/.last_reset
+.ralph/.loop_start_sha
+.ralph/.ralph_session
+.ralph/.ralph_session_history
+.ralph/live.log
+.ralph/logs/
+.ralph/progress.json
+.ralph/status.json
+.ralph/fix_plan.md
+
+# ralph-claude-code (external tool, has its own repo)
+ralph-claude-code/
+
+# mcp-server build
+mcp-server/.next/
