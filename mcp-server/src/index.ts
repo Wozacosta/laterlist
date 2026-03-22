@@ -349,6 +349,53 @@ server.resource(
   }
 );
 
+// ── Resource: laterlist://topic/{id} ─────────────────────────────────────
+
+server.resource(
+  "topic",
+  "laterlist://topic/{id}",
+  async (uri) => {
+    // Extract topic ID from URI: laterlist://topic/<id>
+    const id = uri.pathname.replace(/^\//, "");
+
+    const [topicRes, subtasksRes, notesRes, logsRes] = await Promise.all([
+      client.getTopic(id),
+      client.listSubtasks(id),
+      client.getTopicNotes(id),
+      client.getTimeLogs(id, 10),
+    ]);
+
+    if (!topicRes.ok) {
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: "application/json",
+            text: JSON.stringify({ error: "Topic not found" }),
+          },
+        ],
+      };
+    }
+
+    const detail = {
+      topic: topicRes.data,
+      subtasks: subtasksRes.ok ? subtasksRes.data : [],
+      notes: notesRes.ok ? notesRes.data : null,
+      recentTimeLogs: logsRes.ok ? logsRes.data : [],
+    };
+
+    return {
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "application/json",
+          text: JSON.stringify(detail, null, 2),
+        },
+      ],
+    };
+  }
+);
+
 // ── Start server ────────────────────────────────────────────────────────
 
 async function main() {

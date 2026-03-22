@@ -60,7 +60,7 @@ Depends on: REST API (LT-50–55)
 - [x] **LT-7A**: Tool: `get_topic_detail` — full topic with subtasks, notes, logs, SR, deps
 - [x] **LT-7B**: Tool: `bulk_import` — multiple subtasks at once
 - [x] **LT-7C**: Resource: `laterlist://study-queue`
-- [ ] **LT-7D**: Resource: `laterlist://topic/{id}`
+- [x] **LT-7D**: Resource: `laterlist://topic/{id}`
 
 ### Calendar Integration
 - [ ] **LT-60**: Google Calendar OAuth connect
