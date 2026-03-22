@@ -66,7 +66,7 @@ Depends on: REST API (LT-50–55)
 - [x] **LT-60**: Google Calendar OAuth connect
 - [x] **LT-61**: Proton Calendar connect
 - [x] **LT-62**: Push subtasks as time-blocked calendar events
-- [ ] **LT-63**: Suggest calendar slots from free time + daily goal
+- [x] **LT-63**: Suggest calendar slots from free time + daily goal
 - [ ] **LT-64**: Bidirectional completion sync
 
 ## Testing & Developer Tooling

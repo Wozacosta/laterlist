@@ -20,6 +20,7 @@ import { TopicList } from "@/components/TopicList";
 import { DailyGoal } from "@/components/DailyGoal";
 import { CalendarConnect } from "@/components/CalendarConnect";
 import { ProtonCalendarConnect } from "@/components/ProtonCalendarConnect";
+import { CalendarSuggestions } from "@/components/CalendarSuggestions";
 import { StudyQueue } from "@/components/StudyQueue";
 import { DailyPlan } from "@/components/DailyPlan";
 import { LearningDashboard } from "@/components/LearningDashboard";
@@ -598,6 +599,7 @@ export default function Page() {
           />
           <CalendarConnect />
           <ProtonCalendarConnect />
+          <CalendarSuggestions dailyGoalMinutes={dailyGoalMinutes} />
           <DailyPlan
             recommendations={dailyPlan}
             onSelectTopic={setSelectedTopicId}
