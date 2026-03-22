@@ -314,6 +314,20 @@ export default function Page() {
     [logTime, toast]
   );
 
+  // LT-3H: Stop timer, log elapsed time, reset SR clock
+  const handleStopTimer = useCallback(async () => {
+    const stopped = timerState.stop();
+    if (!stopped) return;
+    const elapsed = Math.floor((Date.now() - stopped.startTime) / 1000);
+    if (elapsed > 0) {
+      await logTime(stopped.topicId, elapsed);
+      const h = Math.floor(elapsed / 3600);
+      const m = Math.round((elapsed % 3600) / 60);
+      const label = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      toast(`Logged ${label} to "${stopped.topicName}"`);
+    }
+  }, [timerState, logTime, toast]);
+
   const handleMarkStudied = useCallback(
     async (id: string) => {
       await markStudied(id);
@@ -334,18 +348,28 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Persistent timer display (LT-3G) */}
+      {/* Persistent timer display (LT-3G) with stop button (LT-3H) */}
       {timerState.active && (
         <div className="mb-4 flex items-center justify-between rounded-lg border border-green-300 bg-green-50 px-4 py-2 dark:border-green-800 dark:bg-green-950">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <span className="text-green-600 dark:text-green-400 animate-pulse">●</span>
             <span className="text-sm font-medium text-green-800 dark:text-green-200 truncate">
               {timerState.active.topicName}
             </span>
           </div>
-          <span className="shrink-0 font-mono text-sm font-semibold text-green-700 dark:text-green-300">
-            {formatElapsed(timerState.elapsed)}
-          </span>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="font-mono text-sm font-semibold text-green-700 dark:text-green-300">
+              {formatElapsed(timerState.elapsed)}
+            </span>
+            <button
+              type="button"
+              onClick={handleStopTimer}
+              className="rounded-md bg-red-500 px-3 py-1 text-xs font-medium text-white hover:bg-red-600 transition-colors"
+              title="Stop timer and log time"
+            >
+              ■ Stop
+            </button>
+          </div>
         </div>
       )}
 
