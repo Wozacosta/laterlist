@@ -5,12 +5,11 @@
  * - laterlist → calendar: when item is marked done, delete/cancel the event
  * - calendar → laterlist: poll for cancelled/deleted events, mark items done
  *
- * Event mappings are stored in .data/calendar-event-map.json.
+ * Event mappings stored in KV (Upstash Redis on Vercel, file-based locally).
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { join } from "path";
 import { google } from "googleapis";
+import { kvGet, kvSet } from "./storage";
 import {
   getAuthenticatedClient,
   getConnectionStatus as getGoogleStatus,
@@ -21,8 +20,7 @@ import {
 } from "./protonCalendar";
 import { getItemById, updateItem } from "./store";
 
-const DATA_DIR = join(process.cwd(), ".data");
-const EVENT_MAP_FILE = join(DATA_DIR, "calendar-event-map.json");
+const EVENT_MAP_KEY = "laterlist:calendar-events";
 
 export interface EventMapping {
   itemId: string;
@@ -31,40 +29,22 @@ export interface EventMapping {
   createdAt: string;
 }
 
-function ensureDir() {
-  if (!existsSync(DATA_DIR)) {
-    mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
 // ── Event Map Storage ───────────────────────────────────────────────────────
 
-export function readEventMap(): EventMapping[] {
-  ensureDir();
-  if (!existsSync(EVENT_MAP_FILE)) return [];
-  try {
-    const data = JSON.parse(readFileSync(EVENT_MAP_FILE, "utf-8"));
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
+export async function readEventMap(): Promise<EventMapping[]> {
+  return (await kvGet<EventMapping[]>(EVENT_MAP_KEY)) ?? [];
 }
 
-function writeEventMap(mappings: EventMapping[]): void {
-  ensureDir();
-  writeFileSync(EVENT_MAP_FILE, JSON.stringify(mappings, null, 2));
+async function writeEventMap(mappings: EventMapping[]): Promise<void> {
+  await kvSet(EVENT_MAP_KEY, mappings);
 }
 
-/**
- * Record a new item↔event mapping after pushing to calendar.
- */
-export function addEventMapping(
+export async function addEventMapping(
   itemId: string,
   eventId: string,
   provider: "google" | "proton"
-): void {
-  const mappings = readEventMap();
-  // Avoid duplicates
+): Promise<void> {
+  const mappings = await readEventMap();
   if (mappings.some((m) => m.itemId === itemId && m.eventId === eventId)) return;
   mappings.push({
     itemId,
@@ -72,23 +52,17 @@ export function addEventMapping(
     provider,
     createdAt: new Date().toISOString(),
   });
-  writeEventMap(mappings);
+  await writeEventMap(mappings);
 }
 
-/**
- * Get event mappings for a specific item.
- */
-export function getEventMappingsForItem(itemId: string): EventMapping[] {
-  return readEventMap().filter((m) => m.itemId === itemId);
+export async function getEventMappingsForItem(itemId: string): Promise<EventMapping[]> {
+  return (await readEventMap()).filter((m) => m.itemId === itemId);
 }
 
-/**
- * Remove all event mappings for an item.
- */
-function removeEventMappingsForItem(itemId: string): EventMapping[] {
-  const mappings = readEventMap();
+async function removeEventMappingsForItem(itemId: string): Promise<EventMapping[]> {
+  const mappings = await readEventMap();
   const removed = mappings.filter((m) => m.itemId === itemId);
-  writeEventMap(mappings.filter((m) => m.itemId !== itemId));
+  await writeEventMap(mappings.filter((m) => m.itemId !== itemId));
   return removed;
 }
 
@@ -96,7 +70,7 @@ function removeEventMappingsForItem(itemId: string): EventMapping[] {
 
 async function deleteGoogleEvent(eventId: string): Promise<boolean> {
   try {
-    const auth = getAuthenticatedClient();
+    const auth = await getAuthenticatedClient();
     const calendar = google.calendar({ version: "v3", auth });
     await calendar.events.delete({
       calendarId: "primary",
@@ -109,7 +83,7 @@ async function deleteGoogleEvent(eventId: string): Promise<boolean> {
 }
 
 async function deleteProtonEvent(eventId: string): Promise<boolean> {
-  const caldav = getCalDAVAuth();
+  const caldav = await getCalDAVAuth();
   if (!caldav) return false;
 
   try {
@@ -120,19 +94,16 @@ async function deleteProtonEvent(eventId: string): Promise<boolean> {
         headers: caldav.headers,
       }
     );
-    return response.ok || response.status === 404; // 404 = already deleted
+    return response.ok || response.status === 404;
   } catch {
     return false;
   }
 }
 
-/**
- * When an item is marked done in laterlist, cancel/delete its calendar events.
- */
 export async function syncItemCompletionToCalendar(
   itemId: string
 ): Promise<{ deleted: number; errors: number }> {
-  const mappings = removeEventMappingsForItem(itemId);
+  const mappings = await removeEventMappingsForItem(itemId);
   let deleted = 0;
   let errors = 0;
 
@@ -156,7 +127,7 @@ async function checkGoogleEventStatus(
   eventId: string
 ): Promise<"active" | "cancelled" | "unknown"> {
   try {
-    const auth = getAuthenticatedClient();
+    const auth = await getAuthenticatedClient();
     const calendar = google.calendar({ version: "v3", auth });
     const res = await calendar.events.get({
       calendarId: "primary",
@@ -165,7 +136,6 @@ async function checkGoogleEventStatus(
     if (res.data.status === "cancelled") return "cancelled";
     return "active";
   } catch {
-    // 404 or error means the event was deleted
     return "cancelled";
   }
 }
@@ -173,7 +143,7 @@ async function checkGoogleEventStatus(
 async function checkProtonEventStatus(
   eventId: string
 ): Promise<"active" | "cancelled" | "unknown"> {
-  const caldav = getCalDAVAuth();
+  const caldav = await getCalDAVAuth();
   if (!caldav) return "unknown";
 
   try {
@@ -192,24 +162,17 @@ async function checkProtonEventStatus(
   }
 }
 
-/**
- * Poll calendar for cancelled/deleted events and mark corresponding
- * items as done in laterlist.
- *
- * Returns the list of items that were marked done.
- */
 export async function syncCalendarCompletionsToLaterlist(): Promise<{
   synced: string[];
   errors: string[];
 }> {
-  const mappings = readEventMap();
+  const mappings = await readEventMap();
   const synced: string[] = [];
   const errors: string[] = [];
   const toRemove: Set<string> = new Set();
 
   for (const mapping of mappings) {
-    // Skip items that are already done
-    const item = getItemById(mapping.itemId);
+    const item = await getItemById(mapping.itemId);
     if (!item) {
       toRemove.add(`${mapping.itemId}:${mapping.eventId}`);
       continue;
@@ -222,19 +185,18 @@ export async function syncCalendarCompletionsToLaterlist(): Promise<{
     let status: "active" | "cancelled" | "unknown";
     if (mapping.provider === "google") {
       try {
-        if (!getGoogleStatus().connected) continue;
+        if (!(await getGoogleStatus()).connected) continue;
       } catch { continue; }
       status = await checkGoogleEventStatus(mapping.eventId);
     } else {
       try {
-        if (!getProtonStatus().connected) continue;
+        if (!(await getProtonStatus()).connected) continue;
       } catch { continue; }
       status = await checkProtonEventStatus(mapping.eventId);
     }
 
     if (status === "cancelled") {
-      // Event was deleted/cancelled in calendar → mark item done
-      updateItem(mapping.itemId, {
+      await updateItem(mapping.itemId, {
         status: "done",
         doneAt: new Date().toISOString(),
       });
@@ -243,32 +205,28 @@ export async function syncCalendarCompletionsToLaterlist(): Promise<{
     }
   }
 
-  // Clean up stale mappings
   if (toRemove.size > 0) {
     const remaining = mappings.filter(
       (m) => !toRemove.has(`${m.itemId}:${m.eventId}`)
     );
-    writeEventMap(remaining);
+    await writeEventMap(remaining);
   }
 
   return { synced, errors };
 }
 
-/**
- * Get sync status — number of active event mappings and sync availability.
- */
-export function getSyncStatus(): {
+export async function getSyncStatus(): Promise<{
   mappedEvents: number;
   provider: "google" | "proton" | null;
-} {
-  const mappings = readEventMap();
+}> {
+  const mappings = await readEventMap();
   let provider: "google" | "proton" | null = null;
   try {
-    if (getGoogleStatus().connected) provider = "google";
+    if ((await getGoogleStatus()).connected) provider = "google";
   } catch { /* */ }
   if (!provider) {
     try {
-      if (getProtonStatus().connected) provider = "proton";
+      if ((await getProtonStatus()).connected) provider = "proton";
     } catch { /* */ }
   }
   return { mappedEvents: mappings.length, provider };

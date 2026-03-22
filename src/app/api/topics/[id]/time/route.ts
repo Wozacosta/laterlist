@@ -14,11 +14,11 @@ export async function POST(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
   const { id } = await context.params;
 
-  if (!getTopicById(id)) {
+  if (!(await getTopicById(id))) {
     return Response.json({ error: "Topic not found" }, { status: 404 });
   }
 
@@ -34,7 +34,7 @@ export async function POST(
     }
 
     const src = source === "done" ? "done" : "manual";
-    const log = logTimeToTopic(id, Math.round(seconds), src);
+    const log = await logTimeToTopic(id, Math.round(seconds), src);
 
     if (!log) {
       return Response.json({ error: "Failed to log time" }, { status: 500 });

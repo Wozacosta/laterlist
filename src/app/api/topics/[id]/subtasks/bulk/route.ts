@@ -27,12 +27,12 @@ export async function POST(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id: topicId } = await context.params;
 
-  if (!getTopicById(topicId)) {
+  if (!(await getTopicById(topicId))) {
     return Response.json({ error: "Topic not found" }, { status: 404 });
   }
 
@@ -89,7 +89,7 @@ export async function POST(
         topicIds: [topicId],
       };
 
-      addItem(item);
+      await addItem(item);
       created.push(item);
     }
 

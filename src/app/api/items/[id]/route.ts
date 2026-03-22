@@ -14,12 +14,12 @@ export async function PATCH(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id } = await context.params;
 
-  const item = getItemById(id);
+  const item = await getItemById(id);
   if (!item) {
     return Response.json({ error: "Item not found" }, { status: 404 });
   }
@@ -43,7 +43,7 @@ export async function PATCH(
       patch.doneAt = undefined;
     }
 
-    const updated = updateItem(id, patch);
+    const updated = await updateItem(id, patch);
 
     // Sync completion to calendar (LT-64) — non-blocking
     if (status === "done") {

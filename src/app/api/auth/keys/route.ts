@@ -8,7 +8,7 @@ import { generateApiKey, listApiKeys, revokeApiKey } from "@/lib/server/apiKeys"
  * manage keys even when locked out.
  */
 export async function GET() {
-  return Response.json(listApiKeys());
+  return Response.json(await listApiKeys());
 }
 
 /**
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const name = typeof body.name === "string" ? body.name : "";
-    const result = generateApiKey(name);
+    const result = await generateApiKey(name);
 
     return Response.json(result, { status: 201 });
   } catch {
@@ -42,7 +42,7 @@ export async function DELETE(request: NextRequest) {
       return Response.json({ error: "id is required" }, { status: 400 });
     }
 
-    const revoked = revokeApiKey(id);
+    const revoked = await revokeApiKey(id);
     if (!revoked) {
       return Response.json({ error: "Key not found" }, { status: 404 });
     }

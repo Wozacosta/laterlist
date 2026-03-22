@@ -45,7 +45,7 @@ async function getGoogleBusyPeriods(
   dayStart: Date,
   dayEnd: Date
 ): Promise<BusyPeriod[]> {
-  const auth = getAuthenticatedClient();
+  const auth = await getAuthenticatedClient();
   const calendar = google.calendar({ version: "v3", auth });
 
   const res = await calendar.freebusy.query({
@@ -72,7 +72,7 @@ async function getProtonBusyPeriods(
   dayStart: Date,
   dayEnd: Date
 ): Promise<BusyPeriod[]> {
-  const caldav = getCalDAVAuth();
+  const caldav = await getCalDAVAuth();
   if (!caldav) return [];
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
@@ -285,7 +285,7 @@ export async function suggestSlots(
   let provider: "google" | "proton" | "local" = "local";
 
   try {
-    if (getGoogleStatus().connected) {
+    if ((await getGoogleStatus()).connected) {
       busy = await getGoogleBusyPeriods(dayStart, dayEnd);
       provider = "google";
     }
@@ -293,7 +293,7 @@ export async function suggestSlots(
 
   if (provider === "local") {
     try {
-      if (getProtonStatus().connected) {
+      if ((await getProtonStatus()).connected) {
         busy = await getProtonBusyPeriods(dayStart, dayEnd);
         provider = "proton";
       }

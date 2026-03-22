@@ -26,14 +26,14 @@ export async function GET(request: NextRequest) {
     const days = parseInt(url.searchParams.get("days") ?? "30", 10);
 
     if (isExport) {
-      return NextResponse.json(exportSessionData(days));
+      return NextResponse.json(await exportSessionData(days));
     }
 
     if (isStats) {
-      return NextResponse.json(getSessionStats(days));
+      return NextResponse.json(await getSessionStats(days));
     }
 
-    const sessions = querySessions({
+    const sessions = await querySessions({
       topicId: url.searchParams.get("topicId") ?? undefined,
       type: (url.searchParams.get("type") as "work" | "break" | "freeform") ?? undefined,
       since: url.searchParams.get("since") ?? undefined,
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const session = recordSession({
+    const session = await recordSession({
       topicId,
       topicName,
       startedAt,

@@ -627,7 +627,7 @@ export interface SeedResult {
   timeLogs: number;
 }
 
-export function seedMockData(seed: number = 42, refTime?: number): SeedResult {
+export async function seedMockData(seed: number = 42, refTime?: number): Promise<SeedResult> {
   resetRng(seed);
   referenceTime = refTime ?? DEFAULT_REFERENCE_TIME;
 
@@ -673,9 +673,9 @@ export function seedMockData(seed: number = 42, refTime?: number): SeedResult {
   const timeLogs = generateTimeLogs(topics, items);
 
   // Write all data
-  writeTopics(topics);
-  writeItems(items);
-  writeTimeLogs(timeLogs);
+  await writeTopics(topics);
+  await writeItems(items);
+  await writeTimeLogs(timeLogs);
 
   return {
     topics: topics.length,
@@ -684,8 +684,8 @@ export function seedMockData(seed: number = 42, refTime?: number): SeedResult {
   };
 }
 
-export function clearAllData(): void {
-  writeTopics([]);
-  writeItems([]);
-  writeTimeLogs([]);
+export async function clearAllData(): Promise<void> {
+  await writeTopics([]);
+  await writeItems([]);
+  await writeTimeLogs([]);
 }

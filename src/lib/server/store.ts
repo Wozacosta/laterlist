@@ -1,145 +1,116 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { join } from "path";
+import { kvGet, kvSet } from "./storage";
 import type { Topic, Item, TimeLog } from "@/db";
 
-const DATA_DIR = join(process.cwd(), ".data");
-const TOPICS_FILE = join(DATA_DIR, "topics.json");
-const ITEMS_FILE = join(DATA_DIR, "items.json");
-const TIMELOGS_FILE = join(DATA_DIR, "timelogs.json");
+const TOPICS_KEY = "laterlist:topics";
+const ITEMS_KEY = "laterlist:items";
+const TIMELOGS_KEY = "laterlist:timelogs";
 
-function ensureDir() {
-  if (!existsSync(DATA_DIR)) {
-    mkdirSync(DATA_DIR, { recursive: true });
-  }
+export async function readTopics(): Promise<Topic[]> {
+  return (await kvGet<Topic[]>(TOPICS_KEY)) ?? [];
 }
 
-export function readTopics(): Topic[] {
-  ensureDir();
-  if (!existsSync(TOPICS_FILE)) return [];
-  try {
-    return JSON.parse(readFileSync(TOPICS_FILE, "utf-8"));
-  } catch {
-    return [];
-  }
+export async function writeTopics(topics: Topic[]): Promise<void> {
+  await kvSet(TOPICS_KEY, topics);
 }
 
-export function writeTopics(topics: Topic[]) {
-  ensureDir();
-  writeFileSync(TOPICS_FILE, JSON.stringify(topics, null, 2));
+export async function getTopicById(id: string): Promise<Topic | undefined> {
+  return (await readTopics()).find((t) => t.id === id);
 }
 
-export function getTopicById(id: string): Topic | undefined {
-  return readTopics().find((t) => t.id === id);
-}
-
-export function addTopic(topic: Topic): Topic {
-  const topics = readTopics();
+export async function addTopic(topic: Topic): Promise<Topic> {
+  const topics = await readTopics();
   topics.push(topic);
-  writeTopics(topics);
+  await writeTopics(topics);
   return topic;
 }
 
-export function updateTopic(id: string, patch: Partial<Topic>): Topic | null {
-  const topics = readTopics();
+export async function updateTopic(id: string, patch: Partial<Topic>): Promise<Topic | null> {
+  const topics = await readTopics();
   const idx = topics.findIndex((t) => t.id === id);
   if (idx === -1) return null;
-  topics[idx] = { ...topics[idx], ...patch, id }; // id cannot be changed
-  writeTopics(topics);
+  topics[idx] = { ...topics[idx], ...patch, id };
+  await writeTopics(topics);
   return topics[idx];
 }
 
-export function deleteTopic(id: string): boolean {
-  const topics = readTopics();
+export async function deleteTopic(id: string): Promise<boolean> {
+  const topics = await readTopics();
   const filtered = topics.filter((t) => t.id !== id);
   if (filtered.length === topics.length) return false;
-  writeTopics(filtered);
+  await writeTopics(filtered);
   return true;
 }
 
 // ── Items (subtasks) ─────────────────────────────────────────────────────
 
-export function readItems(): Item[] {
-  ensureDir();
-  if (!existsSync(ITEMS_FILE)) return [];
-  try {
-    return JSON.parse(readFileSync(ITEMS_FILE, "utf-8"));
-  } catch {
-    return [];
-  }
+export async function readItems(): Promise<Item[]> {
+  return (await kvGet<Item[]>(ITEMS_KEY)) ?? [];
 }
 
-export function writeItems(items: Item[]) {
-  ensureDir();
-  writeFileSync(ITEMS_FILE, JSON.stringify(items, null, 2));
+export async function writeItems(items: Item[]): Promise<void> {
+  await kvSet(ITEMS_KEY, items);
 }
 
-export function getItemById(id: string): Item | undefined {
-  return readItems().find((i) => i.id === id);
+export async function getItemById(id: string): Promise<Item | undefined> {
+  return (await readItems()).find((i) => i.id === id);
 }
 
-export function getItemsByTopicId(topicId: string): Item[] {
-  return readItems().filter((i) => i.topicIds?.includes(topicId));
+export async function getItemsByTopicId(topicId: string): Promise<Item[]> {
+  return (await readItems()).filter((i) => i.topicIds?.includes(topicId));
 }
 
-export function addItem(item: Item): Item {
-  const items = readItems();
+export async function addItem(item: Item): Promise<Item> {
+  const items = await readItems();
   items.push(item);
-  writeItems(items);
+  await writeItems(items);
   return item;
 }
 
-export function updateItem(id: string, patch: Partial<Item>): Item | null {
-  const items = readItems();
+export async function updateItem(id: string, patch: Partial<Item>): Promise<Item | null> {
+  const items = await readItems();
   const idx = items.findIndex((i) => i.id === id);
   if (idx === -1) return null;
   items[idx] = { ...items[idx], ...patch, id };
-  writeItems(items);
+  await writeItems(items);
   return items[idx];
 }
 
-export function deleteItem(id: string): boolean {
-  const items = readItems();
+export async function deleteItem(id: string): Promise<boolean> {
+  const items = await readItems();
   const filtered = items.filter((i) => i.id !== id);
   if (filtered.length === items.length) return false;
-  writeItems(filtered);
+  await writeItems(filtered);
   return true;
 }
 
 // ── Time Logs ────────────────────────────────────────────────────────────
 
-export function readTimeLogs(): TimeLog[] {
-  ensureDir();
-  if (!existsSync(TIMELOGS_FILE)) return [];
-  try {
-    return JSON.parse(readFileSync(TIMELOGS_FILE, "utf-8"));
-  } catch {
-    return [];
-  }
+export async function readTimeLogs(): Promise<TimeLog[]> {
+  return (await kvGet<TimeLog[]>(TIMELOGS_KEY)) ?? [];
 }
 
-export function writeTimeLogs(logs: TimeLog[]) {
-  ensureDir();
-  writeFileSync(TIMELOGS_FILE, JSON.stringify(logs, null, 2));
+export async function writeTimeLogs(logs: TimeLog[]): Promise<void> {
+  await kvSet(TIMELOGS_KEY, logs);
 }
 
-export function getTimeLogsByTopicId(topicId: string): TimeLog[] {
-  return readTimeLogs().filter((l) => l.topicId === topicId);
+export async function getTimeLogsByTopicId(topicId: string): Promise<TimeLog[]> {
+  return (await readTimeLogs()).filter((l) => l.topicId === topicId);
 }
 
-export function addTimeLog(log: TimeLog): TimeLog {
-  const logs = readTimeLogs();
+export async function addTimeLog(log: TimeLog): Promise<TimeLog> {
+  const logs = await readTimeLogs();
   logs.push(log);
-  writeTimeLogs(logs);
+  await writeTimeLogs(logs);
   return log;
 }
 
 /** Log time to a topic: creates a TimeLog and updates the topic's timeSpent + SR clock. */
-export function logTimeToTopic(
+export async function logTimeToTopic(
   topicId: string,
   seconds: number,
   source: "manual" | "done" = "manual"
-): TimeLog | null {
-  const topic = getTopicById(topicId);
+): Promise<TimeLog | null> {
+  const topic = await getTopicById(topicId);
   if (!topic) return null;
 
   const now = new Date().toISOString();
@@ -151,10 +122,9 @@ export function logTimeToTopic(
     source,
   };
 
-  addTimeLog(log);
+  await addTimeLog(log);
 
-  // Update topic: add time + reset SR clock
-  updateTopic(topicId, {
+  await updateTopic(topicId, {
     timeSpent: topic.timeSpent + seconds,
     lastActivityDate: now,
     currentInterval: 1,

@@ -12,11 +12,11 @@ export async function GET(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id } = await context.params;
-  const topic = getTopicById(id);
+  const topic = await getTopicById(id);
 
   if (!topic) {
     return Response.json({ error: "Topic not found" }, { status: 404 });
@@ -34,7 +34,7 @@ export async function PUT(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id } = await context.params;
@@ -76,7 +76,7 @@ export async function PUT(
       );
     }
 
-    const updated = updateTopic(id, allowed);
+    const updated = await updateTopic(id, allowed);
 
     if (!updated) {
       return Response.json({ error: "Topic not found" }, { status: 404 });
@@ -96,11 +96,11 @@ export async function DELETE(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id } = await context.params;
-  const deleted = deleteTopic(id);
+  const deleted = await deleteTopic(id);
 
   if (!deleted) {
     return Response.json({ error: "Topic not found" }, { status: 404 });

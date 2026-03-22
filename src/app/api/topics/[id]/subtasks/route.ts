@@ -23,16 +23,16 @@ export async function GET(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id } = await context.params;
 
-  if (!getTopicById(id)) {
+  if (!(await getTopicById(id))) {
     return Response.json({ error: "Topic not found" }, { status: 404 });
   }
 
-  return Response.json(getItemsByTopicId(id));
+  return Response.json(await getItemsByTopicId(id));
 }
 
 /**
@@ -44,12 +44,12 @@ export async function POST(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id: topicId } = await context.params;
 
-  if (!getTopicById(topicId)) {
+  if (!(await getTopicById(topicId))) {
     return Response.json({ error: "Topic not found" }, { status: 404 });
   }
 
@@ -79,7 +79,7 @@ export async function POST(
       topicIds: [topicId],
     };
 
-    addItem(item);
+    await addItem(item);
 
     return Response.json(item, { status: 201 });
   } catch {
@@ -96,12 +96,12 @@ export async function DELETE(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id: topicId } = await context.params;
 
-  if (!getTopicById(topicId)) {
+  if (!(await getTopicById(topicId))) {
     return Response.json({ error: "Topic not found" }, { status: 404 });
   }
 
@@ -113,7 +113,7 @@ export async function DELETE(
       return Response.json({ error: "itemId is required" }, { status: 400 });
     }
 
-    const item = getItemById(itemId);
+    const item = await getItemById(itemId);
     if (!item) {
       return Response.json({ error: "Item not found" }, { status: 404 });
     }
@@ -129,10 +129,10 @@ export async function DELETE(
     // Otherwise, just remove it from this topic
     const otherTopics = (item.topicIds ?? []).filter((t) => t !== topicId);
     if (otherTopics.length === 0) {
-      deleteItem(itemId);
+      await deleteItem(itemId);
     } else {
       const { updateItem } = await import("@/lib/server/store");
-      updateItem(itemId, { topicIds: otherTopics });
+      await updateItem(itemId, { topicIds: otherTopics });
     }
 
     return new Response(null, { status: 204 });

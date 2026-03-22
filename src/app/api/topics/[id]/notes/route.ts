@@ -12,11 +12,11 @@ export async function GET(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id } = await context.params;
-  const topic = getTopicById(id);
+  const topic = await getTopicById(id);
 
   if (!topic) {
     return Response.json({ error: "Topic not found" }, { status: 404 });
@@ -34,7 +34,7 @@ export async function PUT(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id } = await context.params;
@@ -46,7 +46,7 @@ export async function PUT(
       return Response.json({ error: "notes must be a string" }, { status: 400 });
     }
 
-    const updated = updateTopic(id, {
+    const updated = await updateTopic(id, {
       notes: body.notes || undefined,
     });
 

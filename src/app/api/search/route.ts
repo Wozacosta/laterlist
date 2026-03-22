@@ -17,7 +17,7 @@ interface SearchResult {
  * Returns matched results with snippets.
  */
 export async function GET(request: NextRequest) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const q = request.nextUrl.searchParams.get("q")?.trim().toLowerCase();
@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "q parameter is required" }, { status: 400 });
   }
 
-  const topics = readTopics();
-  const items = readItems();
+  const topics = await readTopics();
+  const items = await readItems();
   const results: SearchResult[] = [];
 
   // Search topics

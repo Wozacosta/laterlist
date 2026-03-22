@@ -11,9 +11,9 @@ import { validateApiKey, hasAnyKeys } from "./apiKeys";
  *
  * @returns null if authorized, or a Response (401/403) if not.
  */
-export function requireAuth(request: NextRequest): Response | null {
+export async function requireAuth(request: NextRequest): Promise<Response | null> {
   // If no keys exist, auth is disabled — open access mode
-  if (!hasAnyKeys()) {
+  if (!(await hasAnyKeys())) {
     return null;
   }
 
@@ -35,7 +35,7 @@ export function requireAuth(request: NextRequest): Response | null {
   }
 
   const token = match[1];
-  if (!validateApiKey(token)) {
+  if (!(await validateApiKey(token))) {
     return Response.json(
       { error: "Invalid or revoked API key" },
       { status: 403 }

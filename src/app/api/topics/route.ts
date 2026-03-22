@@ -8,13 +8,13 @@ import { requireAuth } from "@/lib/server/authMiddleware";
  * Returns: Topic[]
  */
 export async function GET(request: NextRequest) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { searchParams } = request.nextUrl;
   const status = searchParams.get("status");
 
-  let topics = readTopics();
+  let topics = await readTopics();
 
   if (status === "active" || status === "completed") {
     topics = topics.filter((t) => t.status === status);
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
  * Returns: the created Topic
  */
 export async function POST(request: NextRequest) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   try {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       currentInterval: 1,
     };
 
-    addTopic(topic);
+    await addTopic(topic);
 
     return Response.json(topic, { status: 201 });
   } catch {

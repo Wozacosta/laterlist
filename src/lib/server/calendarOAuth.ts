@@ -2,21 +2,18 @@
  * Google Calendar OAuth (LT-60)
  *
  * Manages the OAuth 2.0 flow for connecting a Google Calendar account.
- * Tokens are stored in .data/google-calendar-tokens.json.
+ * Tokens stored in KV (Upstash Redis on Vercel, file-based locally).
  *
  * Required environment variables:
  *   GOOGLE_CLIENT_ID     — OAuth client ID from Google Cloud Console
  *   GOOGLE_CLIENT_SECRET — OAuth client secret
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { join } from "path";
 import { google } from "googleapis";
+import { kvGet, kvSet, kvDel } from "./storage";
 
-const DATA_DIR = join(process.cwd(), ".data");
-const TOKENS_FILE = join(DATA_DIR, "google-calendar-tokens.json");
+const TOKENS_KEY = "laterlist:google-tokens";
 
-// Google Calendar API scopes
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/calendar.readonly",
@@ -30,12 +27,6 @@ export interface CalendarTokens {
   expiry_date: number;
   email?: string;
   connectedAt: string;
-}
-
-function ensureDir() {
-  if (!existsSync(DATA_DIR)) {
-    mkdirSync(DATA_DIR, { recursive: true });
-  }
 }
 
 function getRedirectUri(): string {
@@ -58,47 +49,29 @@ function getOAuth2Client() {
 
 // ── Token Storage ───────────────────────────────────────────────────────────
 
-export function readTokens(): CalendarTokens | null {
-  ensureDir();
-  if (!existsSync(TOKENS_FILE)) return null;
-  try {
-    const data = JSON.parse(readFileSync(TOKENS_FILE, "utf-8"));
-    return data as CalendarTokens;
-  } catch {
-    return null;
-  }
+export async function readTokens(): Promise<CalendarTokens | null> {
+  return kvGet<CalendarTokens>(TOKENS_KEY);
 }
 
-export function writeTokens(tokens: CalendarTokens): void {
-  ensureDir();
-  writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2));
+export async function writeTokens(tokens: CalendarTokens): Promise<void> {
+  await kvSet(TOKENS_KEY, tokens);
 }
 
-export function clearTokens(): void {
-  ensureDir();
-  if (existsSync(TOKENS_FILE)) {
-    writeFileSync(TOKENS_FILE, "null");
-  }
+export async function clearTokens(): Promise<void> {
+  await kvDel(TOKENS_KEY);
 }
 
 // ── OAuth Flow ──────────────────────────────────────────────────────────────
 
-/**
- * Generate the Google OAuth consent URL.
- * The user visits this URL to authorize calendar access.
- */
 export function getAuthUrl(): string {
   const client = getOAuth2Client();
   return client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
-    prompt: "consent", // Force consent to always get refresh_token
+    prompt: "consent",
   });
 }
 
-/**
- * Exchange the authorization code for tokens and store them.
- */
 export async function exchangeCode(code: string): Promise<CalendarTokens> {
   const client = getOAuth2Client();
   const { tokens } = await client.getToken(code);
@@ -107,7 +80,6 @@ export async function exchangeCode(code: string): Promise<CalendarTokens> {
     throw new Error("Failed to get access/refresh tokens from Google");
   }
 
-  // Fetch the user's email for display
   client.setCredentials(tokens);
   let email: string | undefined;
   try {
@@ -115,7 +87,7 @@ export async function exchangeCode(code: string): Promise<CalendarTokens> {
     const userInfo = await oauth2.userinfo.get();
     email = userInfo.data.email ?? undefined;
   } catch {
-    // Non-critical — email is just for display
+    // Non-critical
   }
 
   const stored: CalendarTokens = {
@@ -128,16 +100,12 @@ export async function exchangeCode(code: string): Promise<CalendarTokens> {
     connectedAt: new Date().toISOString(),
   };
 
-  writeTokens(stored);
+  await writeTokens(stored);
   return stored;
 }
 
-/**
- * Get an authenticated OAuth2 client with valid tokens.
- * Automatically refreshes expired tokens.
- */
-export function getAuthenticatedClient() {
-  const tokens = readTokens();
+export async function getAuthenticatedClient() {
+  const tokens = await readTokens();
   if (!tokens) {
     throw new Error("No Google Calendar tokens found — connect first");
   }
@@ -150,10 +118,10 @@ export function getAuthenticatedClient() {
   });
 
   // Auto-refresh handler: persist new tokens when refreshed
-  client.on("tokens", (newTokens) => {
-    const current = readTokens();
+  client.on("tokens", async (newTokens) => {
+    const current = await readTokens();
     if (current) {
-      writeTokens({
+      await writeTokens({
         ...current,
         access_token: newTokens.access_token ?? current.access_token,
         expiry_date: newTokens.expiry_date ?? current.expiry_date,
@@ -164,31 +132,25 @@ export function getAuthenticatedClient() {
   return client;
 }
 
-/**
- * Revoke the Google Calendar connection and clear stored tokens.
- */
 export async function disconnect(): Promise<void> {
-  const tokens = readTokens();
+  const tokens = await readTokens();
   if (tokens) {
     try {
       const client = getOAuth2Client();
       await client.revokeToken(tokens.access_token);
     } catch {
-      // Revocation may fail if token is already expired — that's OK
+      // Revocation may fail if token is already expired
     }
   }
-  clearTokens();
+  await clearTokens();
 }
 
-/**
- * Get the current connection status.
- */
-export function getConnectionStatus(): {
+export async function getConnectionStatus(): Promise<{
   connected: boolean;
   email?: string;
   connectedAt?: string;
-} {
-  const tokens = readTokens();
+}> {
+  const tokens = await readTokens();
   if (!tokens || !tokens.refresh_token) {
     return { connected: false };
   }

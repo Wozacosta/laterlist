@@ -13,19 +13,19 @@ export async function GET(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id } = await context.params;
 
-  if (!getTopicById(id)) {
+  if (!(await getTopicById(id))) {
     return Response.json({ error: "Topic not found" }, { status: 404 });
   }
 
   const { searchParams } = request.nextUrl;
   const limitStr = searchParams.get("limit");
 
-  let logs = getTimeLogsByTopicId(id);
+  let logs = await getTimeLogsByTopicId(id);
 
   // Sort newest first
   logs.sort((a, b) => b.loggedAt.localeCompare(a.loggedAt));

@@ -41,7 +41,7 @@ export interface PushResult {
 
 async function pushToGoogle(event: CalendarEvent): Promise<PushResult> {
   try {
-    const auth = getAuthenticatedClient();
+    const auth = await getAuthenticatedClient();
     const calendar = google.calendar({ version: "v3", auth });
 
     const startDate = new Date(event.startTime);
@@ -82,7 +82,7 @@ function formatICSDate(date: Date): string {
 }
 
 async function pushToProton(event: CalendarEvent): Promise<PushResult> {
-  const caldav = getCalDAVAuth();
+  const caldav = await getCalDAVAuth();
   if (!caldav) {
     return { ok: false, provider: "proton", error: "Proton Calendar not connected" };
   }
@@ -141,12 +141,12 @@ async function pushToProton(event: CalendarEvent): Promise<PushResult> {
  * Detect which calendar provider is connected.
  * Returns the first connected provider, or null if none.
  */
-export function getConnectedProvider(): "google" | "proton" | null {
+export async function getConnectedProvider(): Promise<"google" | "proton" | null> {
   try {
-    if (getGoogleStatus().connected) return "google";
+    if ((await getGoogleStatus()).connected) return "google";
   } catch { /* not configured */ }
   try {
-    if (getProtonStatus().connected) return "proton";
+    if ((await getProtonStatus()).connected) return "proton";
   } catch { /* not configured */ }
   return null;
 }
@@ -158,7 +158,7 @@ export function getConnectedProvider(): "google" | "proton" | null {
  * If both are connected, Google is preferred.
  */
 export async function pushEvent(event: CalendarEvent): Promise<PushResult> {
-  const provider = getConnectedProvider();
+  const provider = await getConnectedProvider();
 
   if (!provider) {
     return {

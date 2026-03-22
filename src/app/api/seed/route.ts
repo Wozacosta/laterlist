@@ -26,10 +26,10 @@ export async function POST(request: Request) {
   const clear = url.searchParams.get("clear") === "true";
 
   if (clear) {
-    clearAllData();
+    await clearAllData();
   }
 
-  const result = seedMockData(seed, refTime);
+  const result = await seedMockData(seed, refTime);
 
   return NextResponse.json({
     ok: true,
@@ -53,6 +53,6 @@ export async function DELETE() {
     );
   }
 
-  clearAllData();
+  await clearAllData();
   return NextResponse.json({ ok: true, cleared: true });
 }

@@ -10,7 +10,7 @@ import {
  */
 export async function GET() {
   try {
-    const status = getSyncStatus();
+    const status = await getSyncStatus();
     return NextResponse.json(status);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";

@@ -13,17 +13,17 @@ export async function POST(
   request: NextRequest,
   context: RouteContext
 ) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
   const { id } = await context.params;
 
-  const topic = getTopicById(id);
+  const topic = await getTopicById(id);
   if (!topic) {
     return Response.json({ error: "Topic not found" }, { status: 404 });
   }
 
-  const updated = updateTopic(id, {
+  const updated = await updateTopic(id, {
     lastActivityDate: new Date().toISOString(),
     currentInterval: 1,
   });

@@ -22,10 +22,10 @@ interface StudyQueueEntry {
  * Topics with unmet prerequisites are filtered out.
  */
 export async function GET(request: NextRequest) {
-  const authErr = requireAuth(request);
+  const authErr = await requireAuth(request);
   if (authErr) return authErr;
 
-  const topics = readTopics();
+  const topics = await readTopics();
   const now = Date.now();
 
   // Build set of completed topic IDs for prerequisite checking

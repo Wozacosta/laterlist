@@ -11,7 +11,7 @@ import { addEventMapping } from "@/lib/server/calendarSync";
  * GET /api/calendar/events — Check which calendar provider is connected
  */
 export async function GET() {
-  const provider = getConnectedProvider();
+  const provider = await getConnectedProvider();
   return NextResponse.json({ provider, connected: provider !== null });
 }
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     // Build the event from either an item ID or direct fields
     let event;
     if (itemId) {
-      const item = getItemById(itemId);
+      const item = await getItemById(itemId);
       if (!item) {
         return NextResponse.json(
           { ok: false, error: `Item not found: ${itemId}` },
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
 
     // Track the event mapping for bidirectional sync (LT-64)
     if (result.eventId && itemId) {
-      addEventMapping(itemId, result.eventId, result.provider);
+      await addEventMapping(itemId, result.eventId, result.provider);
     }
 
     return NextResponse.json(result, { status: 201 });

@@ -7,30 +7,28 @@
  * - Completion status (completed/interrupted)
  * - Pomodoro cycle count
  *
- * Stored in .data/sessions.json.
+ * Stored in KV (Upstash Redis on Vercel, file-based locally).
  * Provides data for graph visualization and external tool integration.
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { join } from "path";
 import { randomUUID } from "crypto";
+import { kvGet, kvSet } from "./storage";
 
-const DATA_DIR = join(process.cwd(), ".data");
-const SESSIONS_FILE = join(DATA_DIR, "sessions.json");
+const SESSIONS_KEY = "laterlist:sessions";
 
 export interface Session {
   id: string;
   topicId: string;
   topicName: string;
-  startedAt: string;      // ISO datetime
-  endedAt: string;        // ISO datetime
+  startedAt: string;
+  endedAt: string;
   durationSeconds: number;
   type: "work" | "break" | "freeform";
   status: "completed" | "interrupted";
   pomodoroConfig?: {
     workMinutes: number;
     breakMinutes: number;
-    cycleNumber: number; // which pomodoro cycle this was
+    cycleNumber: number;
   };
 }
 
@@ -41,12 +39,12 @@ export interface SessionStats {
   averageWorkMinutes: number;
   completedSessions: number;
   interruptedSessions: number;
-  longestStreak: number;     // consecutive completed work sessions
+  longestStreak: number;
   byDay: DaySessionStat[];
 }
 
 export interface DaySessionStat {
-  date: string;           // YYYY-MM-DD
+  date: string;
   sessions: number;
   workSeconds: number;
   breakSeconds: number;
@@ -54,36 +52,19 @@ export interface DaySessionStat {
   interrupted: number;
 }
 
-function ensureDir() {
-  if (!existsSync(DATA_DIR)) {
-    mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
 // ── Storage ─────────────────────────────────────────────────────────────────
 
-export function readSessions(): Session[] {
-  ensureDir();
-  if (!existsSync(SESSIONS_FILE)) return [];
-  try {
-    const data = JSON.parse(readFileSync(SESSIONS_FILE, "utf-8"));
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
+export async function readSessions(): Promise<Session[]> {
+  return (await kvGet<Session[]>(SESSIONS_KEY)) ?? [];
 }
 
-export function writeSessions(sessions: Session[]): void {
-  ensureDir();
-  writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2));
+export async function writeSessions(sessions: Session[]): Promise<void> {
+  await kvSet(SESSIONS_KEY, sessions);
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
-/**
- * Record a completed timer/pomodoro session.
- */
-export function recordSession(data: {
+export async function recordSession(data: {
   topicId: string;
   topicName: string;
   startedAt: string;
@@ -92,29 +73,26 @@ export function recordSession(data: {
   type: "work" | "break" | "freeform";
   status: "completed" | "interrupted";
   pomodoroConfig?: Session["pomodoroConfig"];
-}): Session {
+}): Promise<Session> {
   const session: Session = {
     id: `ses_${randomUUID()}`,
     ...data,
   };
 
-  const sessions = readSessions();
+  const sessions = await readSessions();
   sessions.push(session);
-  writeSessions(sessions);
+  await writeSessions(sessions);
 
   return session;
 }
 
-/**
- * Query sessions with optional filters.
- */
-export function querySessions(opts?: {
+export async function querySessions(opts?: {
   topicId?: string;
   type?: "work" | "break" | "freeform";
   since?: string;
   limit?: number;
-}): Session[] {
-  let sessions = readSessions();
+}): Promise<Session[]> {
+  let sessions = await readSessions();
 
   if (opts?.topicId) {
     sessions = sessions.filter((s) => s.topicId === opts.topicId);
@@ -126,7 +104,6 @@ export function querySessions(opts?: {
     sessions = sessions.filter((s) => s.startedAt >= opts.since!);
   }
 
-  // Sort newest first
   sessions.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 
   if (opts?.limit && opts.limit > 0) {
@@ -136,12 +113,9 @@ export function querySessions(opts?: {
   return sessions;
 }
 
-/**
- * Compute session statistics over a time range.
- */
-export function getSessionStats(days: number = 30): SessionStats {
+export async function getSessionStats(days: number = 30): Promise<SessionStats> {
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
-  const sessions = querySessions({ since });
+  const sessions = await querySessions({ since });
 
   const workSessions = sessions.filter((s) => s.type === "work" || s.type === "freeform");
   const breakSessions = sessions.filter((s) => s.type === "break");
@@ -151,7 +125,6 @@ export function getSessionStats(days: number = 30): SessionStats {
   const completedSessions = sessions.filter((s) => s.status === "completed").length;
   const interruptedSessions = sessions.filter((s) => s.status === "interrupted").length;
 
-  // Calculate longest streak of completed work sessions
   let longestStreak = 0;
   let currentStreak = 0;
   for (const s of [...sessions].reverse()) {
@@ -163,7 +136,6 @@ export function getSessionStats(days: number = 30): SessionStats {
     }
   }
 
-  // Group by day
   const dayMap = new Map<string, DaySessionStat>();
   for (const s of sessions) {
     const date = s.startedAt.slice(0, 10);
@@ -204,18 +176,14 @@ export function getSessionStats(days: number = 30): SessionStats {
   };
 }
 
-/**
- * Export sessions in a format compatible with external tools.
- * Returns JSON with session data suitable for pomodo.ink or similar.
- */
-export function exportSessionData(days: number = 30): {
+export async function exportSessionData(days: number = 30): Promise<{
   version: string;
   exported: string;
   stats: SessionStats;
   sessions: Session[];
-} {
-  const stats = getSessionStats(days);
-  const sessions = querySessions({
+}> {
+  const stats = await getSessionStats(days);
+  const sessions = await querySessions({
     since: new Date(Date.now() - days * 86_400_000).toISOString(),
   });
 
