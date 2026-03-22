@@ -10,6 +10,7 @@ export default defineConfig({
     setupFiles: ["./src/test-setup.ts"],
     exclude: ["e2e/**", "node_modules/**", ".opencode/**"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    fileParallelism: false,
   },
   resolve: {
     alias: {

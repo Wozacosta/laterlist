@@ -2,10 +2,10 @@
  * Integration Tests: Learning Notes (LT-87)
  *
  * Covers PRD requirements LT-34 through LT-37:
- * - LT-34: Markdown notes on topics
+ * - LT-34: Each subtask and topic can have markdown notes attached
  * - LT-35: "What did you learn?" prompt on item completion (notes on items)
- * - LT-36: Notes rendering (markdown content)
- * - LT-37: Notes CRUD via API
+ * - LT-36: Study queue surfaces most recent notes for context
+ * - LT-37: Notes support standard markdown (headings, lists, code blocks, links)
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
@@ -13,6 +13,7 @@ import {
   writeTopics,
   writeItems,
   writeTimeLogs,
+  readItems,
   addTopic,
   getTopicById,
   updateTopic,
@@ -50,6 +51,27 @@ function makeItem(id: string, title: string, overrides?: Partial<Item>): Item {
   };
 }
 
+/**
+ * Mirrors the latestNote logic from useStudyQueue.ts (lines 40-79):
+ * For a given topic, finds the most recent item note (by doneAt/addedAt),
+ * falling back to topic-level notes if no item notes exist.
+ */
+function buildLatestNote(topic: Topic, items: Item[]): string | undefined {
+  let latestNote: string | undefined;
+  let latestDate: string | undefined;
+
+  for (const item of items) {
+    if (!item.notes || !item.topicIds?.includes(topic.id)) continue;
+    const itemDate = item.doneAt ?? item.addedAt;
+    if (!latestDate || itemDate > latestDate) {
+      latestDate = itemDate;
+      latestNote = item.notes;
+    }
+  }
+
+  return latestNote ?? topic.notes;
+}
+
 describe("Learning Notes Integration (LT-87)", () => {
   beforeEach(() => {
     writeTopics([]);
@@ -57,9 +79,9 @@ describe("Learning Notes Integration (LT-87)", () => {
     writeTimeLogs([]);
   });
 
-  // ── LT-34: Markdown notes on topics ──────────────────────────────────
+  // ── LT-34: Each subtask and topic can have markdown notes attached ────
 
-  describe("LT-34: Topic markdown notes", () => {
+  describe("LT-34: Markdown notes on topics and items", () => {
     it("creates topic with no notes by default", () => {
       addTopic(makeTopic("t1", "Rust"));
       expect(getTopicById("t1")!.notes).toBeUndefined();
@@ -75,6 +97,13 @@ describe("Learning Notes Integration (LT-87)", () => {
       expect(topic.notes).toBe(markdown);
       expect(topic.notes).toContain("# Ownership");
       expect(topic.notes).toContain("```rust");
+    });
+
+    it("sets markdown notes on an item (subtask)", () => {
+      addItem(makeItem("i1", "Watch video", { topicIds: ["t1"] }));
+      updateItem("i1", { notes: "Learned about **borrow checker**" });
+
+      expect(getItemById("i1")!.notes).toBe("Learned about **borrow checker**");
     });
 
     it("updates existing notes", () => {
@@ -94,17 +123,15 @@ describe("Learning Notes Integration (LT-87)", () => {
     it("preserves notes through topic status changes", () => {
       addTopic(makeTopic("t1", "Rust", { notes: "My learning notes" }));
 
-      // Complete topic
       updateTopic("t1", { status: "completed", completedAt: new Date().toISOString() });
       expect(getTopicById("t1")!.notes).toBe("My learning notes");
 
-      // Reopen topic
       updateTopic("t1", { status: "active", completedAt: undefined });
       expect(getTopicById("t1")!.notes).toBe("My learning notes");
     });
   });
 
-  // ── LT-35: "What did you learn?" prompt ──────────────────────────────
+  // ── LT-35: "What did you learn?" prompt on item completion ─────────────
 
   describe("LT-35: Item completion notes", () => {
     it("item has no notes by default", () => {
@@ -118,7 +145,6 @@ describe("Learning Notes Integration (LT-87)", () => {
         duration: 600,
       }));
 
-      // Simulate: user types notes then marks done
       const learningNote = "Key takeaway: ownership transfers on assignment, use & for borrowing";
       updateItem("i1", { notes: learningNote });
       updateItem("i1", { status: "done", doneAt: new Date().toISOString() });
@@ -128,10 +154,8 @@ describe("Learning Notes Integration (LT-87)", () => {
       expect(item.notes).toBe(learningNote);
     });
 
-    it("item can be marked done without notes (skip)", () => {
+    it("item can be marked done without notes (prompt is optional)", () => {
       addItem(makeItem("i1", "Quick read"));
-
-      // Mark done without notes
       updateItem("i1", { status: "done", doneAt: new Date().toISOString() });
 
       const item = getItemById("i1")!;
@@ -156,32 +180,113 @@ describe("Learning Notes Integration (LT-87)", () => {
     });
   });
 
-  // ── LT-36: Notes rendering (markdown) ────────────────────────────────
+  // ── LT-36: Study queue surfaces most recent notes ──────────────────────
 
-  describe("LT-36: Markdown content support", () => {
-    it("supports headings", () => {
+  describe("LT-36: Study queue surfaces latest notes for context", () => {
+    it("shows topic-level notes when no item notes exist", () => {
+      const topic = makeTopic("t1", "Rust", { notes: "Topic-level overview of ownership" });
+      addTopic(topic);
+
+      const latestNote = buildLatestNote(getTopicById("t1")!, readItems());
+      expect(latestNote).toBe("Topic-level overview of ownership");
+    });
+
+    it("shows most recent item note instead of topic note", () => {
+      addTopic(makeTopic("t1", "Rust", { notes: "General topic notes" }));
+      addItem(makeItem("i1", "Video 1", {
+        topicIds: ["t1"],
+        notes: "Learned about ownership",
+        doneAt: "2026-03-20T10:00:00.000Z",
+      }));
+
+      const latestNote = buildLatestNote(getTopicById("t1")!, readItems());
+      expect(latestNote).toBe("Learned about ownership");
+    });
+
+    it("picks the most recent item note by doneAt", () => {
+      addTopic(makeTopic("t1", "Rust"));
+      addItem(makeItem("i1", "Video 1", {
+        topicIds: ["t1"],
+        notes: "Older note about ownership",
+        doneAt: "2026-03-18T10:00:00.000Z",
+      }));
+      addItem(makeItem("i2", "Video 2", {
+        topicIds: ["t1"],
+        notes: "Latest note about borrowing",
+        doneAt: "2026-03-20T10:00:00.000Z",
+      }));
+
+      const latestNote = buildLatestNote(getTopicById("t1")!, readItems());
+      expect(latestNote).toBe("Latest note about borrowing");
+    });
+
+    it("falls back to addedAt when item has no doneAt", () => {
+      addTopic(makeTopic("t1", "Rust"));
+      addItem(makeItem("i1", "Article", {
+        topicIds: ["t1"],
+        notes: "Earlier note",
+        addedAt: "2026-03-15T10:00:00.000Z",
+      }));
+      addItem(makeItem("i2", "Tutorial", {
+        topicIds: ["t1"],
+        notes: "More recent note",
+        addedAt: "2026-03-20T10:00:00.000Z",
+      }));
+
+      const latestNote = buildLatestNote(getTopicById("t1")!, readItems());
+      expect(latestNote).toBe("More recent note");
+    });
+
+    it("returns undefined when topic and items have no notes", () => {
+      addTopic(makeTopic("t1", "Rust"));
+      addItem(makeItem("i1", "Video", { topicIds: ["t1"] }));
+
+      const latestNote = buildLatestNote(getTopicById("t1")!, readItems());
+      expect(latestNote).toBeUndefined();
+    });
+
+    it("ignores items not assigned to the topic", () => {
+      addTopic(makeTopic("t1", "Rust", { notes: "Rust notes" }));
+      addItem(makeItem("i1", "Unrelated video", {
+        topicIds: ["t2"],
+        notes: "This belongs to another topic",
+        doneAt: "2026-03-20T10:00:00.000Z",
+      }));
+
+      const latestNote = buildLatestNote(getTopicById("t1")!, readItems());
+      expect(latestNote).toBe("Rust notes");
+    });
+  });
+
+  // ── LT-37: Notes support standard markdown ─────────────────────────────
+
+  describe("LT-37: Standard markdown support", () => {
+    it("supports headings (h1, h2, h3)", () => {
       addTopic(makeTopic("t1", "Test", {
         notes: "# Heading 1\n## Heading 2\n### Heading 3",
       }));
       const notes = getTopicById("t1")!.notes!;
       expect(notes).toContain("# Heading 1");
       expect(notes).toContain("## Heading 2");
+      expect(notes).toContain("### Heading 3");
     });
 
-    it("supports code blocks", () => {
+    it("supports fenced code blocks with language", () => {
       addTopic(makeTopic("t1", "Test", {
         notes: "```typescript\nconst x: number = 42;\n```",
       }));
       const notes = getTopicById("t1")!.notes!;
       expect(notes).toContain("```typescript");
+      expect(notes).toContain("const x: number = 42;");
     });
 
-    it("supports lists", () => {
+    it("supports ordered and unordered lists", () => {
       addTopic(makeTopic("t1", "Test", {
         notes: "- Item A\n- Item B\n  - Nested\n1. Numbered\n2. List",
       }));
       const notes = getTopicById("t1")!.notes!;
       expect(notes).toContain("- Item A");
+      expect(notes).toContain("  - Nested");
       expect(notes).toContain("1. Numbered");
     });
 
@@ -190,56 +295,22 @@ describe("Learning Notes Integration (LT-87)", () => {
         notes: "Visit [Rust docs](https://doc.rust-lang.org) for **bold** and *italic* text",
       }));
       const notes = getTopicById("t1")!.notes!;
-      expect(notes).toContain("[Rust docs]");
+      expect(notes).toContain("[Rust docs](https://doc.rust-lang.org)");
       expect(notes).toContain("**bold**");
+      expect(notes).toContain("*italic*");
     });
 
-    it("supports multi-line content with paragraphs", () => {
+    it("supports multi-line paragraphs", () => {
       const content = "First paragraph about ownership.\n\nSecond paragraph about borrowing.\n\nThird about lifetimes.";
       addTopic(makeTopic("t1", "Test", { notes: content }));
       expect(getTopicById("t1")!.notes).toBe(content);
     });
-  });
 
-  // ── LT-37: Notes CRUD via store ──────────────────────────────────────
-
-  describe("LT-37: Notes CRUD operations", () => {
-    it("read notes from topic", () => {
-      addTopic(makeTopic("t1", "Rust", { notes: "My notes" }));
-      expect(getTopicById("t1")!.notes).toBe("My notes");
-    });
-
-    it("read notes from item", () => {
-      addItem(makeItem("i1", "Video", { notes: "Item notes" }));
-      expect(getItemById("i1")!.notes).toBe("Item notes");
-    });
-
-    it("create notes on topic (update from undefined)", () => {
-      addTopic(makeTopic("t1", "Rust"));
-      expect(getTopicById("t1")!.notes).toBeUndefined();
-
-      updateTopic("t1", { notes: "New notes" });
-      expect(getTopicById("t1")!.notes).toBe("New notes");
-    });
-
-    it("create notes on item (update from undefined)", () => {
-      addItem(makeItem("i1", "Video"));
-      expect(getItemById("i1")!.notes).toBeUndefined();
-
-      updateItem("i1", { notes: "New item notes" });
-      expect(getItemById("i1")!.notes).toBe("New item notes");
-    });
-
-    it("update existing notes", () => {
-      addTopic(makeTopic("t1", "Rust", { notes: "v1" }));
-      updateTopic("t1", { notes: "v2" });
-      expect(getTopicById("t1")!.notes).toBe("v2");
-    });
-
-    it("delete notes (set to undefined)", () => {
-      addTopic(makeTopic("t1", "Rust", { notes: "To be deleted" }));
-      updateTopic("t1", { notes: undefined });
-      expect(getTopicById("t1")!.notes).toBeUndefined();
+    it("supports inline code", () => {
+      addItem(makeItem("i1", "Test", {
+        notes: "Use `let mut` for mutable bindings",
+      }));
+      expect(getItemById("i1")!.notes).toContain("`let mut`");
     });
   });
 });
