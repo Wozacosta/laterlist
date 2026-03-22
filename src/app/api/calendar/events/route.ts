@@ -4,7 +4,6 @@ import {
   buildEventFromItem,
   getConnectedProvider,
 } from "@/lib/server/calendarEvents";
-import { getItemById } from "@/lib/server/store";
 import { addEventMapping } from "@/lib/server/calendarSync";
 
 /**
@@ -39,26 +38,9 @@ export async function POST(request: Request) {
       startTime?: string;
     };
 
-    // Build the event from either an item ID or direct fields
+    // Build the event from provided fields
     let event;
-    if (itemId) {
-      const item = await getItemById(itemId);
-      if (!item) {
-        return NextResponse.json(
-          { ok: false, error: `Item not found: ${itemId}` },
-          { status: 404 }
-        );
-      }
-      event = buildEventFromItem(
-        {
-          title: item.title,
-          url: item.url || undefined,
-          duration: item.duration,
-          topicName,
-        },
-        startTime
-      );
-    } else if (title) {
+    if (title) {
       event = buildEventFromItem(
         { title, url, duration, topicName },
         startTime

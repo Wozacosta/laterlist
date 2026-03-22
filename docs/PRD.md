@@ -201,11 +201,13 @@ Example agent interactions:
 
 #### Calendar Integration
 
+The calendar is not a manual "push this item" tool. It's an **automatic daily scheduler**: laterlist checks your calendar for free time, picks the most urgent topic from your study queue, and blocks off learning time for you every day. The user connects once, sets a daily goal, and the calendar stays populated.
+
 - [ ] **LT-60**: Connect Google Calendar account (OAuth)
 - [ ] **LT-61**: Connect Proton Calendar account
-- [ ] **LT-62**: Push subtasks to calendar as time-blocked events (e.g. "Read: intro to X — 25min")
-- [ ] **LT-63**: Suggest calendar slots based on free time and daily learning goal
-- [ ] **LT-64**: Sync completion status — marking done in laterlist removes/completes the calendar event
+- [ ] **LT-62**: Auto-schedule daily learning block — each day, find the next free slot on the user's calendar and create a time-blocked event for the top study queue topic (highest urgency). Event title: topic name + subtask title if applicable. Duration: daily learning goal (default 1h).
+- [ ] **LT-63**: Smart slot selection — pick free time based on calendar availability, preferred hours (configurable), and daily goal. If no single block fits, split across multiple shorter slots.
+- [ ] **LT-64**: Sync completion status — marking done in laterlist removes/completes the calendar event. Deleting/declining the event in the calendar skips that day (no laterlist side effect).
 
 #### Testing
 

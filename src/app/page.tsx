@@ -623,7 +623,10 @@ export default function Page() {
           />
           <CalendarConnect />
           <ProtonCalendarConnect />
-          <CalendarSuggestions dailyGoalMinutes={dailyGoalMinutes} />
+          <CalendarSuggestions
+            dailyGoalMinutes={dailyGoalMinutes}
+            studyQueue={studyQueue.map((e) => ({ topicId: e.topicId, topicName: e.topicName }))}
+          />
           <SessionGraph />
           <DailyPlan
             recommendations={dailyPlan}

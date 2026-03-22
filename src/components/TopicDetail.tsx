@@ -445,6 +445,9 @@ const UnreadItemList = memo(function UnreadItemList({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId: item.id,
+          title: item.title,
+          url: item.url || undefined,
+          duration: item.duration,
           topicName,
         }),
       });
