@@ -83,8 +83,12 @@ export const CalendarSuggestions = memo(function CalendarSuggestions({
         body: JSON.stringify({ days: schedulable }),
       });
       const data = await res.json();
-      if (data.ok) {
+      if (data.ok && data.created > 0) {
         setResult(`Added ${data.created} learning blocks to your calendar`);
+      } else if (data.ok && data.created === 0) {
+        // All pushes failed — show first error
+        const firstError = data.results?.find((r: { ok: boolean; error?: string }) => !r.ok);
+        setResult(firstError?.error || "Failed to create calendar events — check your calendar connection");
       } else {
         setResult(data.error || "Failed to push to calendar");
       }
@@ -180,7 +184,7 @@ export const CalendarSuggestions = memo(function CalendarSuggestions({
       </div>
 
       {result && (
-        <p className={`mt-2 text-xs ${result.startsWith("Added") ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+        <p className={`mt-2 text-xs ${result.startsWith("Added") ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>
           {result}
         </p>
       )}
