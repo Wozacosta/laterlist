@@ -348,27 +348,97 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Persistent timer display (LT-3G) with stop button (LT-3H) */}
-      {timerState.active && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-green-300 bg-green-50 px-4 py-2 dark:border-green-800 dark:bg-green-950">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-green-600 dark:text-green-400 animate-pulse">●</span>
-            <span className="text-sm font-medium text-green-800 dark:text-green-200 truncate">
-              {timerState.active.topicName}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="font-mono text-sm font-semibold text-green-700 dark:text-green-300">
-              {formatElapsed(timerState.elapsed)}
-            </span>
+      {/* Pomodoro alert overlay (LT-3I) */}
+      {timerState.pomodoroAlert && (
+        <div className="mb-4 rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-3 dark:border-amber-600 dark:bg-amber-950 animate-pulse">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+              {timerState.pomodoroPhase === "break"
+                ? "Work interval done — time for a break!"
+                : "Break over — back to work!"}
+            </p>
             <button
               type="button"
-              onClick={handleStopTimer}
-              className="rounded-md bg-red-500 px-3 py-1 text-xs font-medium text-white hover:bg-red-600 transition-colors"
-              title="Stop timer and log time"
+              onClick={timerState.dismissAlert}
+              className="rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700"
             >
-              ■ Stop
+              OK
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Persistent timer display (LT-3G/3H/3I) */}
+      {timerState.active && (
+        <div className="mb-4 rounded-lg border border-green-300 bg-green-50 px-4 py-2 dark:border-green-800 dark:bg-green-950">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-green-600 dark:text-green-400 animate-pulse">●</span>
+              <span className="text-sm font-medium text-green-800 dark:text-green-200 truncate">
+                {timerState.active.topicName}
+              </span>
+              {timerState.pomodoro.enabled && (
+                <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                  timerState.pomodoroPhase === "work"
+                    ? "bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200"
+                    : "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
+                }`}>
+                  {timerState.pomodoroPhase === "work" ? "WORK" : "BREAK"}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              {timerState.pomodoro.enabled && (
+                <span className="font-mono text-xs text-green-600 dark:text-green-400">
+                  {formatElapsed(timerState.pomodoroRemaining)}
+                </span>
+              )}
+              <span className="font-mono text-sm font-semibold text-green-700 dark:text-green-300">
+                {formatElapsed(timerState.elapsed)}
+              </span>
+              <button
+                type="button"
+                onClick={handleStopTimer}
+                className="rounded-md bg-red-500 px-3 py-1 text-xs font-medium text-white hover:bg-red-600 transition-colors"
+                title="Stop timer and log time"
+              >
+                ■ Stop
+              </button>
+            </div>
+          </div>
+          {/* Pomodoro toggle row */}
+          <div className="mt-1.5 flex items-center gap-3">
+            <label className="flex items-center gap-1.5 text-[11px] text-green-700 dark:text-green-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={timerState.pomodoro.enabled}
+                onChange={(e) => timerState.setPomodoroEnabled(e.target.checked)}
+                className="h-3 w-3 rounded border-green-400 text-green-600 focus:ring-green-500"
+              />
+              Pomodoro
+            </label>
+            {timerState.pomodoro.enabled && (
+              <div className="flex items-center gap-1.5 text-[11px] text-green-600 dark:text-green-400">
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={timerState.pomodoro.workMinutes}
+                  onChange={(e) => timerState.setPomodoroWork(parseInt(e.target.value, 10) || 25)}
+                  className="w-10 rounded border border-green-300 bg-white px-1 py-0.5 text-center text-[11px] text-green-800 dark:border-green-700 dark:bg-green-900 dark:text-green-200"
+                />
+                <span>work /</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={timerState.pomodoro.breakMinutes}
+                  onChange={(e) => timerState.setPomodoroBreak(parseInt(e.target.value, 10) || 5)}
+                  className="w-10 rounded border border-green-300 bg-white px-1 py-0.5 text-center text-[11px] text-green-800 dark:border-green-700 dark:bg-green-900 dark:text-green-200"
+                />
+                <span>break</span>
+              </div>
+            )}
           </div>
         </div>
       )}

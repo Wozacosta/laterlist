@@ -31,7 +31,7 @@
 - [x] **LT-3F**: Timer component — start button on study queue cards and topic detail. Stores active timer in state (topicId, startTime).
 - [x] **LT-3G**: Persistent timer display in header/status bar — shows elapsed time, topic name. Survives page navigation.
 - [x] **LT-3H**: Stop button logs elapsed seconds to topic via existing `logTime`, resets SR clock.
-- [ ] **LT-3I**: Optional Pomodoro mode — configurable work/break intervals (default 25/5 min). Audio/visual notification on interval end.
+- [x] **LT-3I**: Optional Pomodoro mode — configurable work/break intervals (default 25/5 min). Audio/visual notification on interval end.
 - [ ] **LT-3J**: Pomodo.ink integration — shared session data, graph visualization (v2, defer).
 
 ## Lower Priority — Integrations
