@@ -21,6 +21,7 @@ import { DailyGoal } from "@/components/DailyGoal";
 import { CalendarConnect } from "@/components/CalendarConnect";
 import { ProtonCalendarConnect } from "@/components/ProtonCalendarConnect";
 import { CalendarSuggestions } from "@/components/CalendarSuggestions";
+import { SessionGraph } from "@/components/SessionGraph";
 import { StudyQueue } from "@/components/StudyQueue";
 import { DailyPlan } from "@/components/DailyPlan";
 import { LearningDashboard } from "@/components/LearningDashboard";
@@ -318,6 +319,7 @@ export default function Page() {
   );
 
   // LT-3H: Stop timer, log elapsed time, reset SR clock
+  // LT-3J: Record session for history/visualization
   const handleStopTimer = useCallback(async () => {
     const stopped = timerState.stop();
     if (!stopped) return;
@@ -328,6 +330,28 @@ export default function Page() {
       const m = Math.round((elapsed % 3600) / 60);
       const label = h > 0 ? `${h}h ${m}m` : `${m}m`;
       toast(`Logged ${label} to "${stopped.topicName}"`);
+
+      // Record session for graph visualization (LT-3J)
+      const now = new Date().toISOString();
+      const startedAt = new Date(stopped.startTime).toISOString();
+      fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topicId: stopped.topicId,
+          topicName: stopped.topicName,
+          startedAt,
+          endedAt: now,
+          durationSeconds: elapsed,
+          type: timerState.pomodoroConfig.enabled ? "work" : "freeform",
+          status: "completed",
+          pomodoroConfig: timerState.pomodoroConfig.enabled ? {
+            workMinutes: timerState.pomodoroConfig.workMinutes,
+            breakMinutes: timerState.pomodoroConfig.breakMinutes,
+            cycleNumber: 1,
+          } : undefined,
+        }),
+      }).catch(() => {}); // Non-blocking
     }
   }, [timerState, logTime, toast]);
 
@@ -600,6 +624,7 @@ export default function Page() {
           <CalendarConnect />
           <ProtonCalendarConnect />
           <CalendarSuggestions dailyGoalMinutes={dailyGoalMinutes} />
+          <SessionGraph />
           <DailyPlan
             recommendations={dailyPlan}
             onSelectTopic={setSelectedTopicId}
