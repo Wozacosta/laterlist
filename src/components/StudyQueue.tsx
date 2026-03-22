@@ -7,6 +7,8 @@ interface StudyQueueProps {
   entries: StudyQueueEntry[];
   onMarkStudied: (topicId: string) => void;
   onSelectTopic: (topicId: string) => void;
+  onStartTimer?: (topicId: string, topicName: string) => void;
+  activeTimerTopicId?: string | null;
 }
 
 function urgencyColor(score: number, isOverdue: boolean): string {
@@ -37,6 +39,8 @@ export const StudyQueue = memo(function StudyQueue({
   entries,
   onMarkStudied,
   onSelectTopic,
+  onStartTimer,
+  activeTimerTopicId,
 }: StudyQueueProps) {
   if (entries.length === 0) return null;
 
@@ -112,6 +116,23 @@ export const StudyQueue = memo(function StudyQueue({
                 />
               </div>
             </div>
+
+            {/* Start timer button */}
+            {onStartTimer && activeTimerTopicId !== entry.topicId && (
+              <button
+                type="button"
+                onClick={() => onStartTimer(entry.topicId, entry.topicName)}
+                className="shrink-0 rounded px-2 py-1 text-[11px] font-medium text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950 transition-colors"
+                title="Start study timer"
+              >
+                ▶
+              </button>
+            )}
+            {activeTimerTopicId === entry.topicId && (
+              <span className="shrink-0 rounded px-2 py-1 text-[11px] font-medium text-green-600 dark:text-green-400 animate-pulse">
+                ●
+              </span>
+            )}
 
             {/* Mark studied button */}
             <button

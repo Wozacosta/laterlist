@@ -24,6 +24,8 @@ interface TopicDetailProps {
   onPlaylistLoaded?: (title: string, videos: PlaylistVideo[]) => void;
   onSetDependsOn?: (id: string, dependsOn: string[]) => Promise<string[] | null>;
   onSelectTopic?: (id: string) => void;
+  onStartTimer?: (topicId: string, topicName: string) => void;
+  activeTimerTopicId?: string | null;
   isLoggedIn?: boolean;
 }
 
@@ -64,6 +66,8 @@ export const TopicDetail = memo(function TopicDetail({
   onPlaylistLoaded,
   onSetDependsOn,
   onSelectTopic,
+  onStartTimer,
+  activeTimerTopicId,
   isLoggedIn = false,
 }: TopicDetailProps) {
   // Filter items for this topic
@@ -137,6 +141,22 @@ export const TopicDetail = memo(function TopicDetail({
             {` · P${topic.priority ?? 3}`}
           </p>
         </div>
+        {/* Start timer button */}
+        {onStartTimer && !isCompleted && activeTimerTopicId !== topic.id && (
+          <button
+            type="button"
+            onClick={() => onStartTimer(topic.id, topic.name)}
+            className="shrink-0 rounded-lg border border-green-300 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-800 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900"
+            title="Start study timer"
+          >
+            ▶ Start
+          </button>
+        )}
+        {activeTimerTopicId === topic.id && (
+          <span className="shrink-0 rounded-lg border border-green-300 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-600 dark:border-green-800 dark:bg-green-950 dark:text-green-400 animate-pulse">
+            ● Timing...
+          </span>
+        )}
       </div>
 
       {/* Quick-add item to this topic */}

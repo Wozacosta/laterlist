@@ -12,6 +12,7 @@ import { useStreak } from "@/hooks/useStreak";
 import { useStudyQueue } from "@/hooks/useStudyQueue";
 import { useWeeklyActivity } from "@/hooks/useWeeklyActivity";
 import { useDailyPlan } from "@/hooks/useDailyPlan";
+import { useTimerState, TimerContext } from "@/hooks/useTimer";
 import { AddItemInput } from "@/components/AddItemInput";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
@@ -92,6 +93,7 @@ export default function Page() {
   const studyQueue = useStudyQueue(topics, items);
   const { days, topicTotals, weekTotal } = useWeeklyActivity();
   const dailyPlan = useDailyPlan(studyQueue, topics, items, dailyGoalMinutes, todaySeconds);
+  const timerState = useTimerState();
 
   const { toast } = useToast();
   const currentUser = useObservable(db.cloud.currentUser);
@@ -313,6 +315,7 @@ export default function Page() {
   );
 
   return (
+    <TimerContext.Provider value={timerState}>
     <main className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">laterlist</h1>
@@ -421,6 +424,8 @@ export default function Page() {
             onPlaylistLoaded={handlePlaylistLoaded}
             onSetDependsOn={setDependsOn}
             onSelectTopic={setSelectedTopicId}
+            onStartTimer={timerState.start}
+            activeTimerTopicId={timerState.active?.topicId ?? null}
             isLoggedIn={isLoggedIn}
           />
           {pendingPlaylist && (
@@ -487,6 +492,8 @@ export default function Page() {
           />
           <StudyQueue
             entries={studyQueue}
+            onStartTimer={timerState.start}
+            activeTimerTopicId={timerState.active?.topicId ?? null}
             onMarkStudied={handleMarkStudied}
             onSelectTopic={setSelectedTopicId}
           />
@@ -506,5 +513,6 @@ export default function Page() {
         </>
       )}
     </main>
+    </TimerContext.Provider>
   );
 }
