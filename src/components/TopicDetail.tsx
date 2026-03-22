@@ -300,6 +300,7 @@ export const TopicDetail = memo(function TopicDetail({
           items={unreadItems}
           onMarkDone={onMarkDone}
           onUpdateItemNotes={onUpdateItemNotes}
+          topicName={topic.name}
         />
       )}
 
@@ -393,10 +394,12 @@ const UnreadItemList = memo(function UnreadItemList({
   items,
   onMarkDone,
   onUpdateItemNotes,
+  topicName,
 }: {
   items: Item[];
   onMarkDone: (id: string) => void;
   onUpdateItemNotes?: (id: string, notes: string) => void;
+  topicName: string;
 }) {
   const [promptItemId, setPromptItemId] = useState<string | null>(null);
   const [learnDraft, setLearnDraft] = useState("");
@@ -442,7 +445,7 @@ const UnreadItemList = memo(function UnreadItemList({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId: item.id,
-          topicName: topic.name,
+          topicName,
         }),
       });
       const data = await res.json();
@@ -454,7 +457,7 @@ const UnreadItemList = memo(function UnreadItemList({
     } catch {
       alert("Failed to push to calendar");
     }
-  }, [topic.name]);
+  }, [topicName]);
 
   return (
     <div className="mb-4">

@@ -343,11 +343,11 @@ export default function Page() {
           startedAt,
           endedAt: now,
           durationSeconds: elapsed,
-          type: timerState.pomodoroConfig.enabled ? "work" : "freeform",
+          type: timerState.pomodoro.enabled ? "work" : "freeform",
           status: "completed",
-          pomodoroConfig: timerState.pomodoroConfig.enabled ? {
-            workMinutes: timerState.pomodoroConfig.workMinutes,
-            breakMinutes: timerState.pomodoroConfig.breakMinutes,
+          pomodoroConfig: timerState.pomodoro.enabled ? {
+            workMinutes: timerState.pomodoro.workMinutes,
+            breakMinutes: timerState.pomodoro.breakMinutes,
             cycleNumber: 1,
           } : undefined,
         }),
