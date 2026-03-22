@@ -22,6 +22,7 @@
     "dexie": "^4.3.0",
     "dexie-cloud-addon": "^4.3.9",
     "dexie-react-hooks": "^4.2.0",
+    "googleapis": "^171.4.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",

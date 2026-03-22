@@ -18,6 +18,7 @@ import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
 import { TopicList } from "@/components/TopicList";
 import { DailyGoal } from "@/components/DailyGoal";
+import { CalendarConnect } from "@/components/CalendarConnect";
 import { StudyQueue } from "@/components/StudyQueue";
 import { DailyPlan } from "@/components/DailyPlan";
 import { LearningDashboard } from "@/components/LearningDashboard";
@@ -594,6 +595,7 @@ export default function Page() {
             streak={streak}
             onSetGoal={setDailyGoal}
           />
+          <CalendarConnect />
           <DailyPlan
             recommendations={dailyPlan}
             onSelectTopic={setSelectedTopicId}
