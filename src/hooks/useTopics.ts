@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/db";
+import { detectCycle } from "@/lib/cycleDeps";
 
 export function useTopics() {
   const topics = useLiveQuery(() => db.topics.orderBy("sortOrder").toArray());
@@ -105,9 +106,17 @@ export function useTopics() {
     await db.topics.update(id, { notes: notes || undefined });
   }, []);
 
-  const setDependsOn = useCallback(async (id: string, dependsOn: string[]) => {
-    await db.topics.update(id, { dependsOn });
-  }, []);
+  /** Returns cycle path (topic IDs) if circular, or null if saved successfully. */
+  const setDependsOn = useCallback(
+    async (id: string, dependsOn: string[]): Promise<string[] | null> => {
+      const allTopics = topics ?? [];
+      const cycle = detectCycle(id, dependsOn, allTopics);
+      if (cycle) return cycle;
+      await db.topics.update(id, { dependsOn });
+      return null;
+    },
+    [topics]
+  );
 
   return {
     topics: topics ?? [],

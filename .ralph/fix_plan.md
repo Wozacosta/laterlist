@@ -25,7 +25,7 @@
 - [x] **LT-3B**: Add `dependsOn: string[]` (topic IDs) to Topic model. DB migration. UI to set prerequisites (dropdown picker).
 - [x] **LT-3C**: Study queue filters out topics whose prerequisites are not completed.
 - [x] **LT-3D**: Show prerequisite and dependent topics in topic detail view (links, completion status).
-- [ ] **LT-3E**: Validate no circular dependencies when adding a prerequisite (DFS cycle detection).
+- [x] **LT-3E**: Validate no circular dependencies when adding a prerequisite (DFS cycle detection).
 
 ### Session Timer
 - [ ] **LT-3F**: Timer component — start button on study queue cards and topic detail. Stores active timer in state (topicId, startTime).

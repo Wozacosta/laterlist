@@ -22,7 +22,7 @@ interface TopicDetailProps {
   onUpdateItemNotes?: (id: string, notes: string) => void;
   onAddItem?: (data: EnrichedData) => void;
   onPlaylistLoaded?: (title: string, videos: PlaylistVideo[]) => void;
-  onSetDependsOn?: (id: string, dependsOn: string[]) => void;
+  onSetDependsOn?: (id: string, dependsOn: string[]) => Promise<string[] | null>;
   onSelectTopic?: (id: string) => void;
   isLoggedIn?: boolean;
 }
@@ -608,10 +608,11 @@ const PrerequisitePicker = memo(function PrerequisitePicker({
 }: {
   topic: Topic;
   allTopics: Topic[];
-  onSetDependsOn: (id: string, dependsOn: string[]) => void;
+  onSetDependsOn: (id: string, dependsOn: string[]) => Promise<string[] | null>;
   onSelectTopic?: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [cycleError, setCycleError] = useState<string | null>(null);
   const deps = topic.dependsOn ?? [];
 
   // Topics that can be prerequisites: not self, not already a dep
@@ -629,14 +630,22 @@ const PrerequisitePicker = memo(function PrerequisitePicker({
   );
 
   const handleAdd = useCallback(
-    (id: string) => {
-      onSetDependsOn(topic.id, [...deps, id]);
+    async (id: string) => {
+      setCycleError(null);
+      const cycle = await onSetDependsOn(topic.id, [...deps, id]);
+      if (cycle) {
+        const names = cycle
+          .map((cid) => allTopics.find((t) => t.id === cid)?.name ?? cid)
+          .join(" → ");
+        setCycleError(`Circular dependency: ${names}`);
+      }
     },
-    [topic.id, deps, onSetDependsOn]
+    [topic.id, deps, onSetDependsOn, allTopics]
   );
 
   const handleRemove = useCallback(
     (id: string) => {
+      setCycleError(null);
       onSetDependsOn(
         topic.id,
         deps.filter((d) => d !== id)
@@ -734,6 +743,13 @@ const PrerequisitePicker = memo(function PrerequisitePicker({
             </button>
           ))}
         </div>
+      )}
+
+      {/* Cycle detection error (LT-3E) */}
+      {cycleError && (
+        <p className="mb-2 text-xs text-red-500 dark:text-red-400">
+          {cycleError}
+        </p>
       )}
 
       {/* Dependent topics — topics that require this one (LT-3D) */}
