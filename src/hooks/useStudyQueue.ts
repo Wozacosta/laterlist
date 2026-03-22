@@ -24,7 +24,18 @@ const DAY_MS = 86_400_000;
 export function useStudyQueue(topics: Topic[], items: Item[] = []): StudyQueueEntry[] {
   return useMemo(() => {
     const now = Date.now();
-    const activeTopics = topics.filter((t) => t.status === "active");
+
+    // Build set of completed topic IDs for prerequisite checking
+    const completedIds = new Set(
+      topics.filter((t) => t.status === "completed").map((t) => t.id)
+    );
+
+    // Filter to active topics whose prerequisites are all completed (LT-3C)
+    const activeTopics = topics.filter((t) => {
+      if (t.status !== "active") return false;
+      const deps = t.dependsOn ?? [];
+      return deps.every((depId) => completedIds.has(depId));
+    });
 
     // Build a map of topicId → most recent item note (by doneAt date)
     const latestItemNotes = new Map<string, string>();
