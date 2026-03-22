@@ -85,7 +85,7 @@ Depends on: REST API (LT-50–55)
 - [x] **LT-88**: Integration test coverage report mapped to PRD requirement IDs — no requirement untested.
 
 ### Developer Tooling
-- [ ] **LT-90**: CLI/UI command to fill the app with realistic mock data — topics at various stages, subtasks (URLs + manual), time logs, notes, SR states, streaks.
+- [x] **LT-90**: CLI/UI command to fill the app with realistic mock data — topics at various stages, subtasks (URLs + manual), time logs, notes, SR states, streaks.
 - [ ] **LT-91**: Mock data is deterministic (seeded) so screenshots and tests are reproducible.
 
 ## Completed
