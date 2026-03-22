@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, type Item } from "@/db";
+import { db, type Item, type Topic } from "@/db";
 import { isArchived } from "@/lib/archive";
 
 export function useItems() {
@@ -57,7 +57,7 @@ export function useItems() {
         for (const topicId of item.topicIds) {
           const topic = await db.topics.get(topicId);
           if (topic) {
-            const update: Record<string, unknown> = {
+            const update: Partial<Topic> = {
               lastActivityDate: now,
               currentInterval: 1,
             };

@@ -14,6 +14,7 @@ type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
 interface TopicDetailProps {
   topic: Topic;
   items: Item[];
+  allTopics?: Topic[];
   onBack: () => void;
   onMarkDone: (id: string) => void;
   onUnmarkDone: (id: string) => void;
@@ -21,6 +22,7 @@ interface TopicDetailProps {
   onUpdateItemNotes?: (id: string, notes: string) => void;
   onAddItem?: (data: EnrichedData) => void;
   onPlaylistLoaded?: (title: string, videos: PlaylistVideo[]) => void;
+  onSetDependsOn?: (id: string, dependsOn: string[]) => void;
   isLoggedIn?: boolean;
 }
 
@@ -51,6 +53,7 @@ function formatDateTime(iso: string): string {
 export const TopicDetail = memo(function TopicDetail({
   topic,
   items,
+  allTopics = [],
   onBack,
   onMarkDone,
   onUnmarkDone,
@@ -58,6 +61,7 @@ export const TopicDetail = memo(function TopicDetail({
   onUpdateItemNotes,
   onAddItem,
   onPlaylistLoaded,
+  onSetDependsOn,
   isLoggedIn = false,
 }: TopicDetailProps) {
   // Filter items for this topic
@@ -253,6 +257,15 @@ export const TopicDetail = memo(function TopicDetail({
               : "No estimated time"}
           </p>
         </div>
+      )}
+
+      {/* Prerequisites */}
+      {onSetDependsOn && (
+        <PrerequisitePicker
+          topic={topic}
+          allTopics={allTopics}
+          onSetDependsOn={onSetDependsOn}
+        />
       )}
 
       {/* Notes */}
@@ -579,6 +592,129 @@ const TopicNotes = memo(function TopicNotes({
           <MarkdownContent content={topic.notes} />
         </div>
       ) : null}
+    </div>
+  );
+});
+
+/** Dropdown picker to add/remove prerequisite topics. */
+const PrerequisitePicker = memo(function PrerequisitePicker({
+  topic,
+  allTopics,
+  onSetDependsOn,
+}: {
+  topic: Topic;
+  allTopics: Topic[];
+  onSetDependsOn: (id: string, dependsOn: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const deps = topic.dependsOn ?? [];
+
+  // Topics that can be prerequisites: active or completed, not self, not already a dep
+  const available = allTopics.filter(
+    (t) => t.id !== topic.id && !deps.includes(t.id)
+  );
+
+  const depTopics = deps
+    .map((id) => allTopics.find((t) => t.id === id))
+    .filter((t): t is Topic => t != null);
+
+  const handleAdd = useCallback(
+    (id: string) => {
+      onSetDependsOn(topic.id, [...deps, id]);
+    },
+    [topic.id, deps, onSetDependsOn]
+  );
+
+  const handleRemove = useCallback(
+    (id: string) => {
+      onSetDependsOn(
+        topic.id,
+        deps.filter((d) => d !== id)
+      );
+    },
+    [topic.id, deps, onSetDependsOn]
+  );
+
+  return (
+    <div className="mb-4">
+      <div className="mb-1 flex items-center justify-between">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+          Prerequisites
+        </h3>
+        {available.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            {open ? "Done" : "+ Add"}
+          </button>
+        )}
+      </div>
+
+      {/* Current prerequisites */}
+      {depTopics.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {depTopics.map((t) => (
+            <span
+              key={t.id}
+              className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+            >
+              {t.status === "completed" && (
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="text-green-500 dark:text-green-400"
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline
+                    points="22 4 12 14.01 9 11.01"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              )}
+              {t.name}
+              <button
+                type="button"
+                onClick={() => handleRemove(t.id)}
+                className="ml-0.5 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+                aria-label={`Remove ${t.name} prerequisite`}
+              >
+                &times;
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {depTopics.length === 0 && !open && (
+        <p className="text-xs text-gray-300 dark:text-gray-600">
+          No prerequisites set
+        </p>
+      )}
+
+      {/* Dropdown to add prerequisites */}
+      {open && available.length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 max-h-40 overflow-y-auto">
+          {available.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => handleAdd(t.id)}
+              className="w-full flex items-center justify-between px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900"
+            >
+              <span className="truncate">{t.name}</span>
+              <span className="shrink-0 text-[10px] text-gray-400 dark:text-gray-500">
+                P{t.priority} · {t.status === "completed" ? "done" : "active"}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 });

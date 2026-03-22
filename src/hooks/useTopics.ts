@@ -35,6 +35,14 @@ export function useTopics() {
         .modify((item: { topicIds?: string[] }) => {
           item.topicIds = (item.topicIds ?? []).filter((t) => t !== id);
         });
+      // Remove this topic from all other topics' dependsOn arrays
+      await db.topics
+        .toCollection()
+        .modify((topic: { dependsOn?: string[] }) => {
+          if (topic.dependsOn?.includes(id)) {
+            topic.dependsOn = topic.dependsOn.filter((t) => t !== id);
+          }
+        });
       await db.topics.delete(id);
     });
   }, []);
@@ -97,6 +105,10 @@ export function useTopics() {
     await db.topics.update(id, { notes: notes || undefined });
   }, []);
 
+  const setDependsOn = useCallback(async (id: string, dependsOn: string[]) => {
+    await db.topics.update(id, { dependsOn });
+  }, []);
+
   return {
     topics: topics ?? [],
     isLoading: topics === undefined,
@@ -110,5 +122,6 @@ export function useTopics() {
     setEstimate,
     markStudied,
     setNotes,
+    setDependsOn,
   };
 }

@@ -56,6 +56,7 @@ export interface Topic {
   lastActivityDate?: string; // ISO datetime — last time user engaged with this topic (SR clock)
   currentInterval: number; // days until next review (SR interval, starts at 1)
   notes?: string; // markdown notes for the topic
+  dependsOn?: string[]; // topic IDs this topic depends on (prerequisites)
 }
 
 export interface TimeLog {
@@ -211,6 +212,25 @@ db.version(10)
           topic.currentInterval = 1;
         }
         // lastActivityDate left undefined — will be set on first activity
+      });
+  });
+
+db.version(11)
+  .stores({
+    items: "id, url, category, status, sortOrder, addedAt, groupId, *topicIds",
+    groups: "id, sortOrder",
+    topics: "id, sortOrder, status",
+    timeLogs: "id, topicId, loggedAt",
+    settings: "id",
+  })
+  .upgrade((tx) => {
+    return tx
+      .table("topics")
+      .toCollection()
+      .modify((topic: Record<string, unknown>) => {
+        if (topic.dependsOn === undefined) {
+          topic.dependsOn = [];
+        }
       });
   });
 

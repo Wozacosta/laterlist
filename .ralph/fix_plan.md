@@ -22,7 +22,7 @@
 - [x] **LT-3A**: Review step — show list of videos with checkboxes, user deselects unwanted ones, then confirm to bulk-create items assigned to topic.
 
 ### Topic Dependencies
-- [ ] **LT-3B**: Add `dependsOn: string[]` (topic IDs) to Topic model. DB migration. UI to set prerequisites (dropdown picker).
+- [x] **LT-3B**: Add `dependsOn: string[]` (topic IDs) to Topic model. DB migration. UI to set prerequisites (dropdown picker).
 - [ ] **LT-3C**: Study queue filters out topics whose prerequisites are not completed.
 - [ ] **LT-3D**: Show prerequisite and dependent topics in topic detail view (links, completion status).
 - [ ] **LT-3E**: Validate no circular dependencies when adding a prerequisite (DFS cycle detection).

@@ -83,6 +83,7 @@ export default function Page() {
     setEstimate,
     markStudied,
     setNotes,
+    setDependsOn,
   } = useTopics();
 
   const { dailyGoalMinutes, setDailyGoal } = useSettings();
@@ -410,6 +411,7 @@ export default function Page() {
           <TopicDetail
             topic={selectedTopic}
             items={items}
+            allTopics={topics}
             onBack={() => setSelectedTopicId(null)}
             onMarkDone={handleMarkDone}
             onUnmarkDone={unmarkDone}
@@ -417,6 +419,7 @@ export default function Page() {
             onUpdateItemNotes={handleUpdateNotes}
             onAddItem={handleAddToTopic}
             onPlaylistLoaded={handlePlaylistLoaded}
+            onSetDependsOn={setDependsOn}
             isLoggedIn={isLoggedIn}
           />
           {pendingPlaylist && (
