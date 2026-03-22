@@ -38,11 +38,15 @@ function formatDate(dateStr: string): string {
 
 interface CalendarSuggestionsProps {
   dailyGoalMinutes: number;
+  studyStartHour: number;
+  studyEndHour: number;
   studyQueue: StudyQueueTopic[];
 }
 
 export const CalendarSuggestions = memo(function CalendarSuggestions({
   dailyGoalMinutes,
+  studyStartHour,
+  studyEndHour,
   studyQueue,
 }: CalendarSuggestionsProps) {
   const [days, setDays] = useState<DayPlan[] | null>(null);
@@ -59,7 +63,7 @@ export const CalendarSuggestions = memo(function CalendarSuggestions({
       const topicIds = studyQueue.map((t) => t.topicId).join(",");
       const topicNames = studyQueue.map((t) => t.topicName).join(",");
       const res = await fetch(
-        `/api/calendar/week-plan?goal=${goal}&topics=${encodeURIComponent(topicIds)}&names=${encodeURIComponent(topicNames)}`
+        `/api/calendar/week-plan?goal=${goal}&topics=${encodeURIComponent(topicIds)}&names=${encodeURIComponent(topicNames)}&startHour=${studyStartHour}&endHour=${studyEndHour}`
       );
       const data = await res.json();
       setDays(data.days ?? []);
@@ -67,7 +71,7 @@ export const CalendarSuggestions = memo(function CalendarSuggestions({
       setDays(null);
     }
     setLoading(false);
-  }, [dailyGoalMinutes, studyQueue]);
+  }, [dailyGoalMinutes, studyStartHour, studyEndHour, studyQueue]);
 
   const pushToCalendar = useCallback(async () => {
     if (!days) return;

@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
     const goal = parseInt(url.searchParams.get("goal") ?? "60", 10);
     const topicIds = (url.searchParams.get("topics") ?? "").split(",").filter(Boolean);
     const topicNames = (url.searchParams.get("names") ?? "").split(",").filter(Boolean);
+    const startHour = parseInt(url.searchParams.get("startHour") ?? "8", 10);
+    const endHour = parseInt(url.searchParams.get("endHour") ?? "21", 10);
 
     if (topicIds.length === 0) {
       return NextResponse.json({ error: "No topics provided", days: [] }, { status: 400 });
@@ -44,7 +46,7 @@ export async function GET(request: NextRequest) {
       const topicName = topicNames[topicIdx] || "Study";
 
       // Get free slots for this day
-      const suggestion = await suggestSlots(goal, date.toISOString());
+      const suggestion = await suggestSlots(goal, date.toISOString(), startHour, endHour);
       const slot = suggestion.slots.length > 0 ? suggestion.slots[0] : null;
 
       days.push({

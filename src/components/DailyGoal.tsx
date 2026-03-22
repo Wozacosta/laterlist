@@ -6,7 +6,10 @@ interface DailyGoalProps {
   dailyGoalMinutes: number;
   todaySeconds: number;
   streak: number;
+  studyStartHour: number;
+  studyEndHour: number;
   onSetGoal: (minutes: number) => void;
+  onSetStudyHours: (start: number, end: number) => void;
 }
 
 function formatMinutes(totalMinutes: number): string {
@@ -17,13 +20,24 @@ function formatMinutes(totalMinutes: number): string {
   return `${m}m`;
 }
 
+function formatHour(h: number): string {
+  if (h === 0) return "12am";
+  if (h < 12) return `${h}am`;
+  if (h === 12) return "12pm";
+  return `${h - 12}pm`;
+}
+
 export const DailyGoal = memo(function DailyGoal({
   dailyGoalMinutes,
   todaySeconds,
   streak,
+  studyStartHour,
+  studyEndHour,
   onSetGoal,
+  onSetStudyHours,
 }: DailyGoalProps) {
   const [editing, setEditing] = useState(false);
+  const [editingHours, setEditingHours] = useState(false);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -134,6 +148,47 @@ export const DailyGoal = memo(function DailyGoal({
           )}
         </div>
       </div>
+
+      {/* Study hours */}
+      {editingHours ? (
+        <div className="mt-2 flex items-center gap-2 text-xs">
+          <span className="text-gray-500 dark:text-gray-400">Study window:</span>
+          <select
+            value={studyStartHour}
+            onChange={(e) => onSetStudyHours(parseInt(e.target.value, 10), studyEndHour)}
+            className="rounded border border-gray-300 bg-white px-1.5 py-0.5 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          >
+            {Array.from({ length: 24 }, (_, i) => (
+              <option key={i} value={i}>{formatHour(i)}</option>
+            ))}
+          </select>
+          <span className="text-gray-400">–</span>
+          <select
+            value={studyEndHour}
+            onChange={(e) => onSetStudyHours(studyStartHour, parseInt(e.target.value, 10))}
+            className="rounded border border-gray-300 bg-white px-1.5 py-0.5 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          >
+            {Array.from({ length: 24 }, (_, i) => i + 1).filter(h => h > studyStartHour).map(h => (
+              <option key={h} value={h}>{formatHour(h === 24 ? 0 : h)}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => setEditingHours(false)}
+            className="text-blue-500 hover:text-blue-700"
+          >
+            Done
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditingHours(true)}
+          className="mt-2 text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+        >
+          Study hours: {formatHour(studyStartHour)} – {formatHour(studyEndHour)}
+        </button>
+      )}
 
       {/* Progress bar */}
       {goalSet && (

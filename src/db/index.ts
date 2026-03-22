@@ -70,6 +70,8 @@ export interface TimeLog {
 export interface Settings {
   id: string; // singleton "settings"
   dailyGoalMinutes: number; // 0 = no goal set
+  studyStartHour?: number; // earliest hour for study (default: 8)
+  studyEndHour?: number; // latest hour for study (default: 21)
 }
 
 const db = new Dexie("LaterlistDB", { addons: [dexieCloud] }) as Dexie & {

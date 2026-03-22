@@ -17,9 +17,23 @@ export function useSettings() {
     }
   }, []);
 
+  const setStudyHours = useCallback(async (startHour: number, endHour: number) => {
+    const start = Math.max(0, Math.min(23, Math.round(startHour)));
+    const end = Math.max(start + 1, Math.min(24, Math.round(endHour)));
+    const existing = await db.settings.get(SETTINGS_ID);
+    if (existing) {
+      await db.settings.update(SETTINGS_ID, { studyStartHour: start, studyEndHour: end });
+    } else {
+      await db.settings.add({ id: SETTINGS_ID, dailyGoalMinutes: 0, studyStartHour: start, studyEndHour: end });
+    }
+  }, []);
+
   return {
     dailyGoalMinutes: settings?.dailyGoalMinutes ?? 0,
+    studyStartHour: settings?.studyStartHour ?? 8,
+    studyEndHour: settings?.studyEndHour ?? 21,
     isLoading: settings === undefined,
     setDailyGoal,
+    setStudyHours,
   };
 }

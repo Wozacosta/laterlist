@@ -99,7 +99,7 @@ export default function Page() {
     setDependsOn,
   } = useTopics();
 
-  const { dailyGoalMinutes, setDailyGoal } = useSettings();
+  const { dailyGoalMinutes, studyStartHour, studyEndHour, setDailyGoal, setStudyHours } = useSettings();
   const todaySeconds = useTodayTime();
   const streak = useStreak();
   const studyQueue = useStudyQueue(topics, items);
@@ -619,12 +619,17 @@ export default function Page() {
             dailyGoalMinutes={dailyGoalMinutes}
             todaySeconds={todaySeconds}
             streak={streak}
+            studyStartHour={studyStartHour}
+            studyEndHour={studyEndHour}
             onSetGoal={setDailyGoal}
+            onSetStudyHours={setStudyHours}
           />
           <CalendarConnect />
           <ProtonCalendarConnect />
           <CalendarSuggestions
             dailyGoalMinutes={dailyGoalMinutes}
+            studyStartHour={studyStartHour}
+            studyEndHour={studyEndHour}
             studyQueue={studyQueue.map((e) => ({ topicId: e.topicId, topicName: e.topicName }))}
           />
           <SessionGraph />
