@@ -78,7 +78,7 @@ Depends on: REST API (LT-50–55)
 - [x] **LT-83**: E2E test: learning dashboard renders correctly — study queue, progress bars, streak, recommendations.
 
 ### Integration Tests (PRD Coverage)
-- [ ] **LT-84**: Integration tests for data model (LT-01–09) — topic CRUD, subtask assignment, priority scores, many-to-many.
+- [x] **LT-84**: Integration tests for data model (LT-01–09) — topic CRUD, subtask assignment, priority scores, many-to-many.
 - [ ] **LT-85**: Integration tests for time tracking (LT-10–13) — auto-logging, manual logging, remaining time, topic completion.
 - [ ] **LT-86**: Integration tests for SR & study queue (LT-20–24) — SR clock reset, interval scaling, queue ranking.
 - [ ] **LT-87**: Integration tests for learning notes (LT-34–37) — markdown notes, "what did you learn?" prompt, rendering.
