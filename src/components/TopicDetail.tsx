@@ -4,6 +4,7 @@ import { memo, useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Topic, type Item } from "@/db";
 import { maxInterval, urgency } from "@/lib/spacedRepetition";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 interface TopicDetailProps {
   topic: Topic;
@@ -548,13 +549,13 @@ const TopicNotes = memo(function TopicNotes({
         </div>
       ) : topic.notes ? (
         <div
-          className="whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 cursor-pointer"
+          className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 cursor-pointer"
           onClick={() => {
             setDraft(topic.notes ?? "");
             setEditing(true);
           }}
         >
-          {topic.notes}
+          <MarkdownContent content={topic.notes} />
         </div>
       ) : null}
     </div>
