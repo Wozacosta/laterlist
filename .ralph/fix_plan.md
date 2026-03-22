@@ -7,7 +7,7 @@
 ## Next Up — Quick Add (Items from Learning Page)
 - [x] **LT-40**: Add item input on the learning dashboard — same AddItemInput component, items created here enter the global list.
 - [x] **LT-41**: Add item input in topic detail view — items created here are auto-assigned to that topic.
-- [ ] **LT-42**: Inline quick-add: single text field that auto-detects URL vs plain text title (no mode toggle needed).
+- [x] **LT-42**: Inline quick-add: single text field that auto-detects URL vs plain text title (no mode toggle needed).
 - [ ] **LT-43**: When adding from the learning dashboard (not inside a topic), prompt to optionally assign to a topic immediately.
 
 ### AI Daily Recommendations
