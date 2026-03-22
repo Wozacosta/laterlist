@@ -1,0 +1,21 @@
+{
+  "name": "laterlist-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for the Laterlist learning tracker",
+  "type": "module",
+  "bin": {
+    "laterlist-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

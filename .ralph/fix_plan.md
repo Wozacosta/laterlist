@@ -47,19 +47,19 @@
 
 ### MCP Server
 Depends on: REST API (LT-50–55)
-- [ ] **LT-70**: MCP server scaffold — standalone process, `npx laterlist-mcp`, connects to laterlist API
-- [ ] **LT-71**: Tool: `create_topic` — name, priority
-- [ ] **LT-72**: Tool: `list_topics` — status, priority, SR urgency, remaining time
-- [ ] **LT-73**: Tool: `add_subtask` — URL or manual, triggers enrichment
-- [ ] **LT-74**: Tool: `complete_subtask` — mark done, auto-log time
-- [ ] **LT-75**: Tool: `log_time` — log time to topic
-- [ ] **LT-76**: Tool: `add_note` — markdown note on topic or subtask
-- [ ] **LT-77**: Tool: `get_study_queue` — ranked queue with urgency
-- [ ] **LT-78**: Tool: `mark_studied` — reset SR clock
+- [x] **LT-70**: MCP server scaffold — standalone process, `npx laterlist-mcp`, connects to laterlist API
+- [x] **LT-71**: Tool: `create_topic` — name, priority
+- [x] **LT-72**: Tool: `list_topics` — status, priority, SR urgency, remaining time
+- [x] **LT-73**: Tool: `add_subtask` — URL or manual, triggers enrichment
+- [x] **LT-74**: Tool: `complete_subtask` — mark done, auto-log time
+- [x] **LT-75**: Tool: `log_time` — log time to topic
+- [x] **LT-76**: Tool: `add_note` — markdown note on topic or subtask
+- [x] **LT-77**: Tool: `get_study_queue` — ranked queue with urgency
+- [x] **LT-78**: Tool: `mark_studied` — reset SR clock
 - [ ] **LT-79**: Tool: `search` — keyword search across topics, subtasks, notes
-- [ ] **LT-7A**: Tool: `get_topic_detail` — full topic with subtasks, notes, logs, SR, deps
+- [x] **LT-7A**: Tool: `get_topic_detail` — full topic with subtasks, notes, logs, SR, deps
 - [ ] **LT-7B**: Tool: `bulk_import` — multiple subtasks at once
-- [ ] **LT-7C**: Resource: `laterlist://study-queue`
+- [x] **LT-7C**: Resource: `laterlist://study-queue`
 - [ ] **LT-7D**: Resource: `laterlist://topic/{id}`
 
 ### Calendar Integration
