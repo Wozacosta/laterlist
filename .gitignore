@@ -43,3 +43,6 @@ next-env.d.ts
 
 # dexie cloud
 dexie-cloud.key
+
+# server-side data store
+.data/

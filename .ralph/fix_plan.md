@@ -37,7 +37,7 @@
 ## Lower Priority — Integrations
 
 ### REST API
-- [ ] **LT-50**: `GET/POST/PUT/DELETE /api/topics` — topic CRUD
+- [x] **LT-50**: `GET/POST/PUT/DELETE /api/topics` — topic CRUD
 - [ ] **LT-51**: `GET/POST/DELETE /api/topics/:id/subtasks` — subtask management, `PATCH /api/items/:id` mark done
 - [ ] **LT-52**: `POST /api/topics/:id/time` — log time, `GET /api/topics/:id/timelogs` — query logs
 - [ ] **LT-53**: `GET/POST/PUT /api/notes` — notes CRUD on topics and items
