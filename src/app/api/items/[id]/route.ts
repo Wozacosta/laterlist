@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 import { getItemById, updateItem } from "@/lib/server/store";
 import { requireAuth } from "@/lib/server/authMiddleware";
+import { syncItemCompletionToCalendar } from "@/lib/server/calendarSync";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -43,6 +44,11 @@ export async function PATCH(
     }
 
     const updated = updateItem(id, patch);
+
+    // Sync completion to calendar (LT-64) — non-blocking
+    if (status === "done") {
+      syncItemCompletionToCalendar(id).catch(() => {});
+    }
 
     return Response.json(updated);
   } catch {

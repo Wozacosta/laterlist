@@ -5,6 +5,7 @@ import {
   getConnectedProvider,
 } from "@/lib/server/calendarEvents";
 import { getItemById } from "@/lib/server/store";
+import { addEventMapping } from "@/lib/server/calendarSync";
 
 /**
  * GET /api/calendar/events — Check which calendar provider is connected
@@ -73,6 +74,11 @@ export async function POST(request: Request) {
 
     if (!result.ok) {
       return NextResponse.json(result, { status: 502 });
+    }
+
+    // Track the event mapping for bidirectional sync (LT-64)
+    if (result.eventId && itemId) {
+      addEventMapping(itemId, result.eventId, result.provider);
     }
 
     return NextResponse.json(result, { status: 201 });
