@@ -5,6 +5,9 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Topic, type Item } from "@/db";
 import { maxInterval, urgency } from "@/lib/spacedRepetition";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { AddItemInput } from "@/components/AddItemInput";
+
+type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
 
 interface TopicDetailProps {
   topic: Topic;
@@ -14,6 +17,8 @@ interface TopicDetailProps {
   onUnmarkDone: (id: string) => void;
   onSetNotes?: (id: string, notes: string) => void;
   onUpdateItemNotes?: (id: string, notes: string) => void;
+  onAddItem?: (data: EnrichedData) => void;
+  isLoggedIn?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -48,6 +53,8 @@ export const TopicDetail = memo(function TopicDetail({
   onUnmarkDone,
   onSetNotes,
   onUpdateItemNotes,
+  onAddItem,
+  isLoggedIn = false,
 }: TopicDetailProps) {
   // Filter items for this topic
   const topicItems = useMemo(() => {
@@ -121,6 +128,13 @@ export const TopicDetail = memo(function TopicDetail({
           </p>
         </div>
       </div>
+
+      {/* Quick-add item to this topic */}
+      {onAddItem && (
+        <div className="mb-4">
+          <AddItemInput onAdd={onAddItem} isLoggedIn={isLoggedIn} />
+        </div>
+      )}
 
       {/* Stats cards */}
       <div className="mb-4 grid grid-cols-3 gap-2">

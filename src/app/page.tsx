@@ -151,6 +151,16 @@ export default function Page() {
     [addItem, items, toast]
   );
 
+  const handleAddToTopic = useCallback(
+    async (data: EnrichedData) => {
+      if (!selectedTopicId) return;
+      // Inject the current topic into topicIds
+      const topicIds = [...(data.topicIds ?? []), selectedTopicId];
+      await handleAdd({ ...data, topicIds });
+    },
+    [handleAdd, selectedTopicId]
+  );
+
   const handleMarkDone = useCallback(
     async (id: string) => {
       await markDone(id);
@@ -339,6 +349,8 @@ export default function Page() {
           onUnmarkDone={unmarkDone}
           onSetNotes={setNotes}
           onUpdateItemNotes={handleUpdateNotes}
+          onAddItem={handleAddToTopic}
+          isLoggedIn={isLoggedIn}
         />
       ) : (
         <>
