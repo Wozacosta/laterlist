@@ -65,6 +65,15 @@ export function useTopics() {
     });
   }, []);
 
+  const setTopicOrder = useCallback(
+    async (updates: Array<{ id: string; sortOrder: number }>) => {
+      await db.topics.bulkUpdate(
+        updates.map((u) => ({ key: u.id, changes: { sortOrder: u.sortOrder } }))
+      );
+    },
+    []
+  );
+
   const logTime = useCallback(async (id: string, seconds: number) => {
     if (seconds <= 0) return;
     await db.transaction("rw", [db.topics, db.timeLogs], async () => {
@@ -126,6 +135,7 @@ export function useTopics() {
     deleteTopic,
     completeTopic,
     reopenTopic,
+    setTopicOrder,
     logTime,
     setPriority,
     setEstimate,

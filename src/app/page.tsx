@@ -60,7 +60,8 @@ export default function Page() {
     deleteGroup,
   } = useGroups();
 
-  const { topics, addTopic, renameTopic, deleteTopic, completeTopic, reopenTopic } = useTopics();
+  const { topics, addTopic, renameTopic, deleteTopic, completeTopic, reopenTopic, setTopicOrder } =
+    useTopics();
 
   const { toast } = useToast();
   const currentUser = useObservable(db.cloud.currentUser);
@@ -235,6 +236,7 @@ export default function Page() {
         isLoggedIn={isLoggedIn}
         onSelect={handleSelectTopic}
         onAddTopic={handleAddTopic}
+        onReorderTopics={setTopicOrder}
       />
 
       <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8">
