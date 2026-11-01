@@ -118,7 +118,7 @@ export async function fetchArticleMetadata(url: string): Promise<{
     metaContent(html, "property", "og:title") ??
     html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ??
     url;
-  const image = metaContent(html, "property", "og:image");
+  const image = decodeHtmlEntities(metaContent(html, "property", "og:image") ?? "");
   const base = res.url || url;
   const thumbnail = image && URL.canParse(image, base) ? new URL(image, base).href : null;
   const description =

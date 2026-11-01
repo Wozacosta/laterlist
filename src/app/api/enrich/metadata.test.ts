@@ -207,6 +207,20 @@ describe("fetchArticleMetadata", () => {
     expect(result.thumbnail).toBe("https://example.com/images/card.png");
   });
 
+  it("decodes entities in an image link", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => `<meta property="og:image" content="https://pbs.twimg.com/a?format=webp&amp;name=large">`,
+      })
+    );
+
+    const result = await fetchArticleMetadata("https://x.com/a/status/1");
+
+    expect(result.thumbnail).toBe("https://pbs.twimg.com/a?format=webp&name=large");
+  });
+
   it("ignores an image link that can't be read", async () => {
     vi.stubGlobal(
       "fetch",
