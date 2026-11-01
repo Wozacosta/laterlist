@@ -2,6 +2,7 @@
 
 import { memo, useState, useCallback } from "react";
 import type { Item, Category } from "@/db";
+import { getAccessToken } from "@/db/accessToken";
 
 type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
 
@@ -62,11 +63,22 @@ export const AddItemInput = memo(function AddItemInput({ onAdd, isLoggedIn }: Ad
 
         try {
           if (isLoggedIn) {
+            const token = await getAccessToken();
             const res = await fetch("/api/enrich", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                ...(token && { Authorization: `Bearer ${token}` }),
+              },
               body: JSON.stringify({ url }),
             });
+
+            // A rejected sign in shouldn't lose the paste, so save it like a signed-out one
+            if (res.status === 401) {
+              onAdd({ url, title: url, category: "other", tags: [] });
+              resetForm();
+              return;
+            }
 
             const data = await res.json();
 

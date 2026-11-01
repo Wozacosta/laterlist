@@ -1,7 +1,9 @@
 import { type NextRequest } from "next/server";
 import { fetchYouTubeMetadata, fetchArticleMetadata } from "./metadata";
 import { inferCategoryAndTags } from "./ai";
+import { BlockedUrlError } from "./safeFetch";
 import { rateLimit } from "@/lib/ratelimit";
+import { requireDexieUser } from "@/lib/server/dexieAuth";
 
 export async function POST(request: NextRequest) {
   // ── Rate limiting ────────────────────────────────────────────────────────
@@ -26,6 +28,9 @@ export async function POST(request: NextRequest) {
       }
     );
   }
+
+  const denied = await requireDexieUser(request);
+  if (denied) return denied;
 
   try {
     const body = await request.json();
@@ -77,6 +82,9 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (err) {
+    if (err instanceof BlockedUrlError) {
+      return Response.json({ error: "That URL can't be fetched" }, { status: 400 });
+    }
     const message = err instanceof Error ? err.message : "Enrichment failed";
     return Response.json({ error: message }, { status: 500 });
   }
