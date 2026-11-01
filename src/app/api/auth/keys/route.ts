@@ -1,3 +1,4 @@
+import { requireOwner } from "@/lib/server/dexieAuth";
 import { type NextRequest } from "next/server";
 import { generateApiKey, listApiKeys, revokeApiKey } from "@/lib/server/apiKeys";
 
@@ -7,7 +8,9 @@ import { generateApiKey, listApiKeys, revokeApiKey } from "@/lib/server/apiKeys"
  * No auth required — this endpoint is always accessible so users can
  * manage keys even when locked out.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   return Response.json(await listApiKeys());
 }
 
@@ -17,6 +20,8 @@ export async function GET() {
  * Generates a new API key. The full key is returned ONLY in this response.
  */
 export async function POST(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
     const name = typeof body.name === "string" ? body.name : "";
@@ -34,6 +39,8 @@ export async function POST(request: NextRequest) {
  * Revokes an API key by ID.
  */
 export async function DELETE(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
     const { id } = body;

@@ -1,3 +1,5 @@
+import { type NextRequest } from "next/server";
+import { requireOwner } from "@/lib/server/dexieAuth";
 import { NextResponse } from "next/server";
 import {
   connect,
@@ -8,7 +10,9 @@ import {
 /**
  * GET /api/calendar/proton — Check Proton Calendar connection status
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const status = await getConnectionStatus();
     return NextResponse.json(status);
@@ -26,7 +30,9 @@ export async function GET() {
  * The password should be an app-specific password generated in
  * Proton Mail settings (Settings → All Settings → Security → App passwords).
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
     const { email, password, caldavUrl } = body as {
@@ -58,7 +64,9 @@ export async function POST(request: Request) {
 /**
  * DELETE /api/calendar/proton — Disconnect from Proton Calendar
  */
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     await disconnect();
     return NextResponse.json({ ok: true, disconnected: true });

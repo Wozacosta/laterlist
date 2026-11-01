@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/authFetch";
 import { memo, useState, useCallback } from "react";
 
 interface DayPlan {
@@ -62,7 +63,7 @@ export const CalendarSuggestions = memo(function CalendarSuggestions({
       const goal = dailyGoalMinutes > 0 ? dailyGoalMinutes : 60;
       const topicIds = studyQueue.map((t) => t.topicId).join(",");
       const topicNames = studyQueue.map((t) => t.topicName).join(",");
-      const res = await fetch(
+      const res = await authFetch(
         `/api/calendar/week-plan?goal=${goal}&topics=${encodeURIComponent(topicIds)}&names=${encodeURIComponent(topicNames)}&startHour=${studyStartHour}&endHour=${studyEndHour}`
       );
       const data = await res.json();
@@ -81,7 +82,7 @@ export const CalendarSuggestions = memo(function CalendarSuggestions({
     setPushing(true);
     setResult(null);
     try {
-      const res = await fetch("/api/calendar/week-plan", {
+      const res = await authFetch("/api/calendar/week-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ days: schedulable }),

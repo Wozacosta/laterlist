@@ -1,3 +1,5 @@
+import { type NextRequest } from "next/server";
+import { requireOwner } from "@/lib/server/dexieAuth";
 import { NextResponse } from "next/server";
 import {
   pushEvent,
@@ -9,7 +11,9 @@ import { addEventMapping } from "@/lib/server/calendarSync";
 /**
  * GET /api/calendar/events — Check which calendar provider is connected
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   const provider = await getConnectedProvider();
   return NextResponse.json({ provider, connected: provider !== null });
 }
@@ -26,7 +30,9 @@ export async function GET() {
  *   startTime?: string,     // ISO datetime (defaults to next hour)
  * }
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
     const { itemId, title, url, duration, topicName, startTime } = body as {

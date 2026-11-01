@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/authFetch";
 import { memo, useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Topic, type Item } from "@/db";
@@ -440,7 +441,7 @@ const UnreadItemList = memo(function UnreadItemList({
 
   const handlePushToCalendar = useCallback(async (item: Item) => {
     try {
-      const res = await fetch("/api/calendar/events", {
+      const res = await authFetch("/api/calendar/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

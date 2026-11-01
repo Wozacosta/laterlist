@@ -10,9 +10,11 @@
  */
 
 import { google } from "googleapis";
+import { randomBytes } from "crypto";
 import { kvGet, kvSet, kvDel } from "./storage";
 
 const TOKENS_KEY = "laterlist:google-tokens";
+const OAUTH_STATE_KEY = "laterlist:google-oauth-state";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar.events",
@@ -63,13 +65,23 @@ export async function clearTokens(): Promise<void> {
 
 // ── OAuth Flow ──────────────────────────────────────────────────────────────
 
-export function getAuthUrl(): string {
-  const client = getOAuth2Client();
-  return client.generateAuthUrl({
+/** The state ties Google's redirect to a start the owner made, so nobody else can connect an account. */
+export async function getAuthUrl(): Promise<string> {
+  const state = randomBytes(16).toString("hex");
+  await kvSet(OAUTH_STATE_KEY, state);
+
+  return getOAuth2Client().generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
     prompt: "consent",
+    state,
   });
+}
+
+export async function consumeOAuthState(state: string | null): Promise<boolean> {
+  const expected = await kvGet<string>(OAUTH_STATE_KEY);
+  await kvDel(OAUTH_STATE_KEY);
+  return expected !== null && expected === state;
 }
 
 export async function exchangeCode(code: string): Promise<CalendarTokens> {

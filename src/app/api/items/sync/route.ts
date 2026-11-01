@@ -1,3 +1,4 @@
+import { requireOwner } from "@/lib/server/dexieAuth";
 import { type NextRequest } from "next/server";
 import { readItems, writeItems } from "@/lib/server/store";
 
@@ -21,6 +22,8 @@ function decodeHtmlEntities(str: string): string {
  * No auth required — runs from the same origin.
  */
 export async function PUT(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const item = await request.json();
     if (!item.id || !item.title) {

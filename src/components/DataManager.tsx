@@ -1,5 +1,6 @@
 "use client";
 
+import { missingItems } from "@/lib/missingItems";
 import { memo, useRef, useCallback, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
@@ -111,11 +112,9 @@ export const DataManager = memo(function DataManager() {
     if (!pendingBackup) return;
     setConfirmOpen(false);
     try {
-      await db.transaction("rw", db.items, async () => {
-        await db.items.clear();
-        await db.items.bulkAdd(pendingBackup.items);
-      });
-      toast(`Imported ${pendingBackup.items.length} item${pendingBackup.items.length !== 1 ? "s" : ""}`);
+      const missing = missingItems(pendingBackup.items, await db.items.toArray());
+      await db.items.bulkAdd(missing);
+      toast(`Imported ${missing.length} item${missing.length !== 1 ? "s" : ""}`);
       setOpen(false);
     } catch {
       toast("Import failed", "error");
@@ -166,7 +165,7 @@ export const DataManager = memo(function DataManager() {
               <div className="flex items-center justify-between rounded-lg border border-gray-100 p-3 dark:border-gray-800">
                 <div>
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Import</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">Replace current data with backup</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Add missing items from a backup</p>
                 </div>
                 <button
                   type="button"
@@ -201,22 +200,22 @@ export const DataManager = memo(function DataManager() {
           <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/50 dark:bg-black/70" />
           <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900 dark:border dark:border-gray-800">
             <AlertDialog.Title className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              Replace all data?
+              Add from this backup?
             </AlertDialog.Title>
             <AlertDialog.Description className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              This will delete your current list and replace it with{" "}
+              Items you don&apos;t have yet will be added from this backup of{" "}
               <span className="font-medium text-gray-800 dark:text-gray-200">
                 {pendingBackup?.items.length ?? 0} item{(pendingBackup?.items.length ?? 0) !== 1 ? "s" : ""}
-              </span>{" "}
-              from the backup. This cannot be undone.
+              </span>
+              . Nothing is removed.
             </AlertDialog.Description>
             <div className="mt-5 flex justify-end gap-2">
               <AlertDialog.Cancel className={btnGray}>Cancel</AlertDialog.Cancel>
               <AlertDialog.Action
                 onClick={handleImportConfirm}
-                className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
               >
-                Yes, replace
+                Yes, add
               </AlertDialog.Action>
             </div>
           </AlertDialog.Content>
