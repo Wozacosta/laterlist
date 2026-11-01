@@ -4,7 +4,6 @@ import { memo, useState, useCallback } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Item, Topic } from "@/db";
-import { itemDragProps } from "@/lib/itemDrag";
 import { TagChips } from "./TagChips";
 import { TopicPicker } from "./TopicPicker";
 
@@ -72,6 +71,69 @@ export function Thumbnail({
   );
 }
 
+export const gripClass =
+  "shrink-0 cursor-grab touch-none text-lg leading-none text-gray-400 hover:text-gray-700 active:cursor-grabbing dark:text-gray-600 dark:hover:text-gray-300";
+
+export function DragPreview({ title }: { title: string }) {
+  return (
+    <div className="w-fit max-w-56 truncate rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 opacity-90 shadow-lg dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+      {title}
+    </div>
+  );
+}
+
+/** Only the words are the link, so the empty space beside them can do something else. */
+export function ItemLink({
+  item,
+  className,
+  titleClassName = "truncate",
+}: {
+  item: Item;
+  className: string;
+  titleClassName?: string;
+}) {
+  const title = <span className={titleClassName}>{item.title}</span>;
+
+  if (!item.url) return <span className={`flex min-w-0 ${className}`}>{title}</span>;
+
+  return (
+    <a
+      href={item.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      draggable={false}
+      className={`group/link inline-flex max-w-full items-baseline gap-1 hover:text-blue-600 hover:underline dark:hover:text-blue-400 ${className}`}
+    >
+      {title}
+      <span aria-hidden className="shrink-0 text-xs text-gray-400 group-hover/link:text-blue-600 dark:text-gray-600 dark:group-hover/link:text-blue-400">
+        ↗
+      </span>
+    </a>
+  );
+}
+
+export function ItemThumbnail({ item, className }: { item: Item; className?: string }) {
+  const image = (
+    <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} className={className} />
+  );
+
+  if (!item.url) return image;
+
+  return (
+    <a
+      href={item.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      draggable={false}
+      tabIndex={-1}
+      aria-hidden
+      className="shrink-0 hover:opacity-80"
+    >
+      {image}
+    </a>
+  );
+}
+
 export const ItemRow = memo(function ItemRow({
   item,
   topics,
@@ -87,7 +149,7 @@ export const ItemRow = memo(function ItemRow({
 }: ItemRowProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
 
   const style = {
@@ -161,36 +223,28 @@ export const ItemRow = memo(function ItemRow({
       <div
         onClick={handleRowClick}
         className="flex items-center gap-2 px-3 py-2 cursor-pointer"
+        {...listeners}
       >
-        {/* Drag handle */}
+        {/* Drag handle: the whole row drags, this shows it */}
         <button
+          ref={setActivatorNodeRef}
           type="button"
-          className="shrink-0 cursor-grab text-gray-300 hover:text-gray-500 active:cursor-grabbing touch-none dark:text-gray-700 dark:hover:text-gray-400"
-          style={{ touchAction: "none" }}
-          aria-label="Reorder item"
+          className={gripClass}
+          aria-label="Drag to reorder, or onto a topic"
+          title="Drag to reorder, or onto a topic"
           {...attributes}
-          {...listeners}
         >
           ⠿
         </button>
 
-        {/* Thumbnail */}
-        <div className="flex min-w-0 flex-1 items-center gap-2" {...itemDragProps(item.id)}>
-        <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} />
+        <ItemThumbnail item={item} />
 
         {/* Main content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-2 flex-wrap">
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate min-w-0 flex-1 hover:underline ${item.status === "done" ? "line-through" : ""}`}
-            >
-              {item.title}
-            </a>
-          </div>
+          <ItemLink
+            item={item}
+            className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${item.status === "done" ? "line-through" : ""}`}
+          />
           {item.tags.length > 0 && (
             <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-600">
               {item.tags.join(" · ")}
@@ -198,11 +252,9 @@ export const ItemRow = memo(function ItemRow({
           )}
         </div>
 
-        </div>
-
         {/* Meta */}
         <div className="shrink-0 flex flex-col items-end gap-1 text-xs text-gray-400 dark:text-gray-600">
-          <span>{formatDuration(item.duration, item.category)}</span>
+          {item.duration != null && <span>{formatDuration(item.duration, item.category)}</span>}
           <span>{formatDate(item.addedAt)}</span>
         </div>
 
@@ -247,11 +299,39 @@ export const ItemRow = memo(function ItemRow({
         >
           ×
         </button>
+
+        {/* Details */}
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          aria-label={expanded ? "Hide details" : "Show details"}
+          title={expanded ? "Hide details" : "Show details"}
+          className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+        >
+          <svg
+            aria-hidden
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`transition-transform ${expanded ? "rotate-180" : ""}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
       </div>
 
-      {/* Notes & Topics (expanded) */}
+      {/* Summary, Topics, Tags & Notes (expanded) */}
       {expanded && (
         <div className="border-t border-gray-100 px-3 pb-3 pt-2 dark:border-gray-800 space-y-2">
+          {item.summary && (
+            <p className="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{item.summary}</p>
+          )}
           {topics.length > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400 dark:text-gray-600 shrink-0">Topics</span>

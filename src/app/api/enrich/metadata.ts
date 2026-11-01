@@ -54,6 +54,54 @@ export async function fetchYouTubeMetadata(url: string): Promise<{
   return { title, thumbnail, duration, description: "" };
 }
 
+const TWEET_URL = /^https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/\w+\/status\/\d+/i;
+const TWEET_TITLE_LENGTH = 100;
+
+export function isTweetUrl(url: string): boolean {
+  return TWEET_URL.test(url);
+}
+
+/** A tweet has no title, so its first words stand in for one and the text becomes the summary. */
+export async function fetchTweetMetadata(url: string): Promise<{
+  title: string;
+  thumbnail: string | null;
+  duration: null;
+  description: string;
+}> {
+  const res = await fetch(
+    `https://publish.twitter.com/oembed?omit_script=1&dnt=true&url=${encodeURIComponent(url)}`,
+    { headers: { "User-Agent": BROWSER_UA }, cache: "no-store" }
+  );
+  if (!res.ok) {
+    throw new Error(`Tweet oEmbed failed: ${res.status}`);
+  }
+  const oembed = await res.json();
+  const author: string = oembed.author_name ?? "";
+  const body: string = oembed.html?.match(/<p[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? "";
+  const text = decodeHtmlEntities(
+    body
+      .replace(/<a\b[^>]*>(?:pic\.|https?:)[^<]*<\/a>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+
+  const preview =
+    text.length > TWEET_TITLE_LENGTH ? `${text.slice(0, TWEET_TITLE_LENGTH).trimEnd()}…` : text;
+  // oEmbed has no picture, so the page is a best effort.
+  const thumbnail = await fetchArticleMetadata(url).then(
+    (page) => page.thumbnail,
+    () => null
+  );
+
+  return {
+    title: preview ? `${author}: ${preview}` : `Post by ${author}`,
+    thumbnail,
+    duration: null,
+    description: text,
+  };
+}
+
 export async function fetchArticleMetadata(url: string): Promise<{
   title: string;
   thumbnail: string | null;

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fetchYouTubeMetadata, fetchArticleMetadata } from "./metadata";
+import { fetchArticleMetadata, fetchTweetMetadata, fetchYouTubeMetadata, isTweetUrl } from "./metadata";
 
 vi.mock("node:dns/promises", () => {
   const lookup = async () => [{ address: "93.184.216.34", family: 4 }];
@@ -67,6 +67,86 @@ describe("fetchYouTubeMetadata", () => {
     await expect(
       fetchYouTubeMetadata("https://www.youtube.com/watch?v=bad")
     ).rejects.toThrow("YouTube oEmbed failed");
+  });
+});
+
+describe("isTweetUrl", () => {
+  it("matches posts on x.com and twitter.com, with or without tracking", () => {
+    expect(isTweetUrl("https://x.com/burkov/status/2023822767284490263?s=46&t=abc")).toBe(true);
+    expect(isTweetUrl("https://mobile.twitter.com/burkov/status/123")).toBe(true);
+  });
+
+  it("leaves profiles and lookalike sites alone", () => {
+    expect(isTweetUrl("https://x.com/burkov")).toBe(false);
+    expect(isTweetUrl("https://netflix.com/a/status/123")).toBe(false);
+  });
+});
+
+describe("fetchTweetMetadata", () => {
+  const oembed = (html: string) => ({
+    ok: true,
+    json: async () => ({ author_name: "BURKOV", html }),
+  });
+
+  it("uses the tweet as title and text, without its media link", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce(
+          oembed(
+            `<blockquote><p lang="en">Send the prompt &quot;twice&quot;<br>for #better results <a href="https://t.co/a">pic.twitter.com/a</a></p>&mdash; BURKOV</blockquote>`
+          )
+        )
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => `<meta property="og:image" content="https://pbs.twimg.com/media/a.jpg">`,
+        })
+    );
+
+    const result = await fetchTweetMetadata("https://x.com/burkov/status/1");
+
+    expect(result).toEqual({
+      title: 'BURKOV: Send the prompt "twice" for #better results',
+      thumbnail: "https://pbs.twimg.com/media/a.jpg",
+      duration: null,
+      description: 'Send the prompt "twice" for #better results',
+    });
+  });
+
+  it("cuts a long tweet down for the title only", async () => {
+    const text = Array(40).fill("word").join(" ");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce(oembed(`<p>${text}</p>`))
+        .mockResolvedValueOnce({ ok: false, status: 403 })
+    );
+
+    const result = await fetchTweetMetadata("https://x.com/burkov/status/1");
+
+    expect(result.title.length).toBeLessThan(115);
+    expect(result.title.endsWith("…")).toBe(true);
+    expect(result.description).toBe(text);
+    expect(result.thumbnail).toBeNull();
+  });
+
+  it("names the author when a post has no text", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce(oembed(`<p><a href="https://t.co/a">pic.twitter.com/a</a></p>`))
+        .mockResolvedValueOnce({ ok: false, status: 403 })
+    );
+
+    expect((await fetchTweetMetadata("https://x.com/burkov/status/1")).title).toBe("Post by BURKOV");
+  });
+
+  it("throws when oEmbed fails, so the link stays as it was pasted", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce({ ok: false, status: 404 }));
+
+    await expect(fetchTweetMetadata("https://x.com/burkov/status/1")).rejects.toThrow(
+      "Tweet oEmbed failed"
+    );
   });
 });
 

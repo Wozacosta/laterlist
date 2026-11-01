@@ -6,7 +6,7 @@ import { getAccessToken } from "@/db/accessToken";
 import { looksLikeUrl, toUrl } from "@/lib/looksLikeUrl";
 
 type NewItem = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
-type Enrichment = Pick<Item, "title" | "category" | "tags"> & Partial<Pick<Item, "thumbnail" | "duration">>;
+type Enrichment = Pick<Item, "title" | "category" | "tags"> & Partial<Pick<Item, "thumbnail" | "duration" | "summary">>;
 
 async function enrich(url: string): Promise<Enrichment | null> {
   const token = await getAccessToken();
@@ -20,13 +20,14 @@ async function enrich(url: string): Promise<Enrichment | null> {
   });
   if (!res.ok) return null;
 
-  const { title, category, tags, thumbnail, duration } = await res.json();
+  const { title, category, tags, thumbnail, duration, summary } = await res.json();
   return {
     title,
     category,
     tags,
     thumbnail: thumbnail ?? undefined,
     duration: duration ?? undefined,
+    summary: summary || undefined,
   };
 }
 

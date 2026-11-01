@@ -1,10 +1,11 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
+import { DndContext, DragOverlay, PointerSensor, useDraggable, useSensor, useSensors } from "@dnd-kit/core";
 import type { Item, Topic } from "@/db";
-import { itemDragProps } from "@/lib/itemDrag";
+import { useTopicDrop } from "@/hooks/useTopicDrop";
 import { topicLearned, topicQueue } from "@/lib/topicQueue";
-import { formatDuration, Thumbnail } from "./ItemRow";
+import { DragPreview, formatDuration, gripClass, ItemLink, ItemThumbnail } from "./ItemRow";
 
 const quietButton =
   "rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200";
@@ -39,13 +40,12 @@ function MoveTo({ item, moveTargets, onMove }: { item: Item } & Pick<ItemActions
   );
 }
 
-function ItemLink({ item, className }: { item: Item; className: string }) {
-  if (!item.url) return <span className={className}>{item.title}</span>;
-
+/** A row in a topic drags onto the sidebar, so the grip is only a cue with no keyboard stop. */
+function Grip() {
   return (
-    <a href={item.url} target="_blank" rel="noopener noreferrer" className={`${className} hover:underline`}>
-      {item.title}
-    </a>
+    <span aria-hidden title="Drag onto a topic" className={gripClass}>
+      ⠿
+    </span>
   );
 }
 
@@ -57,20 +57,31 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
     .filter(Boolean)
     .join(" · ");
 
+  const { listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
+
   return (
     <section
+      ref={setNodeRef}
       aria-label="Next"
-      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900"
+      className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900 ${
+        isDragging ? "opacity-50" : ""
+      }`}
+      {...listeners}
     >
-      <div className="flex min-w-0 flex-1 basis-72 items-center gap-4" {...itemDragProps(item.id)}>
-      <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} className="h-14 w-24" />
+      <div className="flex min-w-0 flex-1 basis-72 items-center gap-3">
+      <Grip />
+      <ItemThumbnail item={item} className="h-14 w-24" />
 
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Next</p>
-        <ItemLink item={item} className="block break-words text-lg font-semibold text-gray-900 dark:text-white" />
+        <ItemLink
+          item={item}
+          titleClassName="line-clamp-2 break-words"
+          className="text-lg font-semibold text-gray-900 dark:text-white"
+        />
         {details && <p className="text-xs text-gray-500 dark:text-gray-400">{details}</p>}
         {(item.why || item.summary) && (
-          <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{item.why || item.summary}</p>
+          <p className="mt-1 line-clamp-3 text-sm text-gray-700 dark:text-gray-300">{item.why || item.summary}</p>
         )}
       </div>
 
@@ -95,14 +106,22 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
 
 function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
   const details = item.duration != null && formatDuration(item.duration, item.category);
+  const { listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
 
   return (
-    <li className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-800">
-      <div className="flex min-w-0 flex-1 items-center gap-3" {...itemDragProps(item.id)}>
-        <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} className="hidden h-9 w-16 sm:block" />
+    <li
+      ref={setNodeRef}
+      className={`flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-800 ${
+        isDragging ? "opacity-50" : ""
+      }`}
+      {...listeners}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <Grip />
+        <ItemThumbnail item={item} className="hidden h-9 w-16 sm:block" />
 
         <div className="min-w-0 flex-1">
-          <ItemLink item={item} className="block truncate text-[15px] font-medium text-gray-800 dark:text-gray-200" />
+          <ItemLink item={item} className="text-[15px] font-medium text-gray-800 dark:text-gray-200" />
           {details && <p className="text-xs text-gray-400 dark:text-gray-600">{details}</p>}
         </div>
       </div>
@@ -123,7 +142,9 @@ function LearnedRow({ item, actions }: { item: Item; actions: ItemActions }) {
   return (
     <li className="py-2">
       <div className="flex items-center gap-2">
-        <ItemLink item={item} className="min-w-0 flex-1 truncate text-sm text-gray-600 dark:text-gray-400" />
+        <div className="min-w-0 flex-1">
+          <ItemLink item={item} className="text-sm text-gray-600 dark:text-gray-400" />
+        </div>
         <button type="button" onClick={() => actions.onUnmarkDone(item.id)} className={quietButton}>
           Not done
         </button>
@@ -149,6 +170,7 @@ interface TopicViewProps extends Omit<ItemActions, "moveTargets"> {
   onComplete: (id: string) => void;
   onReopen: (id: string) => void;
   onDeleteTopic: (id: string) => void;
+  onDropOnTopic: (itemId: string, topicId: string) => void;
 }
 
 export const TopicView = memo(function TopicView({
@@ -159,8 +181,12 @@ export const TopicView = memo(function TopicView({
   onComplete,
   onReopen,
   onDeleteTopic,
+  onDropOnTopic,
   ...handlers
 }: TopicViewProps) {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const topicDrop = useTopicDrop(onDropOnTopic);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const queue = useMemo(() => topicQueue(items, topic.id), [items, topic.id]);
   const learned = useMemo(() => topicLearned(items, topic.id), [items, topic.id]);
   const moveTargets = useMemo(
@@ -170,6 +196,7 @@ export const TopicView = memo(function TopicView({
 
   const actions: ItemActions = { ...handlers, moveTargets };
   const [next, ...later] = queue;
+  const dragging = queue.find((item) => item.id === draggingId);
 
   function rename() {
     const name = window.prompt("Rename topic", topic.name)?.trim();
@@ -201,6 +228,22 @@ export const TopicView = memo(function TopicView({
         </button>
       </header>
 
+      <DndContext
+        id="topic-items"
+        sensors={sensors}
+        onDragStart={({ active }) => {
+          setDraggingId(String(active.id));
+          topicDrop.start();
+        }}
+        onDragEnd={({ active }) => {
+          setDraggingId(null);
+          topicDrop.finish(String(active.id));
+        }}
+        onDragCancel={() => {
+          setDraggingId(null);
+          topicDrop.cancel();
+        }}
+      >
       {next ? (
         <NextCard item={next} actions={actions} />
       ) : (
@@ -216,6 +259,9 @@ export const TopicView = memo(function TopicView({
           ))}
         </ul>
       )}
+
+      <DragOverlay>{dragging && <DragPreview title={dragging.title} />}</DragOverlay>
+      </DndContext>
 
       {learned.length > 0 && (
         <details>

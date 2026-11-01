@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { fetchYouTubeMetadata, fetchArticleMetadata } from "./metadata";
+import { fetchArticleMetadata, fetchTweetMetadata, fetchYouTubeMetadata, isTweetUrl } from "./metadata";
 import { inferCategoryAndTags } from "./ai";
 import { BlockedUrlError } from "./safeFetch";
 import { rateLimit } from "@/lib/ratelimit";
@@ -57,9 +57,12 @@ export async function POST(request: NextRequest) {
     }
 
     const isYouTube = /youtube\.com|youtu\.be/.test(url);
+    const isTweet = isTweetUrl(url);
     const metadata = isYouTube
       ? await fetchYouTubeMetadata(url)
-      : await fetchArticleMetadata(url);
+      : isTweet
+        ? await fetchTweetMetadata(url)
+        : await fetchArticleMetadata(url);
 
     const { category, tags } = await inferCategoryAndTags(
       metadata.title,
@@ -71,6 +74,7 @@ export async function POST(request: NextRequest) {
         title: metadata.title,
         thumbnail: metadata.thumbnail,
         duration: metadata.duration,
+        summary: isTweet ? metadata.description : undefined,
         category,
         tags,
       },

@@ -251,7 +251,6 @@ export default function Page() {
         onSelect={handleSelectTopic}
         onAddTopic={handleAddTopic}
         onReorderTopics={setTopicOrder}
-        onDropItem={handleDropOnTopic}
       />
 
       <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8">
@@ -284,6 +283,7 @@ export default function Page() {
             onMove={handleMove}
             onDelete={handleDelete}
             onUpdateNotes={handleUpdateNotes}
+            onDropOnTopic={handleDropOnTopic}
             onRename={renameTopic}
             onComplete={completeTopic}
             onReopen={reopenTopic}
@@ -324,6 +324,7 @@ export default function Page() {
               onDelete={handleDelete}
               onReorder={reorderItems}
               onAssignToGroup={assignToGroup}
+              onDropOnTopic={handleDropOnTopic}
               onAssignTopic={assignToTopic}
               onUnassignTopic={unassignFromTopic}
               onRenameGroup={renameGroup}

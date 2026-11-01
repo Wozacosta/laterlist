@@ -20,7 +20,8 @@ import {
 } from "@dnd-kit/sortable";
 import { useState } from "react";
 import type { Item, Group, GroupColor, Topic } from "@/db";
-import { ItemRow } from "./ItemRow";
+import { useTopicDrop } from "@/hooks/useTopicDrop";
+import { DragPreview, ItemRow } from "./ItemRow";
 import { GroupSection } from "./GroupSection";
 import { EmptyState } from "./EmptyState";
 
@@ -63,6 +64,7 @@ interface ItemListProps {
   onDelete: (id: string) => void;
   onReorder: (updates: Array<{ id: string; sortOrder: number }>) => void;
   onAssignToGroup: (itemId: string, groupId: string | undefined) => void;
+  onDropOnTopic: (itemId: string, topicId: string) => void;
   onAssignTopic: (itemId: string, topicId: string) => void;
   onUnassignTopic: (itemId: string, topicId: string) => void;
   onRenameGroup: (id: string, name: string) => void;
@@ -86,6 +88,7 @@ export const ItemList = memo(function ItemList({
   onDelete,
   onReorder,
   onAssignToGroup,
+  onDropOnTopic,
   onAssignTopic,
   onUnassignTopic,
   onRenameGroup,
@@ -95,6 +98,7 @@ export const ItemList = memo(function ItemList({
   onAddGroup,
 }: ItemListProps) {
   const [draggingId, setDraggingId] = useState<UniqueIdentifier | null>(null);
+  const topicDrop = useTopicDrop(onDropOnTopic);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -109,7 +113,7 @@ export const ItemList = memo(function ItemList({
     (event: DragEndEvent) => {
       setDraggingId(null);
       const { active, over } = event;
-      if (!over) return;
+      if (topicDrop.finish(active.id as string) || !over) return;
 
       const activeId = active.id as string;
       const overId = over.id as string;
@@ -145,7 +149,7 @@ export const ItemList = memo(function ItemList({
         }))
       );
     },
-    [items, ungroupedItems, onAssignToGroup, onReorder]
+    [items, ungroupedItems, onAssignToGroup, onReorder, topicDrop]
   );
 
   if (items.length === 0 && groups.length === 0) {
@@ -161,9 +165,15 @@ export const ItemList = memo(function ItemList({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={(e) => setDraggingId(e.active.id)}
+      onDragStart={(e) => {
+        setDraggingId(e.active.id);
+        topicDrop.start();
+      }}
       onDragEnd={handleDragEnd}
-      onDragCancel={() => setDraggingId(null)}
+      onDragCancel={() => {
+        setDraggingId(null);
+        topicDrop.cancel();
+      }}
     >
       {/* Ungrouped items */}
       <UngroupedZone showZone={isDraggingGrouped}>
@@ -221,11 +231,7 @@ export const ItemList = memo(function ItemList({
 
       {/* Drag overlay */}
       <DragOverlay>
-        {draggingItem && (
-          <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg opacity-90 text-sm font-medium text-gray-700 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300">
-            {draggingItem.title}
-          </div>
-        )}
+        {draggingItem && <DragPreview title={draggingItem.title} />}
       </DragOverlay>
     </DndContext>
   );
