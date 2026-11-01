@@ -304,9 +304,9 @@ export const ItemRow = memo(function ItemRow({
 
   const handleNotesBlur = useCallback(
     (e: React.FocusEvent<HTMLTextAreaElement>) => {
-      onUpdateNotes(item.id, e.target.value);
+      if (e.target.value !== (item.notes ?? "")) onUpdateNotes(item.id, e.target.value);
     },
-    [item.id, onUpdateNotes]
+    [item.id, item.notes, onUpdateNotes]
   );
 
   const handleAssignTopic = useCallback(
@@ -419,8 +419,10 @@ export const ItemRow = memo(function ItemRow({
             </div>
           </div>
           <textarea
+            key={item.notes ?? ""}
             defaultValue={item.notes ?? ""}
             onBlur={handleNotesBlur}
+            aria-label={`Notes on "${item.title}"`}
             rows={3}
             placeholder="Add a note..."
             className="w-full rounded border border-gray-200 bg-transparent px-2 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none dark:border-gray-700 dark:text-gray-300 dark:placeholder-gray-600"

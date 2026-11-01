@@ -5,9 +5,11 @@ import { POST } from "./route";
 import type { Item } from "@/db";
 import { checkLink } from "@/lib/server/checkLink";
 import { readRows, writeRows } from "@/lib/server/dexieCloud";
+import { lookUpLink } from "@/lib/server/lookUpLink";
 
 vi.mock("@/lib/server/dexieCloud", () => ({ readRows: vi.fn(), writeRows: vi.fn() }));
 vi.mock("@/lib/server/checkLink", () => ({ checkLink: vi.fn() }));
+vi.mock("@/lib/server/lookUpLink", () => ({ lookUpLink: vi.fn() }));
 
 function rpc(method: string, params: object = {}, token = "right-token") {
   return POST(
@@ -36,6 +38,8 @@ beforeEach(() => {
   vi.mocked(writeRows).mockReset();
   vi.mocked(checkLink).mockReset();
   vi.mocked(checkLink).mockResolvedValue(null);
+  vi.mocked(lookUpLink).mockReset();
+  vi.mocked(lookUpLink).mockRejectedValue(new Error("no page in tests"));
 });
 
 afterEach(() => {
@@ -68,9 +72,12 @@ describe("POST /api/mcp", () => {
 
     expect(result.tools.map((tool: { name: string }) => tool.name)).toEqual([
       "list_topics",
+      "create_topic",
+      "whats_next",
       "list_items",
       "add_item",
       "update_items",
+      "trash_items",
       "reorder_items",
     ]);
   });
@@ -89,6 +96,8 @@ describe("POST /api/mcp", () => {
   });
 
   it("adds a full item", async () => {
+    vi.mocked(readRows).mockResolvedValueOnce([{ id: "t1" }]);
+
     const { text } = await callTool("add_item", {
       title: "  A title  ",
       url: "https://example.com/a",
@@ -131,7 +140,7 @@ describe("POST /api/mcp", () => {
   });
 
   it("changes only the fields sent and keeps the rest of the row", async () => {
-    vi.mocked(readRows).mockResolvedValueOnce([
+    vi.mocked(readRows).mockResolvedValueOnce([{ id: "t1" }]).mockResolvedValueOnce([
       { id: "a", title: "A", notes: "mine", realmId: "me", owner: "me", status: "unread" },
     ]);
 
@@ -228,6 +237,136 @@ describe("POST /api/mcp", () => {
 
     expect(isError).toBe(true);
     expect(writeRows).not.toHaveBeenCalled();
+  });
+
+  it("fills in what a link can tell it", async () => {
+    vi.mocked(lookUpLink).mockResolvedValueOnce({
+      title: "From the page",
+      thumbnail: "https://example.com/a.png",
+      duration: 90,
+      summary: undefined,
+      category: "article",
+      tags: ["a"],
+    });
+
+    await callTool("add_item", { url: "https://example.com/a" });
+
+    expect(vi.mocked(writeRows).mock.calls[0][1][0]).toMatchObject({
+      title: "From the page",
+      thumbnail: "https://example.com/a.png",
+      duration: 90,
+      category: "article",
+      tags: ["a"],
+    });
+  });
+
+  it("wants a title or a link", async () => {
+    expect((await callTool("add_item", {})).isError).toBe(true);
+    expect(writeRows).not.toHaveBeenCalled();
+  });
+
+  it("returns the existing item for a repeat, even one in the Trash", async () => {
+    vi.mocked(readRows).mockResolvedValueOnce([
+      { id: "old", url: "https://example.com/a?utm_source=x", deletedAt: "2026-11-01" },
+    ]);
+
+    const { text } = await callTool("add_item", { url: "https://www.example.com/a/" });
+
+    expect(JSON.parse(text)).toEqual({ id: "old", duplicate: true, inTrash: true });
+    expect(writeRows).not.toHaveBeenCalled();
+  });
+
+  it("refuses an unknown topic, so an item can't vanish from every list", async () => {
+    vi.mocked(readRows).mockResolvedValueOnce([{ id: "t1" }]);
+
+    const { isError, text } = await callTool("add_item", { title: "New", topicIds: ["nope"] });
+
+    expect(isError).toBe(true);
+    expect(text).toContain("nope");
+    expect(writeRows).not.toHaveBeenCalled();
+  });
+
+  it("never lists or changes what's in the Trash", async () => {
+    const rows = [{ id: "gone", title: "Gone", status: "unread", sortOrder: 1, deletedAt: "2026-11-01" }];
+    vi.mocked(readRows).mockResolvedValue(rows);
+
+    expect(JSON.parse((await callTool("list_items")).text)).toEqual([]);
+    expect(JSON.parse((await callTool("update_items", { updates: [{ id: "gone", notes: "x" }] })).text)).toEqual({
+      updated: 0,
+      missing: ["gone"],
+    });
+    expect(writeRows).not.toHaveBeenCalled();
+  });
+
+  it("filters by star and by what's missing", async () => {
+    vi.mocked(readRows).mockResolvedValue([
+      { id: "a", status: "done", sortOrder: 2, starred: true },
+      { id: "b", status: "done", sortOrder: 1, summary: "s" },
+    ]);
+
+    const ids = async (args: object) =>
+      JSON.parse((await callTool("list_items", args)).text).map((item: { id: string }) => item.id);
+
+    expect(await ids({ starred: true })).toEqual(["a"]);
+    expect(await ids({ missing: "summary" })).toEqual(["a"]);
+    expect(await ids({ limit: 1 })).toEqual(["a"]);
+  });
+
+  it("snoozes an item and brings it back", async () => {
+    vi.mocked(readRows).mockResolvedValue([{ id: "a", status: "unread" }]);
+
+    await callTool("update_items", { updates: [{ id: "a", snoozedUntil: "2026-11-08T12:00:00.000Z" }] });
+    await callTool("update_items", { updates: [{ id: "a", snoozedUntil: null }] });
+
+    expect(vi.mocked(writeRows).mock.calls[0][1][0]).toMatchObject({ snoozedUntil: "2026-11-08T12:00:00.000Z" });
+    expect(vi.mocked(writeRows).mock.calls[1][1][0]).toMatchObject({ snoozedUntil: null });
+  });
+
+  it("gives the Next item per topic in the user's order, skipping snoozed ones", async () => {
+    vi.mocked(readRows).mockImplementation(async (table) =>
+      (table === "topics"
+        ? [
+            { id: "b", name: "Second", status: "active", sortOrder: 2 },
+            { id: "a", name: "First", status: "active", sortOrder: 1 },
+            { id: "c", name: "Finished", status: "completed", sortOrder: 3 },
+          ]
+        : [
+            { id: "snoozed", title: "Later", url: "", status: "unread", sortOrder: 9, topicIds: ["a"], snoozedUntil: "2999-01-01T00:00:00.000Z" },
+            { id: "next", title: "Now", url: "", status: "unread", sortOrder: 1, topicIds: ["a"] },
+            { id: "other", title: "Also", url: "", status: "unread", sortOrder: 1, topicIds: ["b"] },
+          ]) as never
+    );
+
+    const next = JSON.parse((await callTool("whats_next")).text);
+
+    expect(next.map((row: { topic: string; item: { id: string } }) => [row.topic, row.item.id])).toEqual([
+      ["First", "next"],
+      ["Second", "other"],
+    ]);
+  });
+
+  it("creates a topic once", async () => {
+    vi.mocked(readRows).mockResolvedValue([{ id: "t", name: "Rust" }]);
+
+    expect(JSON.parse((await callTool("create_topic", { name: "rust" })).text)).toEqual({ id: "t", existing: true });
+    expect(writeRows).not.toHaveBeenCalled();
+
+    await callTool("create_topic", { name: "Go" });
+    expect(vi.mocked(writeRows).mock.calls[0][0]).toBe("topics");
+  });
+
+  it("trashes items but leaves published ones for the app", async () => {
+    vi.mocked(readRows).mockResolvedValue([
+      { id: "a", status: "unread" },
+      { id: "p", status: "done", publishedAt: "2026-01-01" },
+    ]);
+
+    const { text } = await callTool("trash_items", { ids: ["a", "p", "gone"] });
+
+    expect(JSON.parse(text)).toEqual({ trashed: 1, missing: ["gone"], published: ["p"] });
+    const [written] = vi.mocked(writeRows).mock.calls[0][1] as Item[];
+    expect(written.id).toBe("a");
+    expect(written.deletedAt).toBeTruthy();
   });
 
   it("reports a failed write as a tool error", async () => {

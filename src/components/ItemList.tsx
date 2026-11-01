@@ -14,13 +14,13 @@ import {
 import type { DragEndEvent, DragOverEvent, UniqueIdentifier } from "@dnd-kit/core";
 import {
   SortableContext,
-  arrayMove,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useState } from "react";
 import type { Item, Group, GroupColor, Topic } from "@/db";
 import { useTopicDrop } from "@/hooks/useTopicDrop";
+import { reorderItems } from "@/lib/reorderItems";
 import { DragPreview, ItemRow } from "./ItemRow";
 import { GroupSection } from "./GroupSection";
 import { EmptyState } from "./EmptyState";
@@ -139,17 +139,8 @@ export const ItemList = memo(function ItemList({
       if (!activeItem || !overItem) return;
       if (activeItem.groupId || overItem.groupId) return; // only reorder ungrouped
 
-      const oldIndex = ungroupedItems.findIndex((i) => i.id === activeId);
-      const newIndex = ungroupedItems.findIndex((i) => i.id === overId);
-      if (oldIndex === -1 || newIndex === -1) return;
-
-      const reordered = arrayMove(ungroupedItems, oldIndex, newIndex);
-      onReorder(
-        reordered.map((item, index) => ({
-          id: item.id,
-          sortOrder: (reordered.length - index) * 1000,
-        }))
-      );
+      const updates = reorderItems(ungroupedItems, activeId, overId);
+      if (updates.length) onReorder(updates);
     },
     [items, ungroupedItems, onAssignToGroup, onReorder, topicDrop]
   );

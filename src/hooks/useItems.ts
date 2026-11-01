@@ -5,6 +5,16 @@ import { db, type Item, type Topic } from "@/db";
 import { isArchived } from "@/lib/archive";
 import { replaceTopic } from "@/lib/topicQueue";
 
+/** The public reading list is a separate server copy, so it has to be told about every change. */
+async function syncReadingList(item: object): Promise<void> {
+  const res = await authFetch("/api/items/sync", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  if (!res.ok) throw new Error(`Reading list update failed: ${res.status}`);
+}
+
 export function useItems() {
   const allItems = useLiveQuery(() =>
     db.items.orderBy("sortOrder").reverse().toArray()
@@ -121,25 +131,13 @@ export function useItems() {
     const item = await db.items.get(id);
     if (!item) return;
     const now = new Date().toISOString();
+    await syncReadingList({ ...item, publishedAt: now });
     await db.items.update(id, { publishedAt: now });
-
-    // Sync to server store for public reading-list API — non-blocking
-    authFetch("/api/items/sync", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...item, publishedAt: now }),
-    }).catch(() => {});
   }, []);
 
   const unpublishItem = useCallback(async (id: string) => {
+    await syncReadingList({ id, publishedAt: null, status: "unread" });
     await db.items.update(id, { publishedAt: undefined });
-
-    // Remove from server store
-    authFetch("/api/items/sync", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, publishedAt: null, status: "unread" }),
-    }).catch(() => {});
   }, []);
 
   const snooze = useCallback(async (id: string, until: string | null) => {
@@ -153,7 +151,10 @@ export function useItems() {
   }, []);
 
   const deleteItem = useCallback(async (id: string) => {
-    await db.items.update(id, { deletedAt: new Date().toISOString() });
+    const item = await db.items.get(id);
+    if (!item) return;
+    if (item.publishedAt) await syncReadingList({ id, publishedAt: null, status: "unread" });
+    await db.items.update(id, { deletedAt: new Date().toISOString(), publishedAt: undefined });
   }, []);
 
   const restoreItem = useCallback(async (id: string) => {

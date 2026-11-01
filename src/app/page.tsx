@@ -16,6 +16,7 @@ import { SkeletonList } from "@/components/SkeletonList";
 import { TrashView } from "@/components/TrashView";
 import { useToast } from "@/components/Toast";
 import { itemKind, type ItemKind } from "@/lib/itemKind";
+import { linkKey } from "@/lib/linkKey";
 import { matchesSearch } from "@/lib/matchesSearch";
 import type { Item, GroupColor } from "@/db";
 
@@ -142,9 +143,8 @@ export default function Page() {
   const handleAdd = useCallback(
     async (data: NewItem) => {
       if (data.url) {
-        const duplicate = allItems.find(
-          (i) => i.url && i.url.replace(/\/$/, "") === data.url.replace(/\/$/, "")
-        );
+        const key = linkKey(data.url);
+        const duplicate = allItems.find((i) => i.url && linkKey(i.url) === key);
         if (duplicate) {
           toast(`Already saved: "${duplicate.title}"`, "warning");
           return;
@@ -180,10 +180,38 @@ export default function Page() {
 
   const handleDelete = useCallback(
     async (id: string) => {
-      await deleteItem(id);
-      toast("Moved to Trash");
+      try {
+        await deleteItem(id);
+        toast("Moved to Trash");
+      } catch {
+        toast("Couldn't take it off your reading list, so it wasn't deleted", "error");
+      }
     },
     [deleteItem, toast]
+  );
+
+  const handlePublish = useCallback(
+    async (id: string) => {
+      try {
+        await publishItem(id);
+        toast("Published");
+      } catch {
+        toast("Couldn't publish it", "error");
+      }
+    },
+    [publishItem, toast]
+  );
+
+  const handleUnpublish = useCallback(
+    async (id: string) => {
+      try {
+        await unpublishItem(id);
+        toast("Removed from your reading list");
+      } catch {
+        toast("Couldn't remove it from your reading list", "error");
+      }
+    },
+    [unpublishItem, toast]
   );
 
   const handleSnooze = useCallback(
@@ -367,8 +395,8 @@ export default function Page() {
               filtered={isFiltered && items.length > 0}
               onMarkDone={handleMarkDone}
               onUnmarkDone={unmarkDone}
-              onPublish={publishItem}
-              onUnpublish={unpublishItem}
+              onPublish={handlePublish}
+              onUnpublish={handleUnpublish}
               onUpdateTags={handleUpdateTags}
               onUpdateNotes={handleUpdateNotes}
               onToggleStar={toggleStar}

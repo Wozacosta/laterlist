@@ -1,6 +1,8 @@
 import { decodeHtmlEntities } from "@/lib/decodeHtmlEntities";
 import { readCapped, safeFetch } from "./safeFetch";
 
+const LOOKUP_TIMEOUT_MS = 10_000;
+
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -20,7 +22,7 @@ export async function fetchYouTubeMetadata(url: string): Promise<{
   // oEmbed for title + thumbnail
   const oembedRes = await fetch(
     `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
-    { headers: { "User-Agent": BROWSER_UA }, cache: "no-store" }
+    { headers: { "User-Agent": BROWSER_UA }, cache: "no-store", signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) }
   );
   if (!oembedRes.ok) {
     throw new Error(`YouTube oEmbed failed: ${oembedRes.status}`);
@@ -37,7 +39,7 @@ export async function fetchYouTubeMetadata(url: string): Promise<{
     try {
       const watchRes = await fetch(
         `https://www.youtube.com/watch?v=${videoIdMatch[1]}`,
-        { headers: { "User-Agent": BROWSER_UA }, cache: "no-store" }
+        { headers: { "User-Agent": BROWSER_UA }, cache: "no-store", signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) }
       );
       if (watchRes.ok) {
         const html = await watchRes.text();
@@ -65,7 +67,7 @@ export async function fetchTweetMetadata(url: string): Promise<{
 }> {
   const res = await fetch(
     `https://publish.twitter.com/oembed?omit_script=1&dnt=true&url=${encodeURIComponent(url)}`,
-    { headers: { "User-Agent": BROWSER_UA }, cache: "no-store" }
+    { headers: { "User-Agent": BROWSER_UA }, cache: "no-store", signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) }
   );
   if (!res.ok) {
     throw new Error(`Tweet oEmbed failed: ${res.status}`);

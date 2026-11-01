@@ -1,9 +1,7 @@
 import { type NextRequest } from "next/server";
-import { fetchArticleMetadata, fetchTweetMetadata, fetchYouTubeMetadata } from "./metadata";
-import { inferCategoryAndTags } from "./ai";
 import { BlockedUrlError } from "./safeFetch";
-import { isTweetUrl } from "@/lib/itemKind";
 import { rateLimit } from "@/lib/ratelimit";
+import { lookUpLink } from "@/lib/server/lookUpLink";
 import { requireDexieUser } from "@/lib/server/dexieAuth";
 
 export async function POST(request: NextRequest) {
@@ -57,28 +55,8 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "URL must use http or https" }, { status: 400 });
     }
 
-    const isYouTube = /youtube\.com|youtu\.be/.test(url);
-    const isTweet = isTweetUrl(url);
-    const metadata = isYouTube
-      ? await fetchYouTubeMetadata(url)
-      : isTweet
-        ? await fetchTweetMetadata(url)
-        : await fetchArticleMetadata(url);
-
-    const { category, tags } = await inferCategoryAndTags(
-      metadata.title,
-      metadata.description
-    );
-
     return Response.json(
-      {
-        title: metadata.title,
-        thumbnail: metadata.thumbnail,
-        duration: metadata.duration,
-        summary: isTweet ? metadata.description : undefined,
-        category,
-        tags,
-      },
+      await lookUpLink(url),
       {
         headers: {
           "X-RateLimit-Remaining": String(remaining),

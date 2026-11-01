@@ -46,6 +46,7 @@ export interface Item {
   groupId?: string; // optional group membership
   topicIds?: string[]; // optional learning topics (multi-select)
   starred?: boolean; // one of the user's favorites
+  progress?: string; // where the user got to in a long item, in their words
   snoozedUntil?: string | null; // ISO datetime — out of its topic's queue until then
   deletedAt?: string | null; // ISO datetime — in the Trash until restored or emptied
 }

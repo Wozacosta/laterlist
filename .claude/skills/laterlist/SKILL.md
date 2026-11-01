@@ -1,6 +1,6 @@
 ---
 name: laterlist
-description: Work on the user's learning list through the laterlist MCP tools. Use when they ask what's next, where they're at, to file or summarize items, to reorder a topic, or to build a list on a topic.
+description: Work on the user's learning list through the laterlist MCP tools. Use when they ask what's next, where they're at, to save something for later, to file or summarize items, to reorder a topic, to build a list on a topic, to recommend what to learn, or to debrief or quiz them on something they finished.
 ---
 
 Use the `laterlist` MCP tools. Start with `list_topics`, then `list_items`.
@@ -23,6 +23,26 @@ Find items with no `summary`. Read each page, and save two or three plain senten
 ## Say what's next
 
 The top unread item in a topic is its Next item, skipping any with a future `snoozedUntil`: the user has done part of those and they come back on that date. To say where the user is at, use finished items and their notes, then the top of each queue.
+
+## Save something
+
+Use `add_item` with the link. It fills in the title, image and length, and tells you if the link is already saved. Add `topicIds` only if a topic clearly fits.
+
+## Recommend what to learn
+
+Read `list_items` with `status: "done"`, then the unread items. Pick from what's already saved before looking elsewhere. For each pick, name the finished or starred item it builds on, and save that line as the item's `why`. If there are no notes or stars to go on, say that the pick rests on titles alone.
+
+## Collect notes on finished items
+
+Use `list_items` with `status: "done"` and `missing: "notes"`. Ask about one item at a time: what stuck? Save the answer as `notes` in their words. Don't tidy it up, and let them skip freely.
+
+## Debrief
+
+When they say how something went, save their words as `notes`. If they finished it, mark it done. If they got partway, save `progress`, and offer to snooze it with `snoozedUntil`. Then say what's next.
+
+## Quiz
+
+Ask three short questions on a finished item, reading its page or summary first. Save what they say they got wrong or want to remember as `notes`, in their words.
 
 ## Reorder a topic
 

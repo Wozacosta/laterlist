@@ -26,13 +26,17 @@ const CATEGORY_KINDS: Record<Exclude<Category, "other">, ItemKind> = {
 const YOUTUBE_URL = /^https?:\/\/(?:[\w-]+\.)?(?:youtube\.com|youtu\.be)\//i;
 const TWEET_URL = /^https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/\w+\/status\/\d+/i;
 
+export function isYouTubeUrl(url: string): boolean {
+  return YOUTUBE_URL.test(url);
+}
+
 export function isTweetUrl(url: string): boolean {
   return TWEET_URL.test(url);
 }
 
 /** The link decides first: most saved YouTube videos were categorized as articles. */
 export function itemKind({ url, category }: Pick<Item, "url" | "category">): ItemKind {
-  if (YOUTUBE_URL.test(url)) return "YouTube";
+  if (isYouTubeUrl(url)) return "YouTube";
   if (isTweetUrl(url)) return "Tweet";
   if (category !== "other") return CATEGORY_KINDS[category];
   return url ? "Link" : "Note";
