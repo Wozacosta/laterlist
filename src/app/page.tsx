@@ -69,7 +69,7 @@ export default function Page() {
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [hideDone, setHideDone] = useState(false);
+  const [hideDone, setHideDone] = useState(true);
 
   useEffect(() => {
     setSelectedTopicId(localStorage.getItem(SELECTED_TOPIC_KEY));
@@ -295,7 +295,7 @@ export default function Page() {
               items={filteredItems}
               groups={groups}
               topics={topics}
-              filtered={isFiltered}
+              filtered={isFiltered && items.length > 0}
               onMarkDone={handleMarkDone}
               onUnmarkDone={unmarkDone}
               onPublish={publishItem}
