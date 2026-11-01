@@ -5,7 +5,7 @@ import { useDraggable } from "@dnd-kit/core";
 import type { Item, Topic } from "@/db";
 import { pickRecall } from "@/lib/recall";
 import { nextByTopic } from "@/lib/topicQueue";
-import { ItemLink, ItemThumbnail, quietButton, rowTitleClass, StarButton } from "./ItemRow";
+import { ItemLink, ItemThumbnail, quietButton, rowTitleClass, StarButton, TrashButton } from "./ItemRow";
 import { DoneABit, Grip, ItemDetails, ItemDragArea, NextCard, type ItemActions } from "./TopicView";
 
 function TopicName({ topic, onOpen }: { topic: Topic; onOpen: (id: string) => void }) {
@@ -58,6 +58,7 @@ function NextRow({
         <button type="button" onClick={() => actions.onMarkDone(item.id)} className={quietButton}>
           Done
         </button>
+        <TrashButton item={item} onDelete={actions.onDelete} />
       </div>
     </li>
   );

@@ -18,6 +18,7 @@ import {
   QuietSelect,
   rowTitleClass,
   StarButton,
+  TrashButton,
 } from "./ItemRow";
 
 const SNOOZE_OPTIONS = [
@@ -187,9 +188,7 @@ export function NextCard({ item, actions }: { item: Item; actions: ItemActions }
         <MoveTo item={item} moveTargets={actions.moveTargets} onMove={actions.onMove} />
         <div className="ml-auto flex items-center gap-1">
           <StarButton item={item} onToggle={actions.onToggleStar} />
-          <button type="button" onClick={() => actions.onDelete(item.id)} className={quietButton}>
-            Delete
-          </button>
+          <TrashButton item={item} onDelete={actions.onDelete} />
         </div>
       </div>
     </section>
@@ -227,6 +226,7 @@ function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
         <button type="button" onClick={() => actions.onMarkDone(item.id)} className={quietButton}>
           Done
         </button>
+        <TrashButton item={item} onDelete={actions.onDelete} />
       </div>
     </li>
   );
@@ -245,6 +245,7 @@ function SnoozedRow({ item, actions }: { item: Item; actions: ItemActions }) {
       <button type="button" onClick={() => actions.onSnooze(item.id, null, "Back in the queue")} className={quietButton}>
         Bring back
       </button>
+      <TrashButton item={item} onDelete={actions.onDelete} />
     </li>
   );
 }
@@ -263,6 +264,7 @@ function LearnedRow({ item, actions }: { item: Item; actions: ItemActions }) {
           <button type="button" onClick={() => actions.onUnmarkDone(item.id)} className={quietButton}>
             Not done
           </button>
+          <TrashButton item={item} onDelete={actions.onDelete} />
         </div>
       </div>
       <textarea
