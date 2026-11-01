@@ -3,7 +3,7 @@
 import { memo, useMemo } from "react";
 import type { Item, Topic } from "@/db";
 import { topicLearned, topicQueue } from "@/lib/topicQueue";
-import { formatDuration } from "./ItemRow";
+import { formatDuration, Thumbnail } from "./ItemRow";
 
 const quietButton =
   "rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200";
@@ -61,7 +61,9 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
       aria-label="Next"
       className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900"
     >
-      <div className="min-w-0 flex-1 basis-64">
+      <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} className="h-14 w-24" />
+
+      <div className="min-w-0 flex-1 basis-52">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Next</p>
         <ItemLink item={item} className="block break-words text-lg font-semibold text-gray-900 dark:text-white" />
         {details && <p className="text-xs text-gray-500 dark:text-gray-400">{details}</p>}
@@ -91,7 +93,9 @@ function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
   const details = item.duration != null && formatDuration(item.duration, item.category);
 
   return (
-    <li className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-800">
+    <li className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-800">
+      <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} className="hidden h-9 w-16 sm:block" />
+
       <div className="min-w-0 flex-1">
         <ItemLink item={item} className="block truncate text-[15px] font-medium text-gray-800 dark:text-gray-200" />
         {details && <p className="text-xs text-gray-400 dark:text-gray-600">{details}</p>}

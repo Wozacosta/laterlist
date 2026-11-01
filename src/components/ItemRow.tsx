@@ -40,11 +40,19 @@ function formatDate(isoString: string): string {
 }
 
 /** Saved image links go dead over time, so a failed image falls back to the letter. */
-function Thumbnail({ src, category }: { src?: string; category: string }) {
+export function Thumbnail({
+  src,
+  category,
+  className = "h-12 w-12",
+}: {
+  src?: string;
+  category: string;
+  className?: string;
+}) {
   const [failed, setFailed] = useState(false);
 
   return (
-    <div className="shrink-0 h-12 w-12 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+    <div className={`shrink-0 overflow-hidden rounded bg-gray-100 dark:bg-gray-800 ${className}`}>
       {src && !failed ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
