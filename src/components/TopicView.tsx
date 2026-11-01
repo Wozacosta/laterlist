@@ -148,6 +148,9 @@ function LearnedRow({ item, actions }: { item: Item; actions: ItemActions }) {
         <div className="min-w-0 flex-1">
           <ItemLink item={item} className="text-sm text-gray-600 dark:text-gray-400" />
         </div>
+        <div className="hidden sm:block">
+          <MoveTo item={item} moveTargets={actions.moveTargets} onMove={actions.onMove} />
+        </div>
         <button type="button" onClick={() => actions.onUnmarkDone(item.id)} className={quietButton}>
           Not done
         </button>
