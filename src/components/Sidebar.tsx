@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Item, Topic } from "@/db";
+import { draggedItemId, isItemDrag } from "@/lib/itemDrag";
 import { reorderTopics } from "@/lib/reorderTopics";
 import { topicQueue } from "@/lib/topicQueue";
 import { CloudSyncButton } from "./CloudSyncButton";
@@ -36,12 +37,15 @@ function TopicRow({
   count,
   active,
   onSelect,
+  onDropItem,
 }: {
   topic: Topic;
   count: number;
   active: boolean;
   onSelect: (topicId: string) => void;
+  onDropItem: (itemId: string, topicId: string) => void;
 }) {
+  const [dropTarget, setDropTarget] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: topic.id,
   });
@@ -56,8 +60,22 @@ function TopicRow({
       }}
       type="button"
       onClick={() => onSelect(topic.id)}
+      onDragOver={(e) => {
+        if (!isItemDrag(e)) return;
+        e.preventDefault();
+        setDropTarget(true);
+      }}
+      onDragLeave={() => setDropTarget(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDropTarget(false);
+        const itemId = draggedItemId(e);
+        if (itemId) onDropItem(itemId, topic.id);
+      }}
       aria-current={active ? "page" : undefined}
-      className={`${rowClass(active)} cursor-grab active:cursor-grabbing`}
+      className={`${rowClass(active)} cursor-grab active:cursor-grabbing ${
+        dropTarget ? "ring-2 ring-blue-500" : ""
+      }`}
       {...attributes}
       {...listeners}
     >
@@ -75,6 +93,7 @@ interface SidebarProps {
   onSelect: (topicId: string | null) => void;
   onAddTopic: (name: string) => void;
   onReorderTopics: (updates: Array<{ id: string; sortOrder: number }>) => void;
+  onDropItem: (itemId: string, topicId: string) => void;
 }
 
 export const Sidebar = memo(function Sidebar({
@@ -85,6 +104,7 @@ export const Sidebar = memo(function Sidebar({
   onSelect,
   onAddTopic,
   onReorderTopics,
+  onDropItem,
 }: SidebarProps) {
   // Mouse only: on a touch screen the same gesture scrolls the topic row sideways.
   const sensors = useSensors(
@@ -134,6 +154,7 @@ export const Sidebar = memo(function Sidebar({
                 count={topicQueue(items, topic.id).length}
                 active={selected === topic.id}
                 onSelect={onSelect}
+                onDropItem={onDropItem}
               />
             ))}
           </SortableContext>

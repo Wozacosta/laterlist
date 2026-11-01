@@ -2,6 +2,7 @@
 
 import { memo, useMemo } from "react";
 import type { Item, Topic } from "@/db";
+import { itemDragProps } from "@/lib/itemDrag";
 import { topicLearned, topicQueue } from "@/lib/topicQueue";
 import { formatDuration, Thumbnail } from "./ItemRow";
 
@@ -61,15 +62,18 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
       aria-label="Next"
       className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900"
     >
+      <div className="flex min-w-0 flex-1 basis-72 items-center gap-4" {...itemDragProps(item.id)}>
       <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} className="h-14 w-24" />
 
-      <div className="min-w-0 flex-1 basis-52">
+      <div className="min-w-0 flex-1">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Next</p>
         <ItemLink item={item} className="block break-words text-lg font-semibold text-gray-900 dark:text-white" />
         {details && <p className="text-xs text-gray-500 dark:text-gray-400">{details}</p>}
         {(item.why || item.summary) && (
           <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{item.why || item.summary}</p>
         )}
+      </div>
+
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
@@ -94,11 +98,13 @@ function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
 
   return (
     <li className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-800">
-      <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} className="hidden h-9 w-16 sm:block" />
+      <div className="flex min-w-0 flex-1 items-center gap-3" {...itemDragProps(item.id)}>
+        <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} className="hidden h-9 w-16 sm:block" />
 
-      <div className="min-w-0 flex-1">
-        <ItemLink item={item} className="block truncate text-[15px] font-medium text-gray-800 dark:text-gray-200" />
-        {details && <p className="text-xs text-gray-400 dark:text-gray-600">{details}</p>}
+        <div className="min-w-0 flex-1">
+          <ItemLink item={item} className="block truncate text-[15px] font-medium text-gray-800 dark:text-gray-200" />
+          {details && <p className="text-xs text-gray-400 dark:text-gray-600">{details}</p>}
+        </div>
       </div>
       <button type="button" onClick={() => actions.onDoNext(item.id)} className={quietButton}>
         Do next

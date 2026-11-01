@@ -190,6 +190,23 @@ export default function Page() {
     [moveToTopic, selectedTopic, toast, topics]
   );
 
+  // Inside a topic a drop moves the item, like Move to. From All items it adds the topic.
+  const handleDropOnTopic = useCallback(
+    async (itemId: string, topicId: string) => {
+      if (topicId === selectedTopic?.id) return;
+      const name = topics.find((t) => t.id === topicId)?.name ?? "topic";
+
+      if (selectedTopic) {
+        await moveToTopic(itemId, selectedTopic.id, topicId);
+        toast(`Moved to ${name}`);
+      } else {
+        await assignToTopic(itemId, topicId);
+        toast(`Added to ${name}`);
+      }
+    },
+    [assignToTopic, moveToTopic, selectedTopic, toast, topics]
+  );
+
   const handleTagToggle = useCallback((tag: string) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
@@ -237,6 +254,7 @@ export default function Page() {
         onSelect={handleSelectTopic}
         onAddTopic={handleAddTopic}
         onReorderTopics={setTopicOrder}
+        onDropItem={handleDropOnTopic}
       />
 
       <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8">

@@ -4,6 +4,7 @@ import { memo, useState, useCallback } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Item, Topic } from "@/db";
+import { itemDragProps } from "@/lib/itemDrag";
 import { TagChips } from "./TagChips";
 import { TopicPicker } from "./TopicPicker";
 
@@ -174,6 +175,7 @@ export const ItemRow = memo(function ItemRow({
         </button>
 
         {/* Thumbnail */}
+        <div className="flex min-w-0 flex-1 items-center gap-2" {...itemDragProps(item.id)}>
         <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} />
 
         {/* Main content */}
@@ -196,6 +198,8 @@ export const ItemRow = memo(function ItemRow({
               onAdd={handleTagAdd}
             />
           </div>
+        </div>
+
         </div>
 
         {/* Meta */}
