@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { Category, Item, Topic } from "@/db";
+import { itemKind } from "@/lib/itemKind";
 import { checkLink } from "./checkLink";
 import { readRows, writeRows } from "./dexieCloud";
 
@@ -38,6 +39,11 @@ function withoutUndefined<T extends object>(value: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(value).filter(([, field]) => field !== undefined)
   ) as Partial<T>;
+}
+
+/** The Trash stays out of Claude's reach, as it stays out of the app's lists. */
+async function readItems(): Promise<Item[]> {
+  return (await readRows<Item>("items")).filter((item) => !item.deletedAt);
 }
 
 /** New items join the back of the queue, so they never replace the current Next item. */
@@ -78,7 +84,7 @@ export function createMcpServer(): McpServer {
       },
     },
     async ({ status, topicId, withoutTopic }) => {
-      const items = await readRows<Item>("items");
+      const items = await readItems();
       return json(
         items
           .filter((item) => !status || item.status === status)
@@ -89,7 +95,7 @@ export function createMcpServer(): McpServer {
             id: item.id,
             title: item.title,
             url: item.url,
-            category: item.category,
+            kind: itemKind(item),
             tags: item.tags,
             status: item.status,
             topicIds: item.topicIds,
@@ -124,7 +130,7 @@ export function createMcpServer(): McpServer {
         if (problem) return failure(`Not added, because ${problem}: ${url}`);
       }
 
-      const items = await readRows<Item>("items");
+      const items = await readItems();
       const item: Item = {
         ...withoutUndefined(fields),
         title: fields.title,
@@ -161,7 +167,7 @@ export function createMcpServer(): McpServer {
       },
     },
     async ({ updates }) => {
-      const items = new Map((await readRows<Item>("items")).map((item) => [item.id, item]));
+      const items = new Map((await readItems()).map((item) => [item.id, item]));
       const missing: string[] = [];
       const rows: Item[] = [];
 
@@ -196,7 +202,7 @@ export function createMcpServer(): McpServer {
       inputSchema: { ids: z.array(z.string()).min(2).max(500) },
     },
     async ({ ids }) => {
-      const items = new Map((await readRows<Item>("items")).map((item) => [item.id, item]));
+      const items = new Map((await readItems()).map((item) => [item.id, item]));
       const rows = ids.map((id) => items.get(id));
       const missing = ids.filter((id) => !items.has(id));
       if (missing.length || new Set(ids).size !== ids.length) {

@@ -24,6 +24,8 @@ import { CloudSyncButton } from "./CloudSyncButton";
 import { DataManager } from "./DataManager";
 import { ThemeToggle } from "./ThemeToggle";
 
+export const TRASH = "trash";
+
 const rowClass = (active: boolean) =>
   `flex shrink-0 items-center justify-between gap-3 rounded-md px-3 py-1.5 text-left text-sm transition-colors md:w-full ${
     active
@@ -71,6 +73,7 @@ function TopicRow({
 interface SidebarProps {
   topics: Topic[];
   items: Item[];
+  trashCount: number;
   selected: string | null;
   isLoggedIn: boolean;
   onSelect: (topicId: string | null) => void;
@@ -81,6 +84,7 @@ interface SidebarProps {
 export const Sidebar = memo(function Sidebar({
   topics,
   items,
+  trashCount,
   selected,
   isLoggedIn,
   onSelect,
@@ -179,6 +183,17 @@ export const Sidebar = memo(function Sidebar({
             ))}
           </details>
         )}
+
+        <button
+          type="button"
+          onClick={() => onSelect(TRASH)}
+          className={`${rowClass(selected === TRASH)} md:mt-auto`}
+        >
+          <span>Trash</span>
+          {trashCount > 0 && (
+            <span className="text-xs text-gray-400 dark:text-gray-600">{trashCount}</span>
+          )}
+        </button>
       </nav>
 
       <div className="flex flex-wrap items-center gap-2">

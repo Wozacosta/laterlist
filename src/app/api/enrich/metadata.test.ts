@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fetchArticleMetadata, fetchTweetMetadata, fetchYouTubeMetadata, isTweetUrl } from "./metadata";
+import { fetchArticleMetadata, fetchTweetMetadata, fetchYouTubeMetadata } from "./metadata";
 
 vi.mock("node:dns/promises", () => {
   const lookup = async () => [{ address: "93.184.216.34", family: 4 }];
@@ -67,18 +67,6 @@ describe("fetchYouTubeMetadata", () => {
     await expect(
       fetchYouTubeMetadata("https://www.youtube.com/watch?v=bad")
     ).rejects.toThrow("YouTube oEmbed failed");
-  });
-});
-
-describe("isTweetUrl", () => {
-  it("matches posts on x.com and twitter.com, with or without tracking", () => {
-    expect(isTweetUrl("https://x.com/burkov/status/2023822767284490263?s=46&t=abc")).toBe(true);
-    expect(isTweetUrl("https://mobile.twitter.com/burkov/status/123")).toBe(true);
-  });
-
-  it("leaves profiles and lookalike sites alone", () => {
-    expect(isTweetUrl("https://x.com/burkov")).toBe(false);
-    expect(isTweetUrl("https://netflix.com/a/status/123")).toBe(false);
   });
 });
 

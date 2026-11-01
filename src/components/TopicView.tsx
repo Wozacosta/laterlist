@@ -4,8 +4,9 @@ import { memo, useMemo, useState } from "react";
 import { DndContext, DragOverlay, PointerSensor, useDraggable, useSensor, useSensors } from "@dnd-kit/core";
 import type { Item, Topic } from "@/db";
 import { useTopicDrop } from "@/hooks/useTopicDrop";
+import { itemKind } from "@/lib/itemKind";
 import { topicLearned, topicQueue } from "@/lib/topicQueue";
-import { DragPreview, formatDuration, gripClass, ItemLink, ItemThumbnail } from "./ItemRow";
+import { DragPreview, formatDuration, gripClass, ItemLink, ItemThumbnail, KindBadge } from "./ItemRow";
 
 const quietButton =
   "rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200";
@@ -49,14 +50,16 @@ function Grip() {
   );
 }
 
-function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
-  const details = [
-    item.category !== "other" && item.category,
-    item.duration != null && formatDuration(item.duration, item.category),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+function ItemDetails({ item }: { item: Item }) {
+  return (
+    <p className="mt-0.5 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+      <KindBadge item={item} />
+      {item.duration != null && formatDuration(item.duration, itemKind(item))}
+    </p>
+  );
+}
 
+function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
   const { listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
 
   return (
@@ -79,7 +82,7 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
           titleClassName="line-clamp-2 break-words"
           className="text-lg font-semibold text-gray-900 dark:text-white"
         />
-        {details && <p className="text-xs text-gray-500 dark:text-gray-400">{details}</p>}
+        <ItemDetails item={item} />
         {(item.why || item.summary) && (
           <p className="mt-1 line-clamp-3 text-sm text-gray-700 dark:text-gray-300">{item.why || item.summary}</p>
         )}
@@ -105,7 +108,6 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
 }
 
 function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
-  const details = item.duration != null && formatDuration(item.duration, item.category);
   const { listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
 
   return (
@@ -122,7 +124,7 @@ function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
 
         <div className="min-w-0 flex-1">
           <ItemLink item={item} className="text-[15px] font-medium text-gray-800 dark:text-gray-200" />
-          {details && <p className="text-xs text-gray-400 dark:text-gray-600">{details}</p>}
+          <ItemDetails item={item} />
         </div>
       </div>
       <button type="button" onClick={() => actions.onDoNext(item.id)} className={quietButton}>
@@ -142,6 +144,7 @@ function LearnedRow({ item, actions }: { item: Item; actions: ItemActions }) {
   return (
     <li className="py-2">
       <div className="flex items-center gap-2">
+        <KindBadge item={item} />
         <div className="min-w-0 flex-1">
           <ItemLink item={item} className="text-sm text-gray-600 dark:text-gray-400" />
         </div>

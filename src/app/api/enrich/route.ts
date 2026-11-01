@@ -1,7 +1,8 @@
 import { type NextRequest } from "next/server";
-import { fetchArticleMetadata, fetchTweetMetadata, fetchYouTubeMetadata, isTweetUrl } from "./metadata";
+import { fetchArticleMetadata, fetchTweetMetadata, fetchYouTubeMetadata } from "./metadata";
 import { inferCategoryAndTags } from "./ai";
 import { BlockedUrlError } from "./safeFetch";
+import { isTweetUrl } from "@/lib/itemKind";
 import { rateLimit } from "@/lib/ratelimit";
 import { requireDexieUser } from "@/lib/server/dexieAuth";
 

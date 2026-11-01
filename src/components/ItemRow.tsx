@@ -4,6 +4,7 @@ import { memo, useState, useCallback } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Item, Topic } from "@/db";
+import { itemKind, type ItemKind } from "@/lib/itemKind";
 import { TagChips } from "./TagChips";
 import { TopicPicker } from "./TopicPicker";
 
@@ -21,9 +22,34 @@ interface ItemRowProps {
   onUnassignTopic: (itemId: string, topicId: string) => void;
 }
 
-export function formatDuration(seconds: number | undefined, category: string): string {
-  if (seconds == null) return "–";
-  if (category === "video" || category === "podcast") {
+const WATCHED_KINDS: ItemKind[] = ["YouTube", "Video", "Podcast"];
+
+const KIND_STYLES: Record<ItemKind, string> = {
+  YouTube: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+  Tweet: "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900",
+  Video: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+  Article: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+  Paper: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+  Repo: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300",
+  Podcast: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
+  Doc: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+  Action: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+  Link: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
+  Note: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
+};
+
+export function KindBadge({ item }: { item: Item }) {
+  const kind = itemKind(item);
+
+  return (
+    <span className={`shrink-0 rounded px-1.5 text-[11px] font-medium leading-4 ${KIND_STYLES[kind]}`}>
+      {kind}
+    </span>
+  );
+}
+
+export function formatDuration(seconds: number, kind: ItemKind): string {
+  if (WATCHED_KINDS.includes(kind)) {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     if (h > 0) return `${h}h ${m}m`;
@@ -33,7 +59,7 @@ export function formatDuration(seconds: number | undefined, category: string): s
   return `${mins} min read`;
 }
 
-function formatDate(isoString: string): string {
+export function formatDate(isoString: string): string {
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(
     new Date(isoString)
   );
@@ -245,16 +271,19 @@ export const ItemRow = memo(function ItemRow({
             item={item}
             className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${item.status === "done" ? "line-through" : ""}`}
           />
-          {item.tags.length > 0 && (
-            <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-600">
-              {item.tags.join(" · ")}
-            </p>
-          )}
+          <div className="mt-0.5 flex min-w-0 items-center gap-2">
+            <KindBadge item={item} />
+            {item.tags.length > 0 && (
+              <p className="truncate text-xs text-gray-400 dark:text-gray-600">
+                {item.tags.join(" · ")}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Meta */}
         <div className="shrink-0 flex flex-col items-end gap-1 text-xs text-gray-400 dark:text-gray-600">
-          {item.duration != null && <span>{formatDuration(item.duration, item.category)}</span>}
+          {item.duration != null && <span>{formatDuration(item.duration, itemKind(item))}</span>}
           <span>{formatDate(item.addedAt)}</span>
         </div>
 
@@ -295,7 +324,8 @@ export const ItemRow = memo(function ItemRow({
             onDelete(item.id);
           }}
           className="shrink-0 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-lg leading-none dark:text-gray-700 dark:hover:text-red-400"
-          aria-label="Delete item"
+          aria-label="Move to Trash"
+          title="Move to Trash"
         >
           ×
         </button>

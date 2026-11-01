@@ -10,12 +10,14 @@ import { AddItemInput } from "@/components/AddItemInput";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar, TRASH } from "@/components/Sidebar";
 import { TopicView } from "@/components/TopicView";
 import { SkeletonList } from "@/components/SkeletonList";
+import { TrashView } from "@/components/TrashView";
 import { useToast } from "@/components/Toast";
+import { itemKind, type ItemKind } from "@/lib/itemKind";
 import { matchesSearch } from "@/lib/matchesSearch";
-import type { Category, Item, GroupColor } from "@/db";
+import type { Item, GroupColor } from "@/db";
 
 type NewItem = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
 
@@ -36,6 +38,7 @@ export default function Page() {
   const {
     items,
     archivedItems,
+    trashedItems,
     isLoading,
     addItem,
     updateItem,
@@ -44,6 +47,8 @@ export default function Page() {
     publishItem,
     unpublishItem,
     deleteItem,
+    restoreItem,
+    deleteForever,
     reorderItems,
     assignToGroup,
     assignToTopic,
@@ -69,7 +74,7 @@ export default function Page() {
   const isLoggedIn = currentUser?.isLoggedIn ?? false;
 
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedKind, setSelectedKind] = useState<ItemKind | null>(null);
   const [noTopic, setNoTopic] = useState(false);
   const [search, setSearch] = useState("");
   const [hideDone, setHideDone] = useState(true);
@@ -84,6 +89,8 @@ export default function Page() {
     else localStorage.removeItem(SELECTED_TOPIC_KEY);
   }, []);
 
+  const inTrash = selectedTopicId === TRASH;
+
   const selectedTopic = useMemo(
     () => topics.find((t) => t.id === selectedTopicId) ?? null,
     [selectedTopicId, topics]
@@ -92,18 +99,14 @@ export default function Page() {
   // Finished items leave the main list after a while, but they still count as learned.
   const allItems = useMemo(() => [...items, ...archivedItems], [items, archivedItems]);
 
-  const categories = useMemo(() => {
-    const catSet = new Set<Category>();
-    items.forEach((item) => catSet.add(item.category));
-    return Array.from(catSet) as Category[];
-  }, [items]);
+  const kinds = useMemo(() => [...new Set(items.map(itemKind))], [items]);
 
   const noTopicCount = useMemo(
     () => items.filter((item) => !item.topicIds?.length && (!hideDone || item.status === "unread")).length,
     [items, hideDone]
   );
 
-  const isFiltered = selectedCategory !== null || noTopic || hideDone || search.trim() !== "";
+  const isFiltered = selectedKind !== null || noTopic || hideDone || search.trim() !== "";
 
   // A search looks through everything, so finished and archived items can still be found.
   const filteredItems = useMemo(() => {
@@ -111,11 +114,11 @@ export default function Page() {
 
     return (searching ? allItems : items).filter((item) => {
       if (hideDone && !searching && item.status === "done") return false;
-      if (selectedCategory && item.category !== selectedCategory) return false;
+      if (selectedKind && itemKind(item) !== selectedKind) return false;
       if (noTopic && item.topicIds?.length) return false;
       return matchesSearch(item, search);
     });
-  }, [items, allItems, selectedCategory, noTopic, hideDone, search]);
+  }, [items, allItems, selectedKind, noTopic, hideDone, search]);
 
   const totalUnreadSeconds = useMemo(() => {
     return filteredItems
@@ -165,9 +168,25 @@ export default function Page() {
   const handleDelete = useCallback(
     async (id: string) => {
       await deleteItem(id);
-      toast("Removed", "error");
+      toast("Moved to Trash");
     },
     [deleteItem, toast]
+  );
+
+  const handleRestore = useCallback(
+    async (id: string) => {
+      await restoreItem(id);
+      toast("Restored");
+    },
+    [restoreItem, toast]
+  );
+
+  const handleDeleteForever = useCallback(
+    async (ids: string[]) => {
+      await deleteForever(ids);
+      toast("Deleted forever", "error");
+    },
+    [deleteForever, toast]
   );
 
   const handleUpdateTags = useCallback(
@@ -246,7 +265,8 @@ export default function Page() {
       <Sidebar
         topics={topics}
         items={items}
-        selected={selectedTopic?.id ?? null}
+        trashCount={trashedItems.length}
+        selected={inTrash ? TRASH : selectedTopic?.id ?? null}
         isLoggedIn={isLoggedIn}
         onSelect={handleSelectTopic}
         onAddTopic={handleAddTopic}
@@ -263,15 +283,19 @@ export default function Page() {
           </div>
         )}
 
-        <AddItemInput
-          placeholder={selectedTopic ? `Add to ${selectedTopic.name}: paste a link or type` : "Paste a link or type"}
-          onAdd={handleAdd}
-          onEnriched={handleEnriched}
-          isLoggedIn={isLoggedIn}
-        />
+        {!inTrash && (
+          <AddItemInput
+            placeholder={selectedTopic ? `Add to ${selectedTopic.name}: paste a link or type` : "Paste a link or type"}
+            onAdd={handleAdd}
+            onEnriched={handleEnriched}
+            isLoggedIn={isLoggedIn}
+          />
+        )}
 
         {isLoading ? (
           <SkeletonList />
+        ) : inTrash ? (
+          <TrashView items={trashedItems} onRestore={handleRestore} onDeleteForever={handleDeleteForever} />
         ) : selectedTopic ? (
           <TopicView
             topic={selectedTopic}
@@ -292,13 +316,13 @@ export default function Page() {
         ) : (
           <>
             <FilterBar
-              categories={categories}
-              selectedCategory={selectedCategory}
+              kinds={kinds}
+              selectedKind={selectedKind}
               noTopic={noTopic}
               noTopicCount={noTopicCount}
               hideDone={hideDone}
               search={search}
-              onCategoryChange={setSelectedCategory}
+              onKindChange={setSelectedKind}
               onToggleNoTopic={() => setNoTopic((v) => !v)}
               onToggleHideDone={() => setHideDone((v) => !v)}
               onSearchChange={setSearch}

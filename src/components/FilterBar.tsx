@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import type { Category } from "@/db";
+import type { ItemKind } from "@/lib/itemKind";
 
 const chipClass = (active: boolean, on = "bg-blue-600 text-white") =>
   `rounded-full px-3 py-1 text-xs font-medium transition-colors ${
@@ -13,26 +13,26 @@ const chipClass = (active: boolean, on = "bg-blue-600 text-white") =>
 const toggleOn = "bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900";
 
 interface FilterBarProps {
-  categories: Category[];
-  selectedCategory: Category | null;
+  kinds: ItemKind[];
+  selectedKind: ItemKind | null;
   noTopic: boolean;
   noTopicCount: number;
   hideDone: boolean;
   search: string;
-  onCategoryChange: (c: Category | null) => void;
+  onKindChange: (kind: ItemKind | null) => void;
   onToggleNoTopic: () => void;
   onToggleHideDone: () => void;
   onSearchChange: (search: string) => void;
 }
 
 export const FilterBar = memo(function FilterBar({
-  categories,
-  selectedCategory,
+  kinds,
+  selectedKind,
   noTopic,
   noTopicCount,
   hideDone,
   search,
-  onCategoryChange,
+  onKindChange,
   onToggleNoTopic,
   onToggleHideDone,
   onSearchChange,
@@ -41,19 +41,19 @@ export const FilterBar = memo(function FilterBar({
     <div className="mb-3 flex flex-wrap items-center gap-1">
       <button
         type="button"
-        onClick={() => onCategoryChange(null)}
-        className={chipClass(selectedCategory === null)}
+        onClick={() => onKindChange(null)}
+        className={chipClass(selectedKind === null)}
       >
         All
       </button>
-      {categories.map((cat) => (
+      {kinds.map((kind) => (
         <button
-          key={cat}
+          key={kind}
           type="button"
-          onClick={() => onCategoryChange(selectedCategory === cat ? null : cat)}
-          className={chipClass(selectedCategory === cat)}
+          onClick={() => onKindChange(selectedKind === kind ? null : kind)}
+          className={chipClass(selectedKind === kind)}
         >
-          {cat}
+          {kind}
         </button>
       ))}
 

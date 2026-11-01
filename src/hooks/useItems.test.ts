@@ -90,23 +90,55 @@ describe("useItems", () => {
     expect(result.current.items.find((i) => i.id === id)?.doneAt).toBeUndefined();
   });
 
-  it("deleteItem removes the item", async () => {
-    const { result } = renderHook(() => useItems());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
+  async function addOne(result: { current: ReturnType<typeof useItems> }) {
+    let id = "";
     await act(async () => {
-      await result.current.addItem({
+      id = await result.current.addItem({
         url: "https://example.com",
-        title: "Test",
+        title: "To Delete",
         category: "article",
         tags: [],
       });
     });
     await waitFor(() => expect(result.current.items).toHaveLength(1));
-    const id = result.current.items[0].id;
+    return id;
+  }
+
+  it("deleteItem moves the item to the Trash and keeps its row", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const id = await addOne(result);
 
     await act(async () => { await result.current.deleteItem(id); });
+
     await waitFor(() => expect(result.current.items).toHaveLength(0));
+    expect(result.current.trashedItems.map((item) => item.id)).toEqual([id]);
+    expect(await db.items.get(id)).toBeDefined();
+  });
+
+  it("restoreItem brings it back", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const id = await addOne(result);
+
+    await act(async () => { await result.current.deleteItem(id); });
+    await waitFor(() => expect(result.current.trashedItems).toHaveLength(1));
+    await act(async () => { await result.current.restoreItem(id); });
+
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    expect(result.current.trashedItems).toHaveLength(0);
+  });
+
+  it("deleteForever removes the row", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const id = await addOne(result);
+
+    await act(async () => { await result.current.deleteItem(id); });
+    await act(async () => { await result.current.deleteForever([id]); });
+
+    await waitFor(() => expect(result.current.trashedItems).toHaveLength(0));
+    expect(await db.items.get(id)).toBeUndefined();
   });
 
   it("reorderItems updates sortOrder values", async () => {

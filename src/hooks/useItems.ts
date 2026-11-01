@@ -10,12 +10,20 @@ export function useItems() {
   );
 
   const items = useMemo(
-    () => (allItems ?? []).filter((i) => !isArchived(i)),
+    () => (allItems ?? []).filter((i) => !i.deletedAt && !isArchived(i)),
     [allItems]
   );
 
   const archivedItems = useMemo(
-    () => (allItems ?? []).filter(isArchived),
+    () => (allItems ?? []).filter((i) => !i.deletedAt && isArchived(i)),
+    [allItems]
+  );
+
+  const trashedItems = useMemo(
+    () =>
+      (allItems ?? [])
+        .filter((i) => i.deletedAt)
+        .sort((a, b) => (b.deletedAt ?? "").localeCompare(a.deletedAt ?? "")),
     [allItems]
   );
 
@@ -134,7 +142,15 @@ export function useItems() {
   }, []);
 
   const deleteItem = useCallback(async (id: string) => {
-    await db.items.delete(id);
+    await db.items.update(id, { deletedAt: new Date().toISOString() });
+  }, []);
+
+  const restoreItem = useCallback(async (id: string) => {
+    await db.items.update(id, { deletedAt: null });
+  }, []);
+
+  const deleteForever = useCallback(async (ids: string[]) => {
+    await db.items.bulkDelete(ids);
   }, []);
 
   const reorderItems = useCallback(
@@ -189,6 +205,7 @@ export function useItems() {
   return {
     items,
     archivedItems,
+    trashedItems,
     isLoading: allItems === undefined,
     doNext,
     moveToTopic,
@@ -199,6 +216,8 @@ export function useItems() {
     publishItem,
     unpublishItem,
     deleteItem,
+    restoreItem,
+    deleteForever,
     reorderItems,
     assignToGroup,
     assignToTopic,

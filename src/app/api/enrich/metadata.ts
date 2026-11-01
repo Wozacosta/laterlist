@@ -54,12 +54,7 @@ export async function fetchYouTubeMetadata(url: string): Promise<{
   return { title, thumbnail, duration, description: "" };
 }
 
-const TWEET_URL = /^https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/\w+\/status\/\d+/i;
 const TWEET_TITLE_LENGTH = 100;
-
-export function isTweetUrl(url: string): boolean {
-  return TWEET_URL.test(url);
-}
 
 /** A tweet has no title, so its first words stand in for one and the text becomes the summary. */
 export async function fetchTweetMetadata(url: string): Promise<{
