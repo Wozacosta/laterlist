@@ -1,7 +1,15 @@
+import { decodeHtmlEntities } from "@/lib/decodeHtmlEntities";
 import { readCapped, safeFetch } from "./safeFetch";
 
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+/** Reads a meta tag's content, whichever order its attributes come in. */
+function metaContent(html: string, attribute: string, name: string): string | undefined {
+  const tag = html.match(new RegExp(`<meta[^>]+${attribute}=["']${name}["'][^>]*>`, "i"))?.[0];
+  const match = tag?.match(/\scontent=(?:"([^"]*)"|'([^']*)')/i);
+  return match?.[1] ?? match?.[2];
+}
 
 export async function fetchYouTubeMetadata(url: string): Promise<{
   title: string;
@@ -58,32 +66,29 @@ export async function fetchArticleMetadata(url: string): Promise<{
   }
   const html = await readCapped(res);
 
-  // Extract OG / fallback meta
-  const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1]
-    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i)?.[1]
-    ?? html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]
-    ?? url;
+  const title =
+    metaContent(html, "property", "og:title") ??
+    html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ??
+    url;
+  const thumbnail = metaContent(html, "property", "og:image") ?? null;
+  const description =
+    metaContent(html, "property", "og:description") ??
+    metaContent(html, "name", "description") ??
+    "";
 
-  const ogImage =
-    html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)?.[1]
-    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)?.[1]
-    ?? null;
-
-  const ogDescription =
-    html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)?.[1]
-    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i)?.[1]
-    ?? html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)?.[1]
-    ?? "";
-
-  // Strip HTML and count words for read time
-  const plainText = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  // Scripts can hold far more words than the page itself, so only count what's readable.
+  const plainText = html
+    .replace(/<(script|style|noscript|svg|head)\b[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   const wordCount = plainText.split(" ").filter(Boolean).length;
   const duration = Math.round((wordCount / 200) * 60); // seconds
 
   return {
-    title: ogTitle.trim(),
-    thumbnail: ogImage,
+    title: decodeHtmlEntities(title.trim()),
+    thumbnail,
     duration,
-    description: ogDescription.trim(),
+    description: decodeHtmlEntities(description.trim()),
   };
 }

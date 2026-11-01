@@ -97,6 +97,51 @@ describe("fetchArticleMetadata", () => {
     expect(result.duration).toBeGreaterThan(0);
   });
 
+  it("keeps apostrophes and decodes entities in titles", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          `<meta content="Don't panic &amp; carry on" property="og:title"><meta name="description" content='It&#x27;s "fine"'>`,
+      })
+    );
+
+    const result = await fetchArticleMetadata("https://example.com/a");
+
+    expect(result.title).toBe("Don't panic & carry on");
+    expect(result.description).toBe(`It's "fine"`);
+  });
+
+  it("falls back to the title tag, then the link", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce({ ok: true, text: async () => "<title>Git &amp; SQLite</title>" })
+        .mockResolvedValueOnce({ ok: true, text: async () => "<p>no title</p>" })
+    );
+
+    expect((await fetchArticleMetadata("https://example.com/a")).title).toBe("Git & SQLite");
+    expect((await fetchArticleMetadata("https://example.com/b")).title).toBe("https://example.com/b");
+  });
+
+  it("doesn't count scripts or styles as reading time", async () => {
+    const code = Array(100_000).fill("token").join(" ");
+    const words = Array(200).fill("word").join(" ");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          `<head><title>T</title></head><body><script type="module">${code}</script><style>${code}</style><p>${words}</p></body>`,
+      })
+    );
+
+    const result = await fetchArticleMetadata("https://example.com/a");
+
+    expect(result.duration).toBe(60);
+  });
+
   it("throws when article fetch fails", async () => {
     vi.stubGlobal(
       "fetch",

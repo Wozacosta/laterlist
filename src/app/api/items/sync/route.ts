@@ -1,17 +1,6 @@
 import { type NextRequest } from "next/server";
+import { decodeHtmlEntities } from "@/lib/decodeHtmlEntities";
 import { readItems, writeItems } from "@/lib/server/store";
-
-function decodeHtmlEntities(str: string): string {
-  return str
-    .replace(/&#x27;/g, "'")
-    .replace(/&#x2F;/g, "/")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)));
-}
 
 /**
  * PUT /api/items/sync
