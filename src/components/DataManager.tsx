@@ -2,9 +2,9 @@
 
 import { memo, useRef, useCallback, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { db, type Item } from "@/db";
 import { useToast } from "@/components/Toast";
+import { missingItems } from "@/lib/missingItems";
 
 interface LaterlistBackup {
   version: number;
@@ -55,8 +55,6 @@ const btnBase =
   "rounded-lg border border-gray-200 px-3 py-2 text-sm transition-colors dark:border-gray-700";
 const btnGray =
   btnBase + " bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800";
-const btnRed =
-  btnBase + " bg-white text-red-600 hover:bg-red-50 dark:bg-gray-900 dark:text-red-400 dark:hover:bg-red-950";
 const btnBlue =
   "rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors";
 
@@ -65,8 +63,6 @@ export const DataManager = memo(function DataManager() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [pendingBackup, setPendingBackup] = useState<LaterlistBackup | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // ── Export ────────────────────────────────────────────────────────────────
   const handleExport = useCallback(async () => {
@@ -81,7 +77,7 @@ export const DataManager = memo(function DataManager() {
     toast(`Exported ${items.length} item${items.length !== 1 ? "s" : ""}`);
   }, [toast]);
 
-  // ── Import: file picked ───────────────────────────────────────────────────
+  // ── Import: adds what's missing, and never changes or removes anything ─────
   const handleFilePick = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -89,14 +85,19 @@ export const DataManager = memo(function DataManager() {
       e.target.value = "";
       setImporting(true);
       try {
-        const text = await file.text();
-        const data = JSON.parse(text);
+        const data = JSON.parse(await file.text());
         if (!isValidBackup(data)) {
           toast("Invalid backup file", "error");
           return;
         }
-        setPendingBackup(data);
-        setConfirmOpen(true);
+        const missing = missingItems(data.items, await db.items.toArray());
+        await db.items.bulkAdd(missing);
+        toast(
+          missing.length
+            ? `Added ${missing.length} item${missing.length !== 1 ? "s" : ""} from the backup`
+            : "Nothing to add: you already have everything in this backup"
+        );
+        setOpen(false);
       } catch {
         toast("Could not read file", "error");
       } finally {
@@ -105,24 +106,6 @@ export const DataManager = memo(function DataManager() {
     },
     [toast]
   );
-
-  // ── Import: confirmed ─────────────────────────────────────────────────────
-  const handleImportConfirm = useCallback(async () => {
-    if (!pendingBackup) return;
-    setConfirmOpen(false);
-    try {
-      await db.transaction("rw", db.items, async () => {
-        await db.items.clear();
-        await db.items.bulkAdd(pendingBackup.items);
-      });
-      toast(`Imported ${pendingBackup.items.length} item${pendingBackup.items.length !== 1 ? "s" : ""}`);
-      setOpen(false);
-    } catch {
-      toast("Import failed", "error");
-    } finally {
-      setPendingBackup(null);
-    }
-  }, [pendingBackup, toast]);
 
   return (
     <>
@@ -147,7 +130,7 @@ export const DataManager = memo(function DataManager() {
               Export / Import
             </Dialog.Title>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Back up your list to a JSON file, or restore from a previous backup.
+              Back up your list to a JSON file, or add what's missing from a backup.
             </p>
 
             <div className="mt-5 flex flex-col gap-3">
@@ -166,15 +149,15 @@ export const DataManager = memo(function DataManager() {
               <div className="flex items-center justify-between rounded-lg border border-gray-100 p-3 dark:border-gray-800">
                 <div>
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Import</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">Replace current data with backup</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Add missing items. Nothing here changes</p>
                 </div>
                 <button
                   type="button"
                   disabled={importing}
                   onClick={() => fileInputRef.current?.click()}
-                  className={btnRed}
+                  className={`${btnGray} shrink-0 whitespace-nowrap`}
                 >
-                  {importing ? "Reading…" : "Restore"}
+                  {importing ? "Reading…" : "Add items"}
                 </button>
                 <input
                   ref={fileInputRef}
@@ -194,34 +177,6 @@ export const DataManager = memo(function DataManager() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-
-      {/* Confirm destructive import */}
-      <AlertDialog.Root open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialog.Portal>
-          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/50 dark:bg-black/70" />
-          <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900 dark:border dark:border-gray-800">
-            <AlertDialog.Title className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              Replace all data?
-            </AlertDialog.Title>
-            <AlertDialog.Description className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              This will delete your current list and replace it with{" "}
-              <span className="font-medium text-gray-800 dark:text-gray-200">
-                {pendingBackup?.items.length ?? 0} item{(pendingBackup?.items.length ?? 0) !== 1 ? "s" : ""}
-              </span>{" "}
-              from the backup. This cannot be undone.
-            </AlertDialog.Description>
-            <div className="mt-5 flex justify-end gap-2">
-              <AlertDialog.Cancel className={btnGray}>Cancel</AlertDialog.Cancel>
-              <AlertDialog.Action
-                onClick={handleImportConfirm}
-                className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
-              >
-                Yes, replace
-              </AlertDialog.Action>
-            </div>
-          </AlertDialog.Content>
-        </AlertDialog.Portal>
-      </AlertDialog.Root>
     </>
   );
 });
