@@ -1,3 +1,4 @@
+import { requireOwner } from "@/lib/server/dexieAuth";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   recordSession,
@@ -19,6 +20,8 @@ import {
  *   ?days=30       — Number of days for stats/export (default: 30)
  */
 export async function GET(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const url = new URL(request.url);
     const isStats = url.searchParams.get("stats") === "true";
@@ -61,7 +64,9 @@ export async function GET(request: NextRequest) {
  *   pomodoroConfig?: { workMinutes, breakMinutes, cycleNumber }
  * }
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
     const {

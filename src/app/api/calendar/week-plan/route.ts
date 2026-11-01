@@ -1,3 +1,4 @@
+import { requireOwner } from "@/lib/server/dexieAuth";
 import { NextResponse, type NextRequest } from "next/server";
 import { suggestSlots } from "@/lib/server/calendarSlots";
 import { pushEvent } from "@/lib/server/calendarEvents";
@@ -19,6 +20,8 @@ export interface DayPlan {
  *   ?names=a,b...      — Topic names matching the IDs
  */
 export async function GET(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const url = new URL(request.url);
     const goal = parseInt(url.searchParams.get("goal") ?? "60", 10);
@@ -70,7 +73,9 @@ export async function GET(request: NextRequest) {
  *
  * Body: { days: DayPlan[] }
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const { days } = (await request.json()) as { days: DayPlan[] };
 

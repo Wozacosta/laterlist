@@ -1,3 +1,4 @@
+import { requireDexieUser } from "@/lib/server/dexieAuth";
 import { type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/ratelimit";
 
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
     request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
     request.headers.get("x-real-ip") ??
     "unknown";
+
+  const denied = await requireDexieUser(request);
+  if (denied) return denied;
 
   const { allowed, remaining, resetAt } = rateLimit(ip);
 

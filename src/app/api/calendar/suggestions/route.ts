@@ -1,3 +1,4 @@
+import { requireOwner } from "@/lib/server/dexieAuth";
 import { NextResponse, type NextRequest } from "next/server";
 import { suggestSlots } from "@/lib/server/calendarSlots";
 
@@ -14,6 +15,8 @@ import { suggestSlots } from "@/lib/server/calendarSlots";
  * Works with Google Calendar, Proton Calendar, or locally (no calendar).
  */
 export async function GET(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const url = new URL(request.url);
     const goal = parseInt(url.searchParams.get("goal") ?? "30", 10);

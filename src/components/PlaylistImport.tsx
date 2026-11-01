@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/authFetch";
 import { memo, useState, useCallback } from "react";
 import type { PlaylistVideo } from "@/app/api/playlist/route";
 
@@ -26,7 +27,7 @@ export const PlaylistImport = memo(function PlaylistImport({
       setError(null);
 
       try {
-        const res = await fetch("/api/playlist", {
+        const res = await authFetch("/api/playlist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: trimmed }),

@@ -1,3 +1,4 @@
+import { authFetch } from "@/lib/authFetch";
 import { useCallback, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Item, type Topic } from "@/db";
@@ -123,7 +124,7 @@ export function useItems() {
     await db.items.update(id, { publishedAt: now });
 
     // Sync to server store for public reading-list API — non-blocking
-    fetch("/api/items/sync", {
+    authFetch("/api/items/sync", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...item, publishedAt: now }),
@@ -134,7 +135,7 @@ export function useItems() {
     await db.items.update(id, { publishedAt: undefined });
 
     // Remove from server store
-    fetch("/api/items/sync", {
+    authFetch("/api/items/sync", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, publishedAt: null, status: "unread" }),
