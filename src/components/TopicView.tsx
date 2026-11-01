@@ -5,8 +5,15 @@ import { DndContext, DragOverlay, PointerSensor, useDraggable, useSensor, useSen
 import type { Item, Topic } from "@/db";
 import { useTopicDrop } from "@/hooks/useTopicDrop";
 import { itemKind } from "@/lib/itemKind";
-import { topicLearned, topicQueue } from "@/lib/topicQueue";
-import { DragPreview, formatDuration, gripClass, ItemLink, ItemThumbnail, KindBadge, StarButton } from "./ItemRow";
+import { topicLearned, topicQueue, topicSnoozed } from "@/lib/topicQueue";
+import { DragPreview, formatDate, formatDuration, gripClass, ItemLink, ItemThumbnail, KindBadge, StarButton } from "./ItemRow";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const SNOOZE_OPTIONS = [
+  { label: "Back tomorrow", days: 1 },
+  { label: "Back in a week", days: 7 },
+];
 
 const quietButton =
   "rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200";
@@ -20,6 +27,28 @@ interface ItemActions {
   onDelete: (id: string) => void;
   onUpdateNotes: (id: string, notes: string) => void;
   onToggleStar: (id: string) => void;
+  onSnooze: (id: string, until: string | null, message: string) => void;
+}
+
+function DoneABit({ item, onSnooze }: { item: Item } & Pick<ItemActions, "onSnooze">) {
+  return (
+    <select
+      aria-label={`Done a bit of "${item.title}"`}
+      value=""
+      onChange={(e) => {
+        const option = SNOOZE_OPTIONS[Number(e.target.value)];
+        if (option) onSnooze(item.id, new Date(Date.now() + option.days * DAY_MS).toISOString(), option.label);
+      }}
+      className="max-w-28 rounded bg-transparent px-1 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+    >
+      <option value="">Done a bit…</option>
+      {SNOOZE_OPTIONS.map((option, index) => (
+        <option key={option.days} value={index}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
 }
 
 function MoveTo({ item, moveTargets, onMove }: { item: Item } & Pick<ItemActions, "moveTargets" | "onMove">) {
@@ -100,6 +129,7 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
         >
           Done
         </button>
+        <DoneABit item={item} onSnooze={actions.onSnooze} />
         <MoveTo item={item} moveTargets={actions.moveTargets} onMove={actions.onMove} />
         <button type="button" onClick={() => actions.onDelete(item.id)} className={quietButton}>
           Delete
@@ -138,6 +168,23 @@ function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
       </div>
       <button type="button" onClick={() => actions.onMarkDone(item.id)} className={quietButton}>
         Done
+      </button>
+    </li>
+  );
+}
+
+function SnoozedRow({ item, actions }: { item: Item; actions: ItemActions }) {
+  return (
+    <li className="flex items-center gap-2 py-2">
+      <KindBadge item={item} />
+      <div className="min-w-0 flex-1">
+        <ItemLink item={item} className="text-sm text-gray-600 dark:text-gray-400" />
+      </div>
+      <span className="shrink-0 text-xs text-gray-400 dark:text-gray-600">
+        Back {formatDate(item.snoozedUntil ?? "")}
+      </span>
+      <button type="button" onClick={() => actions.onSnooze(item.id, null, "Back in the queue")} className={quietButton}>
+        Bring back
       </button>
     </li>
   );
@@ -197,7 +244,9 @@ export const TopicView = memo(function TopicView({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const topicDrop = useTopicDrop(onDropOnTopic);
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const queue = useMemo(() => topicQueue(items, topic.id), [items, topic.id]);
+  // Not memoized: a snoozed item comes back when its time passes, not when the items change.
+  const queue = topicQueue(items, topic.id);
+  const snoozed = topicSnoozed(items, topic.id);
   const learned = useMemo(() => topicLearned(items, topic.id), [items, topic.id]);
   const moveTargets = useMemo(
     () => topics.filter((t) => t.status === "active" && t.id !== topic.id),
@@ -258,7 +307,9 @@ export const TopicView = memo(function TopicView({
         <NextCard item={next} actions={actions} />
       ) : (
         <p className="rounded-xl border border-dashed border-gray-300 p-5 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-          Nothing to learn here yet. Paste a link or type something above.
+          {snoozed.length > 0
+            ? "Nothing right now. Your snoozed items come back on their dates."
+            : "Nothing to learn here yet. Paste a link or type something above."}
         </p>
       )}
 
@@ -272,6 +323,19 @@ export const TopicView = memo(function TopicView({
 
       <DragOverlay>{dragging && <DragPreview title={dragging.title} />}</DragOverlay>
       </DndContext>
+
+      {snoozed.length > 0 && (
+        <details>
+          <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400">
+            Snoozed ({snoozed.length})
+          </summary>
+          <ul className="mt-2 divide-y divide-gray-100 dark:divide-gray-800">
+            {snoozed.map((item) => (
+              <SnoozedRow key={item.id} item={item} actions={actions} />
+            ))}
+          </ul>
+        </details>
+      )}
 
       {learned.length > 0 && (
         <details>

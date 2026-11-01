@@ -46,6 +46,7 @@ export default function Page() {
     unmarkDone,
     publishItem,
     unpublishItem,
+    snooze,
     toggleStar,
     deleteItem,
     restoreItem,
@@ -176,6 +177,14 @@ export default function Page() {
       toast("Moved to Trash");
     },
     [deleteItem, toast]
+  );
+
+  const handleSnooze = useCallback(
+    async (id: string, until: string | null, message: string) => {
+      await snooze(id, until);
+      toast(message);
+    },
+    [snooze, toast]
   );
 
   const handleRestore = useCallback(
@@ -313,6 +322,7 @@ export default function Page() {
             onDelete={handleDelete}
             onUpdateNotes={handleUpdateNotes}
             onToggleStar={toggleStar}
+            onSnooze={handleSnooze}
             onDropOnTopic={handleDropOnTopic}
             onRename={renameTopic}
             onComplete={completeTopic}

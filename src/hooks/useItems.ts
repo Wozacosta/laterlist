@@ -141,6 +141,10 @@ export function useItems() {
     }).catch(() => {});
   }, []);
 
+  const snooze = useCallback(async (id: string, until: string | null) => {
+    await db.items.update(id, { snoozedUntil: until });
+  }, []);
+
   const toggleStar = useCallback(async (id: string) => {
     const item = await db.items.get(id);
     if (!item) return;
@@ -221,6 +225,7 @@ export function useItems() {
     unmarkDone,
     publishItem,
     unpublishItem,
+    snooze,
     toggleStar,
     deleteItem,
     restoreItem,

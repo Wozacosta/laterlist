@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Item } from "@/db";
-import { replaceTopic, topicLearned, topicQueue } from "./topicQueue";
+import { replaceTopic, topicLearned, topicQueue, topicSnoozed } from "./topicQueue";
 
 function item(id: string, patch: Partial<Item> = {}): Item {
   return {
@@ -68,5 +68,25 @@ describe("replaceTopic", () => {
 
   it("doesn't duplicate a topic the item is already in", () => {
     expect(replaceTopic(["a", "b"], "a", "b")).toEqual(["b"]);
+  });
+});
+
+describe("snoozed items", () => {
+  const now = new Date("2026-11-01T12:00:00.000Z").getTime();
+  const snoozed = (id: string, snoozedUntil?: string | null) =>
+    item(id, { status: "unread", topicIds: ["t"], snoozedUntil });
+
+  it("leave the queue until their time", () => {
+    const items = [snoozed("waiting", "2026-11-02T12:00:00.000Z"), snoozed("free")];
+
+    expect(topicQueue(items, "t", now).map((i) => i.id)).toEqual(["free"]);
+    expect(topicSnoozed(items, "t", now).map((i) => i.id)).toEqual(["waiting"]);
+  });
+
+  it("come back once their time has passed, or when cleared", () => {
+    const items = [snoozed("past", "2026-10-31T12:00:00.000Z"), snoozed("cleared", null)];
+
+    expect(topicQueue(items, "t", now)).toHaveLength(2);
+    expect(topicSnoozed(items, "t", now)).toHaveLength(0);
   });
 });

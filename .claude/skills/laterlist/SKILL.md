@@ -22,7 +22,7 @@ Find items with no `summary`. Read each page, and save two or three plain senten
 
 ## Say what's next
 
-The top unread item in a topic is its Next item. To say where the user is at, use finished items and their notes, then the top of each queue.
+The top unread item in a topic is its Next item, skipping any with a future `snoozedUntil`: the user has done part of those and they come back on that date. To say where the user is at, use finished items and their notes, then the top of each queue.
 
 ## Reorder a topic
 

@@ -100,6 +100,7 @@ export function createMcpServer(): McpServer {
             tags: item.tags,
             status: item.status,
             starred: item.starred,
+            snoozedUntil: item.snoozedUntil,
             topicIds: item.topicIds,
             notes: item.notes,
             summary: item.summary,
