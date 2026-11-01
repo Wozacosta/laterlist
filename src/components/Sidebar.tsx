@@ -18,6 +18,7 @@ interface SidebarProps {
   topics: Topic[];
   items: Item[];
   selected: string | null;
+  isLoggedIn: boolean;
   onSelect: (topicId: string | null) => void;
   onAddTopic: (name: string) => void;
 }
@@ -26,6 +27,7 @@ export const Sidebar = memo(function Sidebar({
   topics,
   items,
   selected,
+  isLoggedIn,
   onSelect,
   onAddTopic,
 }: SidebarProps) {
@@ -113,7 +115,7 @@ export const Sidebar = memo(function Sidebar({
       <div className="flex flex-wrap items-center gap-2">
         <DataManager />
         <ThemeToggle />
-        <CloudSyncButton />
+        {isLoggedIn && <CloudSyncButton />}
       </div>
     </aside>
   );

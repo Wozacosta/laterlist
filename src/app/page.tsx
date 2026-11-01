@@ -7,6 +7,7 @@ import { useItems } from "@/hooks/useItems";
 import { useGroups } from "@/hooks/useGroups";
 import { useTopics } from "@/hooks/useTopics";
 import { AddItemInput } from "@/components/AddItemInput";
+import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
 import { Sidebar } from "@/components/Sidebar";
@@ -231,11 +232,21 @@ export default function Page() {
         topics={topics}
         items={items}
         selected={selectedTopic?.id ?? null}
+        isLoggedIn={isLoggedIn}
         onSelect={handleSelectTopic}
         onAddTopic={handleAddTopic}
       />
 
       <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8">
+        {!isLoading && !isLoggedIn && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Sign in to load your list and back it up.
+            </p>
+            <CloudSyncButton />
+          </div>
+        )}
+
         <AddItemInput
           placeholder={selectedTopic ? `Add to ${selectedTopic.name}: paste a link or type` : "Paste a link or type"}
           onAdd={handleAdd}
