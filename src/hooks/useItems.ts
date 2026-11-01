@@ -141,6 +141,12 @@ export function useItems() {
     }).catch(() => {});
   }, []);
 
+  const toggleStar = useCallback(async (id: string) => {
+    const item = await db.items.get(id);
+    if (!item) return;
+    await db.items.update(id, { starred: !item.starred });
+  }, []);
+
   const deleteItem = useCallback(async (id: string) => {
     await db.items.update(id, { deletedAt: new Date().toISOString() });
   }, []);
@@ -215,6 +221,7 @@ export function useItems() {
     unmarkDone,
     publishItem,
     unpublishItem,
+    toggleStar,
     deleteItem,
     restoreItem,
     deleteForever,

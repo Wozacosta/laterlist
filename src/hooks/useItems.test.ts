@@ -141,6 +141,18 @@ describe("useItems", () => {
     expect(await db.items.get(id)).toBeUndefined();
   });
 
+  it("toggleStar stars and unstars an item", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const id = await addOne(result);
+
+    await act(async () => { await result.current.toggleStar(id); });
+    await waitFor(() => expect(result.current.items[0].starred).toBe(true));
+
+    await act(async () => { await result.current.toggleStar(id); });
+    await waitFor(() => expect(result.current.items[0].starred).toBe(false));
+  });
+
   it("reorderItems updates sortOrder values", async () => {
     const { result } = renderHook(() => useItems());
     await waitFor(() => expect(result.current.isLoading).toBe(false));

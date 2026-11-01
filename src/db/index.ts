@@ -45,6 +45,7 @@ export interface Item {
   why?: string; // one line on what this gives the user
   groupId?: string; // optional group membership
   topicIds?: string[]; // optional learning topics (multi-select)
+  starred?: boolean; // one of the user's favorites
   deletedAt?: string | null; // ISO datetime — in the Trash until restored or emptied
 }
 

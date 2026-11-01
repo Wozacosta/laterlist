@@ -6,7 +6,7 @@ import type { Item, Topic } from "@/db";
 import { useTopicDrop } from "@/hooks/useTopicDrop";
 import { itemKind } from "@/lib/itemKind";
 import { topicLearned, topicQueue } from "@/lib/topicQueue";
-import { DragPreview, formatDuration, gripClass, ItemLink, ItemThumbnail, KindBadge } from "./ItemRow";
+import { DragPreview, formatDuration, gripClass, ItemLink, ItemThumbnail, KindBadge, StarButton } from "./ItemRow";
 
 const quietButton =
   "rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200";
@@ -19,6 +19,7 @@ interface ItemActions {
   onMove: (id: string, topicId: string) => void;
   onDelete: (id: string) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  onToggleStar: (id: string) => void;
 }
 
 function MoveTo({ item, moveTargets, onMove }: { item: Item } & Pick<ItemActions, "moveTargets" | "onMove">) {
@@ -91,6 +92,7 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
+        <StarButton item={item} onToggle={actions.onToggleStar} />
         <button
           type="button"
           onClick={() => actions.onMarkDone(item.id)}
@@ -127,6 +129,7 @@ function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
           <ItemDetails item={item} />
         </div>
       </div>
+      <StarButton item={item} onToggle={actions.onToggleStar} />
       <button type="button" onClick={() => actions.onDoNext(item.id)} className={quietButton}>
         Do next
       </button>
@@ -144,6 +147,7 @@ function LearnedRow({ item, actions }: { item: Item; actions: ItemActions }) {
   return (
     <li className="py-2">
       <div className="flex items-center gap-2">
+        <StarButton item={item} onToggle={actions.onToggleStar} />
         <KindBadge item={item} />
         <div className="min-w-0 flex-1">
           <ItemLink item={item} className="text-sm text-gray-600 dark:text-gray-400" />

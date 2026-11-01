@@ -15,11 +15,14 @@ const toggleOn = "bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900";
 interface FilterBarProps {
   kinds: ItemKind[];
   selectedKind: ItemKind | null;
+  starred: boolean;
+  starredCount: number;
   noTopic: boolean;
   noTopicCount: number;
   hideDone: boolean;
   search: string;
   onKindChange: (kind: ItemKind | null) => void;
+  onToggleStarred: () => void;
   onToggleNoTopic: () => void;
   onToggleHideDone: () => void;
   onSearchChange: (search: string) => void;
@@ -28,11 +31,14 @@ interface FilterBarProps {
 export const FilterBar = memo(function FilterBar({
   kinds,
   selectedKind,
+  starred,
+  starredCount,
   noTopic,
   noTopicCount,
   hideDone,
   search,
   onKindChange,
+  onToggleStarred,
   onToggleNoTopic,
   onToggleHideDone,
   onSearchChange,
@@ -57,6 +63,14 @@ export const FilterBar = memo(function FilterBar({
         </button>
       ))}
 
+      <button
+        type="button"
+        onClick={onToggleStarred}
+        aria-pressed={starred}
+        className={chipClass(starred, toggleOn)}
+      >
+        ★ Starred ({starredCount})
+      </button>
       <button
         type="button"
         onClick={onToggleNoTopic}

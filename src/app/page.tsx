@@ -46,6 +46,7 @@ export default function Page() {
     unmarkDone,
     publishItem,
     unpublishItem,
+    toggleStar,
     deleteItem,
     restoreItem,
     deleteForever,
@@ -75,6 +76,7 @@ export default function Page() {
 
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [selectedKind, setSelectedKind] = useState<ItemKind | null>(null);
+  const [starred, setStarred] = useState(false);
   const [noTopic, setNoTopic] = useState(false);
   const [search, setSearch] = useState("");
   const [hideDone, setHideDone] = useState(true);
@@ -101,24 +103,27 @@ export default function Page() {
 
   const kinds = useMemo(() => [...new Set(items.map(itemKind))], [items]);
 
+  const starredCount = useMemo(() => allItems.filter((item) => item.starred).length, [allItems]);
+
   const noTopicCount = useMemo(
     () => items.filter((item) => !item.topicIds?.length && (!hideDone || item.status === "unread")).length,
     [items, hideDone]
   );
 
-  const isFiltered = selectedKind !== null || noTopic || hideDone || search.trim() !== "";
+  const isFiltered = selectedKind !== null || starred || noTopic || hideDone || search.trim() !== "";
 
-  // A search looks through everything, so finished and archived items can still be found.
+  // Search and Starred look through everything, so finished and archived items can still be found.
   const filteredItems = useMemo(() => {
-    const searching = search.trim() !== "";
+    const everything = starred || search.trim() !== "";
 
-    return (searching ? allItems : items).filter((item) => {
-      if (hideDone && !searching && item.status === "done") return false;
+    return (everything ? allItems : items).filter((item) => {
+      if (hideDone && !everything && item.status === "done") return false;
+      if (starred && !item.starred) return false;
       if (selectedKind && itemKind(item) !== selectedKind) return false;
       if (noTopic && item.topicIds?.length) return false;
       return matchesSearch(item, search);
     });
-  }, [items, allItems, selectedKind, noTopic, hideDone, search]);
+  }, [items, allItems, selectedKind, starred, noTopic, hideDone, search]);
 
   const totalUnreadSeconds = useMemo(() => {
     return filteredItems
@@ -307,6 +312,7 @@ export default function Page() {
             onMove={handleMove}
             onDelete={handleDelete}
             onUpdateNotes={handleUpdateNotes}
+            onToggleStar={toggleStar}
             onDropOnTopic={handleDropOnTopic}
             onRename={renameTopic}
             onComplete={completeTopic}
@@ -318,11 +324,14 @@ export default function Page() {
             <FilterBar
               kinds={kinds}
               selectedKind={selectedKind}
+              starred={starred}
+              starredCount={starredCount}
               noTopic={noTopic}
               noTopicCount={noTopicCount}
               hideDone={hideDone}
               search={search}
               onKindChange={setSelectedKind}
+              onToggleStarred={() => setStarred((v) => !v)}
               onToggleNoTopic={() => setNoTopic((v) => !v)}
               onToggleHideDone={() => setHideDone((v) => !v)}
               onSearchChange={setSearch}
@@ -345,6 +354,7 @@ export default function Page() {
               onUnpublish={unpublishItem}
               onUpdateTags={handleUpdateTags}
               onUpdateNotes={handleUpdateNotes}
+              onToggleStar={toggleStar}
               onDelete={handleDelete}
               onReorder={reorderItems}
               onAssignToGroup={assignToGroup}

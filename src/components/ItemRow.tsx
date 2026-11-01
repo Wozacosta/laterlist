@@ -17,6 +17,7 @@ interface ItemRowProps {
   onUnpublish: (id: string) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  onToggleStar: (id: string) => void;
   onDelete: (id: string) => void;
   onAssignTopic: (itemId: string, topicId: string) => void;
   onUnassignTopic: (itemId: string, topicId: string) => void;
@@ -45,6 +46,27 @@ export function KindBadge({ item }: { item: Item }) {
     <span className={`shrink-0 rounded px-1.5 text-[11px] font-medium leading-4 ${KIND_STYLES[kind]}`}>
       {kind}
     </span>
+  );
+}
+
+export function StarButton({ item, onToggle }: { item: Item; onToggle: (id: string) => void }) {
+  const label = item.starred ? "Remove star" : "Star";
+
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(item.id)}
+      aria-pressed={item.starred === true}
+      aria-label={`${label}: ${item.title}`}
+      title={label}
+      className={`shrink-0 text-lg leading-none ${
+        item.starred
+          ? "text-amber-400 hover:text-amber-500"
+          : "text-gray-300 hover:text-amber-400 dark:text-gray-600"
+      }`}
+    >
+      {item.starred ? "★" : "☆"}
+    </button>
   );
 }
 
@@ -169,6 +191,7 @@ export const ItemRow = memo(function ItemRow({
   onUnpublish,
   onUpdateTags,
   onUpdateNotes,
+  onToggleStar,
   onDelete,
   onAssignTopic,
   onUnassignTopic,
@@ -306,6 +329,8 @@ export const ItemRow = memo(function ItemRow({
             ↗
           </button>
         )}
+
+        <StarButton item={item} onToggle={onToggleStar} />
 
         {/* Done checkbox */}
         <input

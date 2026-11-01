@@ -61,6 +61,7 @@ interface ItemListProps {
   onUnpublish: (id: string) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  onToggleStar: (id: string) => void;
   onDelete: (id: string) => void;
   onReorder: (updates: Array<{ id: string; sortOrder: number }>) => void;
   onAssignToGroup: (itemId: string, groupId: string | undefined) => void;
@@ -85,6 +86,7 @@ export const ItemList = memo(function ItemList({
   onUnpublish,
   onUpdateTags,
   onUpdateNotes,
+  onToggleStar,
   onDelete,
   onReorder,
   onAssignToGroup,
@@ -193,6 +195,7 @@ export const ItemList = memo(function ItemList({
                 onUnpublish={onUnpublish}
                 onUpdateTags={onUpdateTags}
                 onUpdateNotes={onUpdateNotes}
+                onToggleStar={onToggleStar}
                 onDelete={onDelete}
                 onAssignTopic={onAssignTopic}
                 onUnassignTopic={onUnassignTopic}
@@ -220,6 +223,7 @@ export const ItemList = memo(function ItemList({
             onUnpublish={onUnpublish}
             onUpdateTags={onUpdateTags}
             onUpdateNotes={onUpdateNotes}
+            onToggleStar={onToggleStar}
             onDeleteItem={onDelete}
             onAssignTopic={onAssignTopic}
             onUnassignTopic={onUnassignTopic}
