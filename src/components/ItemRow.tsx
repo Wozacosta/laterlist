@@ -39,6 +39,30 @@ function formatDate(isoString: string): string {
   );
 }
 
+/** Saved image links go dead over time, so a failed image falls back to the letter. */
+function Thumbnail({ src, category }: { src?: string; category: string }) {
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <div className="shrink-0 h-12 w-12 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+      {src && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <div className="h-full w-full flex items-center justify-center text-gray-300 text-xs dark:text-gray-600">
+          {category[0].toUpperCase()}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export const ItemRow = memo(function ItemRow({
   item,
   topics,
@@ -142,20 +166,7 @@ export const ItemRow = memo(function ItemRow({
         </button>
 
         {/* Thumbnail */}
-        <div className="shrink-0 h-12 w-12 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
-          {item.thumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.thumbnail}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center text-gray-300 text-xs dark:text-gray-600">
-              {item.category[0].toUpperCase()}
-            </div>
-          )}
-        </div>
+        <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} />
 
         {/* Main content */}
         <div className="flex-1 min-w-0">

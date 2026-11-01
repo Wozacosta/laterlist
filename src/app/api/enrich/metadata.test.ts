@@ -113,6 +113,35 @@ describe("fetchArticleMetadata", () => {
     expect(result.description).toBe(`It's "fine"`);
   });
 
+  it("turns a relative image into a full link", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => `<meta property="og:image" content="/images/card.png">`,
+      })
+    );
+
+    const result = await fetchArticleMetadata("https://example.com/blog/post");
+
+    expect(result.thumbnail).toBe("https://example.com/images/card.png");
+  });
+
+  it("ignores an image link that can't be read", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => `<title>Still fine</title><meta property="og:image" content="http://">`,
+      })
+    );
+
+    const result = await fetchArticleMetadata("https://example.com/post");
+
+    expect(result.title).toBe("Still fine");
+    expect(result.thumbnail).toBeNull();
+  });
+
   it("falls back to the title tag, then the link", async () => {
     vi.stubGlobal(
       "fetch",
