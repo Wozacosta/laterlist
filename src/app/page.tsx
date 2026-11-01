@@ -14,6 +14,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { TopicView } from "@/components/TopicView";
 import { SkeletonList } from "@/components/SkeletonList";
 import { useToast } from "@/components/Toast";
+import { matchesSearch } from "@/lib/matchesSearch";
 import type { Category, Item, GroupColor } from "@/db";
 
 type NewItem = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
@@ -69,7 +70,8 @@ export default function Page() {
 
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [noTopic, setNoTopic] = useState(false);
+  const [search, setSearch] = useState("");
   const [hideDone, setHideDone] = useState(true);
 
   useEffect(() => {
@@ -90,29 +92,30 @@ export default function Page() {
   // Finished items leave the main list after a while, but they still count as learned.
   const allItems = useMemo(() => [...items, ...archivedItems], [items, archivedItems]);
 
-  const allTags = useMemo(() => {
-    const tagSet = new Set<string>();
-    items.forEach((item) => item.tags.forEach((t) => tagSet.add(t)));
-    return Array.from(tagSet).sort();
-  }, [items]);
-
   const categories = useMemo(() => {
     const catSet = new Set<Category>();
     items.forEach((item) => catSet.add(item.category));
     return Array.from(catSet) as Category[];
   }, [items]);
 
-  const isFiltered = selectedCategory !== null || selectedTags.length > 0 || hideDone;
+  const noTopicCount = useMemo(
+    () => items.filter((item) => !item.topicIds?.length && (!hideDone || item.status === "unread")).length,
+    [items, hideDone]
+  );
 
+  const isFiltered = selectedCategory !== null || noTopic || hideDone || search.trim() !== "";
+
+  // A search looks through everything, so finished and archived items can still be found.
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      if (hideDone && item.status === "done") return false;
+    const searching = search.trim() !== "";
+
+    return (searching ? allItems : items).filter((item) => {
+      if (hideDone && !searching && item.status === "done") return false;
       if (selectedCategory && item.category !== selectedCategory) return false;
-      if (selectedTags.length > 0 && !selectedTags.every((t) => item.tags.includes(t)))
-        return false;
-      return true;
+      if (noTopic && item.topicIds?.length) return false;
+      return matchesSearch(item, search);
     });
-  }, [items, selectedCategory, selectedTags, hideDone]);
+  }, [items, allItems, selectedCategory, noTopic, hideDone, search]);
 
   const totalUnreadSeconds = useMemo(() => {
     return filteredItems
@@ -207,12 +210,6 @@ export default function Page() {
     [assignToTopic, moveToTopic, selectedTopic, toast, topics]
   );
 
-  const handleTagToggle = useCallback((tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  }, []);
-
   const handleAddGroup = useCallback(async () => {
     const color = DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length];
     colorIndex++;
@@ -296,13 +293,15 @@ export default function Page() {
           <>
             <FilterBar
               categories={categories}
-              allTags={allTags}
               selectedCategory={selectedCategory}
-              selectedTags={selectedTags}
+              noTopic={noTopic}
+              noTopicCount={noTopicCount}
               hideDone={hideDone}
+              search={search}
               onCategoryChange={setSelectedCategory}
-              onTagToggle={handleTagToggle}
+              onToggleNoTopic={() => setNoTopic((v) => !v)}
               onToggleHideDone={() => setHideDone((v) => !v)}
+              onSearchChange={setSearch}
             />
 
             {totalUnreadSeconds > 0 && (

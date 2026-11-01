@@ -191,13 +191,11 @@ export const ItemRow = memo(function ItemRow({
               {item.title}
             </a>
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <TagChips
-              tags={item.tags}
-              onRemove={handleTagRemove}
-              onAdd={handleTagAdd}
-            />
-          </div>
+          {item.tags.length > 0 && (
+            <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-600">
+              {item.tags.join(" · ")}
+            </p>
+          )}
         </div>
 
         </div>
@@ -265,6 +263,12 @@ export const ItemRow = memo(function ItemRow({
               />
             </div>
           )}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 dark:text-gray-600 shrink-0">Tags</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <TagChips tags={item.tags} onRemove={handleTagRemove} onAdd={handleTagAdd} />
+            </div>
+          </div>
           <textarea
             defaultValue={item.notes ?? ""}
             onBlur={handleNotesBlur}
