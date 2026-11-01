@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import type { Item } from "@/db";
-import { replaceTopic, topicLearned, topicQueue, topicSnoozed } from "./topicQueue";
+import type { Item, Topic } from "@/db";
+import { nextByTopic, replaceTopic, topicLearned, topicQueue, topicSnoozed } from "./topicQueue";
 
 function item(id: string, patch: Partial<Item> = {}): Item {
   return {
@@ -88,5 +88,42 @@ describe("snoozed items", () => {
 
     expect(topicQueue(items, "t", now)).toHaveLength(2);
     expect(topicSnoozed(items, "t", now)).toHaveLength(0);
+  });
+});
+
+describe("nextByTopic", () => {
+  const topic = (id: string, sortOrder: number, status = "active") => ({ id, name: id, sortOrder, status }) as Topic;
+  const queued = (id: string, topicIds: string[], patch: Partial<Item> = {}) =>
+    item(id, { status: "unread", topicIds, sortOrder: 1, ...patch });
+
+  it("gives one item per active topic, in sidebar order", () => {
+    const rows = nextByTopic(
+      [topic("b", 2), topic("a", 1), topic("done", 3, "completed")],
+      [queued("x", ["a"]), queued("y", ["b"]), queued("z", ["done"])]
+    );
+
+    expect(rows.map((row) => [row.topic.id, row.item.id])).toEqual([["a", "x"], ["b", "y"]]);
+  });
+
+  it("puts started items first", () => {
+    const rows = nextByTopic(
+      [topic("a", 1), topic("b", 2)],
+      [queued("x", ["a"]), queued("y", ["b"], { progress: "video 7" })]
+    );
+
+    expect(rows[0].item.id).toBe("y");
+  });
+
+  it("doesn't show an item in two topics twice", () => {
+    const rows = nextByTopic(
+      [topic("a", 1), topic("b", 2)],
+      [queued("both", ["a", "b"], { sortOrder: 2 }), queued("y", ["b"])]
+    );
+
+    expect(rows.map((row) => row.item.id)).toEqual(["both", "y"]);
+  });
+
+  it("skips topics with nothing to do", () => {
+    expect(nextByTopic([topic("a", 1)], [])).toEqual([]);
   });
 });

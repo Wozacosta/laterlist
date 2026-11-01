@@ -1,4 +1,4 @@
-import type { Item } from "@/db";
+import type { Item, Topic } from "@/db";
 
 function isSnoozed(item: Item, now: number): boolean {
   return item.snoozedUntil != null && new Date(item.snoozedUntil).getTime() > now;
@@ -30,4 +30,20 @@ export function topicLearned(items: Item[], topicId: string): Item[] {
 /** Swaps one topic for another, keeping any others the item belongs to. */
 export function replaceTopic(topicIds: string[], from: string, to: string): string[] {
   return [...new Set(topicIds.map((id) => (id === from ? to : id)))];
+}
+
+/** One Next item per active topic: anything already started first, then in sidebar order. */
+export function nextByTopic(topics: Topic[], items: Item[], now = Date.now()): { topic: Topic; item: Item }[] {
+  const seen = new Set<string>();
+
+  return topics
+    .filter((topic) => topic.status === "active")
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .flatMap((topic) => {
+      const item = topicQueue(items, topic.id, now).find(({ id }) => !seen.has(id));
+      if (!item) return [];
+      seen.add(item.id);
+      return [{ topic, item }];
+    })
+    .sort((a, b) => Number(Boolean(b.item.progress)) - Number(Boolean(a.item.progress)));
 }

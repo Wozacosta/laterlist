@@ -25,6 +25,7 @@ import { DataManager } from "./DataManager";
 import { ThemeToggle } from "./ThemeToggle";
 
 export const TRASH = "trash";
+export const NEXT = "next";
 
 const rowClass = (active: boolean) =>
   `flex shrink-0 items-center justify-between gap-3 rounded-md px-3 py-1.5 text-left text-sm transition-colors md:w-full ${
@@ -128,6 +129,10 @@ export const Sidebar = memo(function Sidebar({
         aria-label="Topics"
         className="order-last flex w-full gap-1 overflow-x-auto [scrollbar-width:none] md:order-none md:flex-1 md:flex-col md:overflow-y-auto"
       >
+        <button type="button" onClick={() => onSelect(NEXT)} className={rowClass(selected === NEXT)}>
+          <span>Next</span>
+        </button>
+
         <button type="button" onClick={() => onSelect(null)} className={rowClass(selected === null)}>
           <span>All items</span>
           <span className="text-xs text-gray-400 dark:text-gray-600">{unread}</span>

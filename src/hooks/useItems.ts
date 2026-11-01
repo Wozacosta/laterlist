@@ -60,7 +60,9 @@ export function useItems() {
   const updateItem = useCallback(
     async (
       id: string,
-      patch: Partial<Pick<Item, "tags" | "notes" | "title" | "thumbnail" | "category" | "duration">>
+      patch: Partial<
+        Pick<Item, "tags" | "notes" | "title" | "thumbnail" | "category" | "duration" | "summary" | "progress" | "recalledAt">
+      >
     ) => {
       await db.items.update(id, patch);
     },

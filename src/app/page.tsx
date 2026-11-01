@@ -10,7 +10,9 @@ import { AddItemInput } from "@/components/AddItemInput";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
-import { Sidebar, TRASH } from "@/components/Sidebar";
+import { NextView } from "@/components/NextView";
+import { QuickNote } from "@/components/QuickNote";
+import { NEXT, Sidebar, TRASH } from "@/components/Sidebar";
 import { TopicView } from "@/components/TopicView";
 import { SkeletonList } from "@/components/SkeletonList";
 import { TrashView } from "@/components/TrashView";
@@ -21,8 +23,6 @@ import { matchesSearch } from "@/lib/matchesSearch";
 import type { Item, GroupColor } from "@/db";
 
 type NewItem = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
-
-const SELECTED_TOPIC_KEY = "laterlist:selected-topic";
 
 function formatTotalTime(seconds: number): string {
   if (seconds === 0) return "";
@@ -76,24 +76,24 @@ export default function Page() {
   const currentUser = useObservable(db.cloud.currentUser);
   const isLoggedIn = currentUser?.isLoggedIn ?? false;
 
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(NEXT);
+  const [followUp, setFollowUp] = useState<{ id: string; title: string; field: "notes" | "progress" } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [selectedKind, setSelectedKind] = useState<ItemKind | null>(null);
   const [starred, setStarred] = useState(false);
   const [noTopic, setNoTopic] = useState(false);
   const [search, setSearch] = useState("");
   const [hideDone, setHideDone] = useState(true);
 
+  // A pinned tab needs this to notice that a snoozed item is due back.
   useEffect(() => {
-    setSelectedTopicId(localStorage.getItem(SELECTED_TOPIC_KEY));
-  }, []);
-
-  const handleSelectTopic = useCallback((topicId: string | null) => {
-    setSelectedTopicId(topicId);
-    if (topicId) localStorage.setItem(SELECTED_TOPIC_KEY, topicId);
-    else localStorage.removeItem(SELECTED_TOPIC_KEY);
+    const refresh = () => document.visibilityState === "visible" && setNow(Date.now());
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
   }, []);
 
   const inTrash = selectedTopicId === TRASH;
+  const inNext = selectedTopicId === NEXT;
 
   const selectedTopic = useMemo(
     () => topics.find((t) => t.id === selectedTopicId) ?? null,
@@ -172,10 +172,32 @@ export default function Page() {
 
   const handleMarkDone = useCallback(
     async (id: string) => {
+      const item = allItems.find((i) => i.id === id);
       await markDone(id);
       toast("Marked as done");
+      if (item && !item.notes) setFollowUp({ id, title: item.title, field: "notes" });
     },
-    [markDone, toast]
+    [allItems, markDone, toast]
+  );
+
+  const handleFollowUp = useCallback(
+    async (text: string) => {
+      if (!followUp) return;
+      await updateItem(followUp.id, { [followUp.field]: text });
+      setFollowUp(null);
+      toast("Saved");
+    },
+    [followUp, toast, updateItem]
+  );
+
+  const handleRecall = useCallback(
+    async (id: string, text: string) => {
+      const item = allItems.find((i) => i.id === id);
+      const recalledAt = new Date().toISOString();
+      const notes = [item?.notes, text.trim()].filter(Boolean).join("\n");
+      await updateItem(id, text.trim() ? { recalledAt, notes } : { recalledAt });
+    },
+    [allItems, updateItem]
   );
 
   const handleDelete = useCallback(
@@ -216,10 +238,12 @@ export default function Page() {
 
   const handleSnooze = useCallback(
     async (id: string, until: string | null, message: string) => {
+      const item = allItems.find((i) => i.id === id);
       await snooze(id, until);
       toast(message);
+      if (until && item) setFollowUp({ id, title: item.title, field: "progress" });
     },
-    [snooze, toast]
+    [allItems, snooze, toast]
   );
 
   const handleRestore = useCallback(
@@ -303,10 +327,10 @@ export default function Page() {
   const handleDeleteTopic = useCallback(
     async (id: string) => {
       await deleteTopic(id);
-      handleSelectTopic(null);
+      setSelectedTopicId(null);
       toast("Topic deleted", "error");
     },
-    [deleteTopic, handleSelectTopic, toast]
+    [deleteTopic, toast]
   );
 
   return (
@@ -315,9 +339,9 @@ export default function Page() {
         topics={topics}
         items={items}
         trashCount={trashedItems.length}
-        selected={inTrash ? TRASH : selectedTopic?.id ?? null}
+        selected={inTrash ? TRASH : inNext ? NEXT : selectedTopic?.id ?? null}
         isLoggedIn={isLoggedIn}
-        onSelect={handleSelectTopic}
+        onSelect={setSelectedTopicId}
         onAddTopic={handleAddTopic}
         onReorderTopics={setTopicOrder}
       />
@@ -341,8 +365,39 @@ export default function Page() {
           />
         )}
 
+        {followUp && (
+          <QuickNote
+            key={`${followUp.id}-${followUp.field}`}
+            label={followUp.title}
+            placeholder={followUp.field === "notes" ? "What did you take from it?" : "Where did you get to? e.g. video 7"}
+            onSave={handleFollowUp}
+            onDismiss={() => setFollowUp(null)}
+          />
+        )}
+
         {isLoading ? (
           <SkeletonList />
+        ) : inNext ? (
+          <NextView
+            topics={topics}
+            items={allItems}
+            now={now}
+            noTopicCount={noTopicCount}
+            onOpenTopic={setSelectedTopicId}
+            onOpenNoTopic={() => {
+              setNoTopic(true);
+              setSelectedTopicId(null);
+            }}
+            onRecall={handleRecall}
+            onDropOnTopic={handleDropOnTopic}
+            onMarkDone={handleMarkDone}
+            onUnmarkDone={unmarkDone}
+            onDoNext={doNext}
+            onDelete={handleDelete}
+            onUpdateNotes={handleUpdateNotes}
+            onToggleStar={toggleStar}
+            onSnooze={handleSnooze}
+          />
         ) : inTrash ? (
           <TrashView items={trashedItems} onRestore={handleRestore} onDeleteForever={handleDeleteForever} />
         ) : selectedTopic ? (
@@ -350,6 +405,7 @@ export default function Page() {
             topic={selectedTopic}
             topics={topics}
             items={allItems}
+            now={now}
             onMarkDone={handleMarkDone}
             onUnmarkDone={unmarkDone}
             onDoNext={doNext}

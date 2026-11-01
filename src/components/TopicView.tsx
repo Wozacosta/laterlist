@@ -20,17 +20,23 @@ import {
   StarButton,
 } from "./ItemRow";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 const SNOOZE_OPTIONS = [
   { label: "Back tomorrow", days: 1 },
   { label: "Back in a week", days: 7 },
 ];
 
+/** Early on the morning it's due, so an evening session is back the next day. */
+function backOn(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  date.setHours(4, 0, 0, 0);
+  return date.toISOString();
+}
+
 const sectionLabel =
   "cursor-pointer text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400";
 
-interface ItemActions {
+export interface ItemActions {
   moveTargets: Topic[];
   onMarkDone: (id: string) => void;
   onUnmarkDone: (id: string) => void;
@@ -42,14 +48,14 @@ interface ItemActions {
   onSnooze: (id: string, until: string | null, message: string) => void;
 }
 
-function DoneABit({ item, onSnooze }: { item: Item } & Pick<ItemActions, "onSnooze">) {
+export function DoneABit({ item, onSnooze }: { item: Item } & Pick<ItemActions, "onSnooze">) {
   return (
     <QuietSelect
       aria-label={`Done a bit of "${item.title}"`}
       value=""
       onChange={(e) => {
         const option = SNOOZE_OPTIONS[Number(e.target.value)];
-        if (option) onSnooze(item.id, new Date(Date.now() + option.days * DAY_MS).toISOString(), option.label);
+        if (option) onSnooze(item.id, backOn(option.days), option.label);
       }}
     >
       <option value="">Done a bit…</option>
@@ -82,7 +88,7 @@ function MoveTo({ item, moveTargets, onMove }: { item: Item } & Pick<ItemActions
 }
 
 /** A row in a topic drags onto the sidebar, so the grip is only a cue with no keyboard stop. */
-function Grip() {
+export function Grip() {
   return (
     <span aria-hidden title="Drag onto a topic" className={gripClass}>
       ⠿
@@ -90,16 +96,55 @@ function Grip() {
   );
 }
 
-function ItemDetails({ item }: { item: Item }) {
+export function ItemDetails({ item }: { item: Item }) {
   return (
-    <p className="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+    <p className="mt-1 flex min-w-0 items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
       <KindBadge item={item} />
-      {item.duration != null && formatDuration(item.duration, itemKind(item))}
+      {item.duration != null && <span className="shrink-0">{formatDuration(item.duration, itemKind(item))}</span>}
+      {item.progress && <span className="truncate">Stopped at {item.progress}</span>}
     </p>
   );
 }
 
-function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
+/** Rows in here can be dragged onto a sidebar topic. */
+export function ItemDragArea({
+  items,
+  onDrop,
+  children,
+}: {
+  items: Item[];
+  onDrop: (itemId: string, topicId: string) => void;
+  children: React.ReactNode;
+}) {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const topicDrop = useTopicDrop(onDrop);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const dragging = items.find((item) => item.id === draggingId);
+
+  return (
+    <DndContext
+      id="topic-items"
+      sensors={sensors}
+      onDragStart={({ active }) => {
+        setDraggingId(String(active.id));
+        topicDrop.start();
+      }}
+      onDragEnd={({ active }) => {
+        setDraggingId(null);
+        topicDrop.finish(String(active.id));
+      }}
+      onDragCancel={() => {
+        setDraggingId(null);
+        topicDrop.cancel();
+      }}
+    >
+      {children}
+      <DragOverlay>{dragging && <DragPreview title={dragging.title} />}</DragOverlay>
+    </DndContext>
+  );
+}
+
+export function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
   const { listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
 
   return (
@@ -195,7 +240,7 @@ function SnoozedRow({ item, actions }: { item: Item; actions: ItemActions }) {
         <ItemLink item={item} titleClassName={rowTitleClass} className="text-sm text-gray-600 dark:text-gray-400" />
       </div>
       <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
-        Back {formatDate(item.snoozedUntil ?? "")}
+        {item.progress ? `At ${item.progress} · ` : ""}Back {formatDate(item.snoozedUntil ?? "")}
       </span>
       <button type="button" onClick={() => actions.onSnooze(item.id, null, "Back in the queue")} className={quietButton}>
         Bring back
@@ -237,6 +282,7 @@ interface TopicViewProps extends Omit<ItemActions, "moveTargets"> {
   topic: Topic;
   topics: Topic[];
   items: Item[];
+  now: number;
   onRename: (id: string, name: string) => void;
   onComplete: (id: string) => void;
   onReopen: (id: string) => void;
@@ -248,6 +294,7 @@ export const TopicView = memo(function TopicView({
   topic,
   topics,
   items,
+  now,
   onRename,
   onComplete,
   onReopen,
@@ -255,12 +302,8 @@ export const TopicView = memo(function TopicView({
   onDropOnTopic,
   ...handlers
 }: TopicViewProps) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
-  const topicDrop = useTopicDrop(onDropOnTopic);
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  // Not memoized: a snoozed item comes back when its time passes, not when the items change.
-  const queue = topicQueue(items, topic.id);
-  const snoozed = topicSnoozed(items, topic.id);
+  const queue = topicQueue(items, topic.id, now);
+  const snoozed = topicSnoozed(items, topic.id, now);
   const learned = useMemo(() => topicLearned(items, topic.id), [items, topic.id]);
   const moveTargets = useMemo(
     () => topics.filter((t) => t.status === "active" && t.id !== topic.id),
@@ -269,7 +312,6 @@ export const TopicView = memo(function TopicView({
 
   const actions: ItemActions = { ...handlers, moveTargets };
   const [next, ...later] = queue;
-  const dragging = queue.find((item) => item.id === draggingId);
 
   function rename() {
     const name = window.prompt("Rename topic", topic.name)?.trim();
@@ -301,24 +343,9 @@ export const TopicView = memo(function TopicView({
         </button>
       </header>
 
-      <DndContext
-        id="topic-items"
-        sensors={sensors}
-        onDragStart={({ active }) => {
-          setDraggingId(String(active.id));
-          topicDrop.start();
-        }}
-        onDragEnd={({ active }) => {
-          setDraggingId(null);
-          topicDrop.finish(String(active.id));
-        }}
-        onDragCancel={() => {
-          setDraggingId(null);
-          topicDrop.cancel();
-        }}
-      >
+      <ItemDragArea items={queue} onDrop={onDropOnTopic}>
       {next ? (
-        <NextCard item={next} actions={actions} />
+        <NextCard key={next.id} item={next} actions={actions} />
       ) : (
         <p className="rounded-xl border border-dashed border-gray-300 p-5 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
           {snoozed.length > 0
@@ -338,8 +365,7 @@ export const TopicView = memo(function TopicView({
         </ul>
       )}
 
-      <DragOverlay>{dragging && <DragPreview title={dragging.title} />}</DragOverlay>
-      </DndContext>
+      </ItemDragArea>
 
       {snoozed.length > 0 && (
         <details>
