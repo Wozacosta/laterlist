@@ -8,6 +8,7 @@ export type Category =
   | "repo"
   | "podcast"
   | "doc"
+  | "action"
   | "other";
 
 export type GroupColor =
@@ -40,6 +41,8 @@ export interface Item {
   doneAt?: string; // ISO datetime string
   publishedAt?: string; // ISO datetime — item visible on public reading list
   notes?: string;
+  summary?: string; // short AI summary of the content
+  why?: string; // one line on what this gives the user
   groupId?: string; // optional group membership
   topicIds?: string[]; // optional learning topics (multi-select)
 }

@@ -64,6 +64,9 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Next</p>
       <ItemLink item={item} className="block break-words text-xl font-semibold text-gray-900 dark:text-white" />
       {details && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{details}</p>}
+      {(item.why || item.summary) && (
+        <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">{item.why || item.summary}</p>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <button
