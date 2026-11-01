@@ -87,40 +87,98 @@ export function formatDate(isoString: string): string {
   );
 }
 
-/** Saved image links go dead over time, so a failed image falls back to the letter. */
+const KIND_GLYPHS: Record<ItemKind, string> = {
+  YouTube: "▶",
+  Tweet: "𝕏",
+  Video: "▶",
+  Article: "Aa",
+  Paper: "§",
+  Repo: "</>",
+  Podcast: "♪",
+  Doc: "≡",
+  Action: "✓",
+  Link: "↗",
+  Note: "✎",
+};
+
+/** Saved image links go dead over time, so a failed image falls back to the kind's tile. */
 export function Thumbnail({
   src,
-  category,
-  className = "h-12 w-12",
+  kind,
+  className = "h-12 w-16",
 }: {
   src?: string;
-  category: string;
+  kind: ItemKind;
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
 
-  return (
-    <div className={`shrink-0 overflow-hidden rounded bg-gray-100 dark:bg-gray-800 ${className}`}>
-      {src && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element
+  if (src && !failed) {
+    return (
+      <div className={`shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800 ${className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
           alt=""
           loading="lazy"
+          draggable={false}
           onError={() => setFailed(true)}
           className="h-full w-full object-cover"
         />
-      ) : (
-        <div className="h-full w-full flex items-center justify-center text-gray-300 text-xs dark:text-gray-600">
-          {category[0].toUpperCase()}
-        </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex shrink-0 items-center justify-center rounded-md text-sm font-semibold ${KIND_STYLES[kind]} ${className}`}
+    >
+      {KIND_GLYPHS[kind]}
     </div>
   );
 }
 
 export const gripClass =
   "shrink-0 cursor-grab touch-none text-lg leading-none text-gray-400 hover:text-gray-700 active:cursor-grabbing dark:text-gray-600 dark:hover:text-gray-300";
+
+export const quietButton =
+  "shrink-0 rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200";
+
+/** Titles get two lines on a phone, where one line only fits a few words. */
+export const rowTitleClass = "line-clamp-2 break-words sm:line-clamp-1";
+
+export function ChevronIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
+export function QuietSelect({ children, ...props }: React.ComponentProps<"select">) {
+  return (
+    <span className="relative inline-flex shrink-0 text-gray-500 dark:text-gray-400">
+      <select
+        {...props}
+        className="max-w-36 cursor-pointer appearance-none truncate rounded bg-transparent py-1 pl-2 pr-6 text-xs field-sizing-content hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+      >
+        {children}
+      </select>
+      <ChevronIcon className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2" />
+    </span>
+  );
+}
 
 export function DragPreview({ title }: { title: string }) {
   return (
@@ -160,9 +218,24 @@ export function ItemLink({
   );
 }
 
+function ItemMeta({ item }: { item: Item }) {
+  const details = [
+    item.duration != null && formatDuration(item.duration, itemKind(item)),
+    formatDate(item.addedAt),
+    ...item.tags,
+  ].filter(Boolean);
+
+  return (
+    <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+      <KindBadge item={item} />
+      <p className="truncate">{details.join(" · ")}</p>
+    </div>
+  );
+}
+
 export function ItemThumbnail({ item, className }: { item: Item; className?: string }) {
   const image = (
-    <Thumbnail key={item.thumbnail} src={item.thumbnail} category={item.category} className={className} />
+    <Thumbnail key={item.thumbnail} src={item.thumbnail} kind={itemKind(item)} className={className} />
   );
 
   if (!item.url) return image;
@@ -204,7 +277,7 @@ export const ItemRow = memo(function ItemRow({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.5 : undefined,
   };
 
   const handleCheckboxChange = useCallback(() => {
@@ -265,13 +338,13 @@ export const ItemRow = memo(function ItemRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group rounded-lg border border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900 ${
-        item.status === "done" ? "opacity-35" : ""
+      className={`group border-b border-gray-100 transition-colors last:border-b-0 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900 ${
+        item.status === "done" ? "opacity-70" : ""
       }`}
     >
       <div
         onClick={handleRowClick}
-        className="flex items-center gap-2 px-3 py-2 cursor-pointer"
+        className="flex items-center gap-3 px-3 py-2.5 cursor-pointer"
         {...listeners}
       >
         {/* Drag handle: the whole row drags, this shows it */}
@@ -292,43 +365,11 @@ export const ItemRow = memo(function ItemRow({
         <div className="flex-1 min-w-0">
           <ItemLink
             item={item}
+            titleClassName={rowTitleClass}
             className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${item.status === "done" ? "line-through" : ""}`}
           />
-          <div className="mt-0.5 flex min-w-0 items-center gap-2">
-            <KindBadge item={item} />
-            {item.tags.length > 0 && (
-              <p className="truncate text-xs text-gray-400 dark:text-gray-600">
-                {item.tags.join(" · ")}
-              </p>
-            )}
-          </div>
+          <ItemMeta item={item} />
         </div>
-
-        {/* Meta */}
-        <div className="shrink-0 flex flex-col items-end gap-1 text-xs text-gray-400 dark:text-gray-600">
-          {item.duration != null && <span>{formatDuration(item.duration, itemKind(item))}</span>}
-          <span>{formatDate(item.addedAt)}</span>
-        </div>
-
-        {/* Publish toggle (only for done items) */}
-        {item.status === "done" && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              item.publishedAt ? onUnpublish(item.id) : onPublish(item.id);
-            }}
-            className={`shrink-0 text-sm transition-colors ${
-              item.publishedAt
-                ? "text-green-500 hover:text-green-600 dark:text-green-400"
-                : "text-gray-300 hover:text-gray-500 dark:text-gray-700 dark:hover:text-gray-400"
-            }`}
-            aria-label={item.publishedAt ? "Unpublish" : "Publish"}
-            title={item.publishedAt ? "Published — click to unpublish" : "Publish to reading list"}
-          >
-            ↗
-          </button>
-        )}
 
         <StarButton item={item} onToggle={onToggleStar} />
 
@@ -341,20 +382,6 @@ export const ItemRow = memo(function ItemRow({
           aria-label="Mark as done"
         />
 
-        {/* Delete */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(item.id);
-          }}
-          className="shrink-0 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-lg leading-none dark:text-gray-700 dark:hover:text-red-400"
-          aria-label="Move to Trash"
-          title="Move to Trash"
-        >
-          ×
-        </button>
-
         {/* Details */}
         <button
           type="button"
@@ -362,22 +389,9 @@ export const ItemRow = memo(function ItemRow({
           aria-expanded={expanded}
           aria-label={expanded ? "Hide details" : "Show details"}
           title={expanded ? "Hide details" : "Show details"}
-          className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
         >
-          <svg
-            aria-hidden
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={`transition-transform ${expanded ? "rotate-180" : ""}`}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          <ChevronIcon className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
         </button>
       </div>
 
@@ -411,6 +425,20 @@ export const ItemRow = memo(function ItemRow({
             placeholder="Add a note..."
             className="w-full rounded border border-gray-200 bg-transparent px-2 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none dark:border-gray-700 dark:text-gray-300 dark:placeholder-gray-600"
           />
+          <div className="flex justify-end gap-1">
+            {item.status === "done" && (
+              <button
+                type="button"
+                onClick={() => (item.publishedAt ? onUnpublish(item.id) : onPublish(item.id))}
+                className={quietButton}
+              >
+                {item.publishedAt ? "Remove from reading list" : "Publish to reading list"}
+              </button>
+            )}
+            <button type="button" onClick={() => onDelete(item.id)} className={quietButton}>
+              Move to Trash
+            </button>
+          </div>
         </div>
       )}
     </div>

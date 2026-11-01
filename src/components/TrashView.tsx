@@ -2,10 +2,7 @@
 
 import { memo } from "react";
 import type { Item } from "@/db";
-import { formatDate, ItemLink, ItemThumbnail, KindBadge } from "./ItemRow";
-
-const quietButton =
-  "shrink-0 rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200";
+import { formatDate, ItemLink, ItemThumbnail, KindBadge, quietButton, rowTitleClass } from "./ItemRow";
 
 interface TrashViewProps {
   items: Item[];
@@ -47,26 +44,34 @@ export const TrashView = memo(function TrashView({ items, onRestore, onDeleteFor
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Items stay here until you empty the Trash.
           </p>
-          <ul aria-label="Trash" className="flex flex-col gap-2">
+          <ul
+            aria-label="Trash"
+            className="divide-y divide-gray-100 rounded-xl border border-gray-200 dark:divide-gray-800 dark:border-gray-800"
+          >
             {items.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-800"
-              >
-                <ItemThumbnail item={item} className="hidden h-9 w-16 sm:block" />
-                <div className="min-w-0 flex-1">
-                  <ItemLink item={item} className="text-[15px] font-medium text-gray-800 dark:text-gray-200" />
-                  <p className="mt-0.5 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-600">
-                    <KindBadge item={item} />
-                    {item.deletedAt && `Deleted ${formatDate(item.deletedAt)}`}
-                  </p>
+              <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 sm:flex-nowrap">
+                <div className="flex min-w-0 basis-full items-center gap-3 sm:flex-1 sm:basis-0">
+                  <ItemThumbnail item={item} className="h-9 w-16" />
+                  <div className="min-w-0 flex-1">
+                    <ItemLink
+                      item={item}
+                      titleClassName={rowTitleClass}
+                      className="text-sm font-medium text-gray-800 dark:text-gray-200"
+                    />
+                    <p className="mt-1 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                      <KindBadge item={item} />
+                      {item.deletedAt && `Deleted ${formatDate(item.deletedAt)}`}
+                    </p>
+                  </div>
                 </div>
-                <button type="button" onClick={() => onRestore(item.id)} className={quietButton}>
-                  Restore
-                </button>
-                <button type="button" onClick={() => deleteOne(item)} className={quietButton}>
-                  Delete forever
-                </button>
+                <div className="ml-auto flex shrink-0 items-center gap-1">
+                  <button type="button" onClick={() => onRestore(item.id)} className={quietButton}>
+                    Restore
+                  </button>
+                  <button type="button" onClick={() => deleteOne(item)} className={quietButton}>
+                    Delete forever
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

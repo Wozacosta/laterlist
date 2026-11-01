@@ -183,7 +183,7 @@ export const ItemList = memo(function ItemList({
           items={ungroupedItems.map((i) => i.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="flex flex-col gap-1 mb-4">
+          <div className={ungroupedItems.length ? "mb-4 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800" : undefined}>
             {ungroupedItems.map((item) => (
               <ItemRow
                 key={item.id}
@@ -246,7 +246,7 @@ const AddGroupButton = memo(function AddGroupButton({ onClick }: { onClick: () =
     <button
       type="button"
       onClick={onClick}
-      className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-gray-300 py-2 text-xs text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors dark:border-gray-700 dark:text-gray-600 dark:hover:border-gray-600 dark:hover:text-gray-400"
+      className="ml-auto mt-3 flex items-center gap-1.5 rounded px-2 py-1 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>

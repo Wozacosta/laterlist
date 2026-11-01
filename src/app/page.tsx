@@ -102,7 +102,14 @@ export default function Page() {
   // Finished items leave the main list after a while, but they still count as learned.
   const allItems = useMemo(() => [...items, ...archivedItems], [items, archivedItems]);
 
-  const kinds = useMemo(() => [...new Set(items.map(itemKind))], [items]);
+  const kinds = useMemo(() => {
+    const counts = new Map<ItemKind, number>();
+    for (const item of items) {
+      const kind = itemKind(item);
+      counts.set(kind, (counts.get(kind) ?? 0) + 1);
+    }
+    return [...counts.keys()].sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0));
+  }, [items]);
 
   const starredCount = useMemo(() => allItems.filter((item) => item.starred).length, [allItems]);
 

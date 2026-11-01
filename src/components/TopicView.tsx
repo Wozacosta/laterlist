@@ -6,7 +6,19 @@ import type { Item, Topic } from "@/db";
 import { useTopicDrop } from "@/hooks/useTopicDrop";
 import { itemKind } from "@/lib/itemKind";
 import { topicLearned, topicQueue, topicSnoozed } from "@/lib/topicQueue";
-import { DragPreview, formatDate, formatDuration, gripClass, ItemLink, ItemThumbnail, KindBadge, StarButton } from "./ItemRow";
+import {
+  DragPreview,
+  formatDate,
+  formatDuration,
+  gripClass,
+  ItemLink,
+  ItemThumbnail,
+  KindBadge,
+  quietButton,
+  QuietSelect,
+  rowTitleClass,
+  StarButton,
+} from "./ItemRow";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -15,8 +27,8 @@ const SNOOZE_OPTIONS = [
   { label: "Back in a week", days: 7 },
 ];
 
-const quietButton =
-  "rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200";
+const sectionLabel =
+  "cursor-pointer text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400";
 
 interface ItemActions {
   moveTargets: Topic[];
@@ -32,14 +44,13 @@ interface ItemActions {
 
 function DoneABit({ item, onSnooze }: { item: Item } & Pick<ItemActions, "onSnooze">) {
   return (
-    <select
+    <QuietSelect
       aria-label={`Done a bit of "${item.title}"`}
       value=""
       onChange={(e) => {
         const option = SNOOZE_OPTIONS[Number(e.target.value)];
         if (option) onSnooze(item.id, new Date(Date.now() + option.days * DAY_MS).toISOString(), option.label);
       }}
-      className="max-w-28 rounded bg-transparent px-1 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
     >
       <option value="">Done a bit…</option>
       {SNOOZE_OPTIONS.map((option, index) => (
@@ -47,7 +58,7 @@ function DoneABit({ item, onSnooze }: { item: Item } & Pick<ItemActions, "onSnoo
           {option.label}
         </option>
       ))}
-    </select>
+    </QuietSelect>
   );
 }
 
@@ -55,11 +66,10 @@ function MoveTo({ item, moveTargets, onMove }: { item: Item } & Pick<ItemActions
   if (moveTargets.length === 0) return null;
 
   return (
-    <select
+    <QuietSelect
       aria-label={`Move "${item.title}" to another topic`}
       value=""
       onChange={(e) => e.target.value && onMove(item.id, e.target.value)}
-      className="max-w-28 rounded bg-transparent px-1 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
     >
       <option value="">Move to…</option>
       {moveTargets.map((topic) => (
@@ -67,7 +77,7 @@ function MoveTo({ item, moveTargets, onMove }: { item: Item } & Pick<ItemActions
           {topic.name}
         </option>
       ))}
-    </select>
+    </QuietSelect>
   );
 }
 
@@ -82,7 +92,7 @@ function Grip() {
 
 function ItemDetails({ item }: { item: Item }) {
   return (
-    <p className="mt-0.5 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+    <p className="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
       <KindBadge item={item} />
       {item.duration != null && formatDuration(item.duration, itemKind(item))}
     </p>
@@ -96,44 +106,46 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
     <section
       ref={setNodeRef}
       aria-label="Next"
-      className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900 ${
+      className={`rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900 ${
         isDragging ? "opacity-50" : ""
       }`}
       {...listeners}
     >
-      <div className="flex min-w-0 flex-1 basis-72 items-center gap-3">
-      <Grip />
-      <ItemThumbnail item={item} className="h-14 w-24" />
+      <div className="flex items-center gap-3">
+        <Grip />
+        <ItemThumbnail item={item} className="h-14 w-20 sm:h-20 sm:w-36" />
 
-      <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Next</p>
-        <ItemLink
-          item={item}
-          titleClassName="line-clamp-2 break-words"
-          className="text-lg font-semibold text-gray-900 dark:text-white"
-        />
-        <ItemDetails item={item} />
-        {(item.why || item.summary) && (
-          <p className="mt-1 line-clamp-3 text-sm text-gray-700 dark:text-gray-300">{item.why || item.summary}</p>
-        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Next</p>
+          <ItemLink
+            item={item}
+            titleClassName="line-clamp-2 break-words"
+            className="text-lg font-semibold leading-snug text-gray-900 dark:text-white"
+          />
+          <ItemDetails item={item} />
+        </div>
       </div>
 
-      </div>
+      {(item.why || item.summary) && (
+        <p className="mt-3 line-clamp-3 text-sm text-gray-700 dark:text-gray-300">{item.why || item.summary}</p>
+      )}
 
-      <div className="flex shrink-0 items-center gap-1">
-        <StarButton item={item} onToggle={actions.onToggleStar} />
+      <div className="mt-3 flex flex-wrap items-center gap-1">
         <button
           type="button"
           onClick={() => actions.onMarkDone(item.id)}
-          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+          className="mr-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
         >
           Done
         </button>
         <DoneABit item={item} onSnooze={actions.onSnooze} />
         <MoveTo item={item} moveTargets={actions.moveTargets} onMove={actions.onMove} />
-        <button type="button" onClick={() => actions.onDelete(item.id)} className={quietButton}>
-          Delete
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <StarButton item={item} onToggle={actions.onToggleStar} />
+          <button type="button" onClick={() => actions.onDelete(item.id)} className={quietButton}>
+            Delete
+          </button>
+        </div>
       </div>
     </section>
   );
@@ -145,30 +157,32 @@ function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
   return (
     <li
       ref={setNodeRef}
-      className={`flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-800 ${
-        isDragging ? "opacity-50" : ""
-      }`}
+      className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 sm:flex-nowrap ${isDragging ? "opacity-50" : ""}`}
       {...listeners}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="flex min-w-0 basis-full items-center gap-3 sm:flex-1 sm:basis-0">
         <Grip />
-        <ItemThumbnail item={item} className="hidden h-9 w-16 sm:block" />
+        <ItemThumbnail item={item} className="h-9 w-16" />
 
         <div className="min-w-0 flex-1">
-          <ItemLink item={item} className="text-[15px] font-medium text-gray-800 dark:text-gray-200" />
+          <ItemLink
+            item={item}
+            titleClassName={rowTitleClass}
+            className="text-sm font-medium text-gray-800 dark:text-gray-200"
+          />
           <ItemDetails item={item} />
         </div>
       </div>
-      <StarButton item={item} onToggle={actions.onToggleStar} />
-      <button type="button" onClick={() => actions.onDoNext(item.id)} className={quietButton}>
-        Do next
-      </button>
-      <div className="hidden sm:block">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        <StarButton item={item} onToggle={actions.onToggleStar} />
+        <button type="button" onClick={() => actions.onDoNext(item.id)} className={quietButton}>
+          Do next
+        </button>
         <MoveTo item={item} moveTargets={actions.moveTargets} onMove={actions.onMove} />
+        <button type="button" onClick={() => actions.onMarkDone(item.id)} className={quietButton}>
+          Done
+        </button>
       </div>
-      <button type="button" onClick={() => actions.onMarkDone(item.id)} className={quietButton}>
-        Done
-      </button>
     </li>
   );
 }
@@ -178,9 +192,9 @@ function SnoozedRow({ item, actions }: { item: Item; actions: ItemActions }) {
     <li className="flex items-center gap-2 py-2">
       <KindBadge item={item} />
       <div className="min-w-0 flex-1">
-        <ItemLink item={item} className="text-sm text-gray-600 dark:text-gray-400" />
+        <ItemLink item={item} titleClassName={rowTitleClass} className="text-sm text-gray-600 dark:text-gray-400" />
       </div>
-      <span className="shrink-0 text-xs text-gray-400 dark:text-gray-600">
+      <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
         Back {formatDate(item.snoozedUntil ?? "")}
       </span>
       <button type="button" onClick={() => actions.onSnooze(item.id, null, "Back in the queue")} className={quietButton}>
@@ -193,18 +207,18 @@ function SnoozedRow({ item, actions }: { item: Item; actions: ItemActions }) {
 function LearnedRow({ item, actions }: { item: Item; actions: ItemActions }) {
   return (
     <li className="py-2">
-      <div className="flex items-center gap-2">
-        <StarButton item={item} onToggle={actions.onToggleStar} />
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <KindBadge item={item} />
         <div className="min-w-0 flex-1">
-          <ItemLink item={item} className="text-sm text-gray-600 dark:text-gray-400" />
+          <ItemLink item={item} titleClassName={rowTitleClass} className="text-sm text-gray-600 dark:text-gray-400" />
         </div>
-        <div className="hidden sm:block">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <StarButton item={item} onToggle={actions.onToggleStar} />
           <MoveTo item={item} moveTargets={actions.moveTargets} onMove={actions.onMove} />
+          <button type="button" onClick={() => actions.onUnmarkDone(item.id)} className={quietButton}>
+            Not done
+          </button>
         </div>
-        <button type="button" onClick={() => actions.onUnmarkDone(item.id)} className={quietButton}>
-          Not done
-        </button>
       </div>
       <textarea
         key={item.notes ?? ""}
@@ -213,7 +227,7 @@ function LearnedRow({ item, actions }: { item: Item; actions: ItemActions }) {
         rows={1}
         aria-label={`Notes on "${item.title}"`}
         placeholder="What did you take from it?"
-        className="mt-1 w-full resize-y rounded bg-transparent px-1 py-0.5 text-xs text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-400 dark:placeholder-gray-600"
+        className="mt-1 w-full resize-none rounded bg-transparent px-1 py-0.5 text-xs text-gray-600 placeholder-gray-400 field-sizing-content focus:outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-400 dark:placeholder-gray-600"
       />
     </li>
   );
@@ -314,7 +328,10 @@ export const TopicView = memo(function TopicView({
       )}
 
       {later.length > 0 && (
-        <ul aria-label="After that" className="-mt-4 flex flex-col gap-2">
+        <ul
+          aria-label="After that"
+          className="-mt-3 divide-y divide-gray-100 rounded-xl border border-gray-200 dark:divide-gray-800 dark:border-gray-800"
+        >
           {later.map((item) => (
             <LaterRow key={item.id} item={item} actions={actions} />
           ))}
@@ -326,7 +343,7 @@ export const TopicView = memo(function TopicView({
 
       {snoozed.length > 0 && (
         <details>
-          <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400">
+          <summary className={sectionLabel}>
             Snoozed ({snoozed.length})
           </summary>
           <ul className="mt-2 divide-y divide-gray-100 dark:divide-gray-800">
@@ -339,7 +356,7 @@ export const TopicView = memo(function TopicView({
 
       {learned.length > 0 && (
         <details>
-          <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400">
+          <summary className={sectionLabel}>
             Learned ({learned.length})
           </summary>
           <ul className="mt-2 divide-y divide-gray-100 dark:divide-gray-800">

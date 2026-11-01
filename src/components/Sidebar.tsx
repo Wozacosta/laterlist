@@ -65,7 +65,7 @@ function TopicRow({
       {...listeners}
     >
       <span className="truncate">{topic.name}</span>
-      <span className="text-xs text-gray-400 dark:text-gray-600">{count}</span>
+      {count > 0 && <span className="text-xs text-gray-400 dark:text-gray-600">{count}</span>}
     </button>
   );
 }
@@ -121,10 +121,13 @@ export const Sidebar = memo(function Sidebar({
   }
 
   return (
-    <aside className="flex flex-col gap-4 border-b border-gray-200 p-4 md:sticky md:top-0 md:h-screen md:w-64 md:shrink-0 md:border-b-0 md:border-r dark:border-gray-800">
-      <h1 className="px-3 text-lg font-bold text-gray-900 dark:text-white">laterlist</h1>
+    <aside className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-gray-200 p-4 md:sticky md:top-0 md:h-screen md:w-64 md:shrink-0 md:flex-col md:flex-nowrap md:items-stretch md:gap-4 md:border-b-0 md:border-r dark:border-gray-800">
+      <h1 className="flex-1 px-3 text-lg font-bold text-gray-900 md:flex-none dark:text-white">laterlist</h1>
 
-      <nav aria-label="Topics" className="flex gap-1 overflow-x-auto md:flex-1 md:flex-col md:overflow-y-auto">
+      <nav
+        aria-label="Topics"
+        className="order-last flex w-full gap-1 overflow-x-auto [scrollbar-width:none] md:order-none md:flex-1 md:flex-col md:overflow-y-auto"
+      >
         <button type="button" onClick={() => onSelect(null)} className={rowClass(selected === null)}>
           <span>All items</span>
           <span className="text-xs text-gray-400 dark:text-gray-600">{unread}</span>
