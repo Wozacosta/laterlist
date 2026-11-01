@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/authFetch";
 import { memo, useState, useEffect, useCallback } from "react";
 
 interface ProtonStatus {
@@ -18,7 +19,7 @@ export const ProtonCalendarConnect = memo(function ProtonCalendarConnect() {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/calendar/proton");
+      const res = await authFetch("/api/calendar/proton");
       const data = await res.json();
       setStatus(data);
     } catch {
@@ -34,7 +35,7 @@ export const ProtonCalendarConnect = memo(function ProtonCalendarConnect() {
     if (!email || !password) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/calendar/proton", {
+      const res = await authFetch("/api/calendar/proton", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -56,7 +57,7 @@ export const ProtonCalendarConnect = memo(function ProtonCalendarConnect() {
   const handleDisconnect = useCallback(async () => {
     setLoading(true);
     try {
-      await fetch("/api/calendar/proton", { method: "DELETE" });
+      await authFetch("/api/calendar/proton", { method: "DELETE" });
       setStatus({ connected: false });
     } catch {
       setStatus({ connected: false, error: "Failed to disconnect" });

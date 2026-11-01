@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
-import { requireDexieUser } from "./dexieAuth";
+import { requireDexieUser, requireOwner } from "./dexieAuth";
 
 function request(headers: Record<string, string> = {}) {
   return new NextRequest("https://www.laterlist.cc/api/enrich", { method: "POST", headers });
@@ -71,6 +71,39 @@ describe("requireDexieUser", () => {
     const denied = await requireDexieUser(request(signedIn));
 
     expect(denied?.status).toBe(503);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("requireOwner", () => {
+  beforeEach(() => {
+    vi.stubEnv("MCP_USER_EMAIL", "Owner@Example.com");
+  });
+
+  it("accepts the owner, whatever the case of the address", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ valid: true, claims: { sub: "owner@example.com" } })
+    );
+
+    expect(await requireOwner(request(signedIn))).toBeNull();
+  });
+
+  it("refuses another signed-in user", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ valid: true, claims: { sub: "someone@example.com" } })
+    );
+
+    expect((await requireOwner(request(signedIn)))?.status).toBe(403);
+  });
+
+  it("refuses a request with no token", async () => {
+    expect((await requireOwner(request()))?.status).toBe(401);
+  });
+
+  it("refuses everyone when no owner is configured", async () => {
+    vi.stubEnv("MCP_USER_EMAIL", "");
+
+    expect((await requireOwner(request(signedIn)))?.status).toBe(503);
     expect(fetch).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/authFetch";
 import { memo, useState, useEffect, useCallback } from "react";
 
 interface CalendarStatus {
@@ -15,7 +16,7 @@ export const CalendarConnect = memo(function CalendarConnect() {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/oauth/google");
+      const res = await authFetch("/api/oauth/google");
       const data = await res.json();
       setStatus(data);
     } catch {
@@ -47,7 +48,7 @@ export const CalendarConnect = memo(function CalendarConnect() {
   const handleConnect = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/oauth/google", { method: "POST" });
+      const res = await authFetch("/api/oauth/google", { method: "POST" });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
@@ -64,7 +65,7 @@ export const CalendarConnect = memo(function CalendarConnect() {
   const handleDisconnect = useCallback(async () => {
     setLoading(true);
     try {
-      await fetch("/api/oauth/google", { method: "DELETE" });
+      await authFetch("/api/oauth/google", { method: "DELETE" });
       setStatus({ connected: false });
     } catch {
       setStatus({ connected: false, error: "Failed to disconnect" });

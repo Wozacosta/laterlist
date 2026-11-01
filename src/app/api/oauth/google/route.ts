@@ -1,3 +1,5 @@
+import { type NextRequest } from "next/server";
+import { requireOwner } from "@/lib/server/dexieAuth";
 import { NextResponse } from "next/server";
 import {
   getAuthUrl,
@@ -8,7 +10,9 @@ import {
 /**
  * GET /api/oauth/google — Check Google Calendar connection status
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const status = await getConnectionStatus();
     return NextResponse.json(status);
@@ -21,9 +25,11 @@ export async function GET() {
 /**
  * POST /api/oauth/google — Start OAuth flow (returns auth URL)
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
-    const url = getAuthUrl();
+    const url = await getAuthUrl();
     return NextResponse.json({ url });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -34,7 +40,9 @@ export async function POST() {
 /**
  * DELETE /api/oauth/google — Disconnect Google Calendar
  */
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     await disconnect();
     return NextResponse.json({ ok: true, disconnected: true });

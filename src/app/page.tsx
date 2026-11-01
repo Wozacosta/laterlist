@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/authFetch";
 import { useState, useCallback, useMemo } from "react";
 import { useObservable } from "dexie-react-hooks";
 import { db } from "@/db";
@@ -336,7 +337,7 @@ export default function Page() {
       // Record session for graph visualization (LT-3J)
       const now = new Date().toISOString();
       const startedAt = new Date(stopped.startTime).toISOString();
-      fetch("/api/sessions", {
+      authFetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

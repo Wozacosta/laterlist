@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/authFetch";
 import { memo, useState, useEffect, useCallback } from "react";
 
 interface DaySessionStat {
@@ -42,7 +43,7 @@ export const SessionGraph = memo(function SessionGraph() {
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/sessions?stats=true&days=14");
+      const res = await authFetch("/api/sessions?stats=true&days=14");
       const data = await res.json();
       setStats(data);
       setExpanded(true);
@@ -54,7 +55,7 @@ export const SessionGraph = memo(function SessionGraph() {
 
   const handleExport = useCallback(async () => {
     try {
-      const res = await fetch("/api/sessions?export=true&days=30");
+      const res = await authFetch("/api/sessions?export=true&days=30");
       const data = await res.json();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);

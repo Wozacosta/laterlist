@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { exchangeCode } from "@/lib/server/calendarOAuth";
+import { consumeOAuthState, exchangeCode } from "@/lib/server/calendarOAuth";
 
 /**
  * GET /api/oauth/google/callback — Google OAuth redirect handler
@@ -24,6 +24,12 @@ export async function GET(request: NextRequest) {
   if (!code) {
     return NextResponse.redirect(
       `${appBase}?calendar_error=${encodeURIComponent("No authorization code received")}`
+    );
+  }
+
+  if (!(await consumeOAuthState(url.searchParams.get("state")))) {
+    return NextResponse.redirect(
+      `${appBase}?calendar_error=${encodeURIComponent("Start connecting from the app")}`
     );
   }
 

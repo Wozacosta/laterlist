@@ -1,3 +1,5 @@
+import { type NextRequest } from "next/server";
+import { requireOwner } from "@/lib/server/dexieAuth";
 import { NextResponse } from "next/server";
 import {
   syncCalendarCompletionsToLaterlist,
@@ -8,7 +10,9 @@ import {
 /**
  * GET /api/calendar/sync — Get sync status
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const status = await getSyncStatus();
     return NextResponse.json(status);
@@ -25,7 +29,9 @@ export async function GET() {
  *   { action: "pull" }           — poll calendar for completed events → mark items done
  *   { action: "push", itemId }   — item marked done → delete calendar event
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const denied = await requireOwner(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
     const { action, itemId } = body as { action?: string; itemId?: string };
