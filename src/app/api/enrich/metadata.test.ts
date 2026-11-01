@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fetchYouTubeMetadata, fetchArticleMetadata } from "./metadata";
 
+vi.mock("node:dns/promises", () => {
+  const lookup = async () => [{ address: "93.184.216.34", family: 4 }];
+  return { default: { lookup }, lookup };
+});
+
 beforeEach(() => {
   vi.restoreAllMocks();
 });
