@@ -59,16 +59,18 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
   return (
     <section
       aria-label="Next"
-      className="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-800 dark:bg-gray-900"
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900"
     >
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Next</p>
-      <ItemLink item={item} className="block break-words text-xl font-semibold text-gray-900 dark:text-white" />
-      {details && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{details}</p>}
-      {(item.why || item.summary) && (
-        <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">{item.why || item.summary}</p>
-      )}
+      <div className="min-w-0 flex-1 basis-64">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Next</p>
+        <ItemLink item={item} className="block break-words text-lg font-semibold text-gray-900 dark:text-white" />
+        {details && <p className="text-xs text-gray-500 dark:text-gray-400">{details}</p>}
+        {(item.why || item.summary) && (
+          <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{item.why || item.summary}</p>
+        )}
+      </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1">
         <button
           type="button"
           onClick={() => actions.onMarkDone(item.id)}
@@ -86,18 +88,20 @@ function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
 }
 
 function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
+  const details = item.duration != null && formatDuration(item.duration, item.category);
+
   return (
-    <li className="flex items-center gap-2 py-2">
+    <li className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-800">
       <div className="min-w-0 flex-1">
-        <ItemLink item={item} className="block truncate text-sm text-gray-800 dark:text-gray-200" />
-        {item.duration != null && (
-          <p className="text-xs text-gray-400 dark:text-gray-600">{formatDuration(item.duration, item.category)}</p>
-        )}
+        <ItemLink item={item} className="block truncate text-[15px] font-medium text-gray-800 dark:text-gray-200" />
+        {details && <p className="text-xs text-gray-400 dark:text-gray-600">{details}</p>}
       </div>
       <button type="button" onClick={() => actions.onDoNext(item.id)} className={quietButton}>
         Do next
       </button>
-      <MoveTo item={item} moveTargets={actions.moveTargets} onMove={actions.onMove} />
+      <div className="hidden sm:block">
+        <MoveTo item={item} moveTargets={actions.moveTargets} onMove={actions.onMove} />
+      </div>
       <button type="button" onClick={() => actions.onMarkDone(item.id)} className={quietButton}>
         Done
       </button>
@@ -196,16 +200,11 @@ export const TopicView = memo(function TopicView({
       )}
 
       {later.length > 0 && (
-        <details>
-          <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400">
-            {later.length} more
-          </summary>
-          <ul className="mt-2 divide-y divide-gray-100 dark:divide-gray-800">
-            {later.map((item) => (
-              <LaterRow key={item.id} item={item} actions={actions} />
-            ))}
-          </ul>
-        </details>
+        <ul aria-label="After that" className="-mt-4 flex flex-col gap-2">
+          {later.map((item) => (
+            <LaterRow key={item.id} item={item} actions={actions} />
+          ))}
+        </ul>
       )}
 
       {learned.length > 0 && (

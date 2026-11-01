@@ -23,7 +23,7 @@ function getSyncLabel(
 }
 
 const btnClass =
-  "rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800";
+  "shrink-0 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800";
 
 export const CloudSyncButton = memo(function CloudSyncButton() {
   const currentUser = useObservable(db.cloud.currentUser);
