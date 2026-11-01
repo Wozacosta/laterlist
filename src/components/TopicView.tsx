@@ -1,0 +1,222 @@
+"use client";
+
+import { memo, useMemo } from "react";
+import type { Item, Topic } from "@/db";
+import { topicLearned, topicQueue } from "@/lib/topicQueue";
+import { formatDuration } from "./ItemRow";
+
+const quietButton =
+  "rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200";
+
+interface ItemActions {
+  moveTargets: Topic[];
+  onMarkDone: (id: string) => void;
+  onUnmarkDone: (id: string) => void;
+  onDoNext: (id: string) => void;
+  onMove: (id: string, topicId: string) => void;
+  onDelete: (id: string) => void;
+  onUpdateNotes: (id: string, notes: string) => void;
+}
+
+function MoveTo({ item, moveTargets, onMove }: { item: Item } & Pick<ItemActions, "moveTargets" | "onMove">) {
+  if (moveTargets.length === 0) return null;
+
+  return (
+    <select
+      aria-label={`Move "${item.title}" to another topic`}
+      value=""
+      onChange={(e) => e.target.value && onMove(item.id, e.target.value)}
+      className="max-w-28 rounded bg-transparent px-1 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+    >
+      <option value="">Move to…</option>
+      {moveTargets.map((topic) => (
+        <option key={topic.id} value={topic.id}>
+          {topic.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function ItemLink({ item, className }: { item: Item; className: string }) {
+  if (!item.url) return <span className={className}>{item.title}</span>;
+
+  return (
+    <a href={item.url} target="_blank" rel="noopener noreferrer" className={`${className} hover:underline`}>
+      {item.title}
+    </a>
+  );
+}
+
+function NextCard({ item, actions }: { item: Item; actions: ItemActions }) {
+  const details = [
+    item.category !== "other" && item.category,
+    item.duration != null && formatDuration(item.duration, item.category),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <section
+      aria-label="Next"
+      className="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-800 dark:bg-gray-900"
+    >
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Next</p>
+      <ItemLink item={item} className="block break-words text-xl font-semibold text-gray-900 dark:text-white" />
+      {details && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{details}</p>}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => actions.onMarkDone(item.id)}
+          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          Done
+        </button>
+        <MoveTo item={item} moveTargets={actions.moveTargets} onMove={actions.onMove} />
+        <button type="button" onClick={() => actions.onDelete(item.id)} className={quietButton}>
+          Delete
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function LaterRow({ item, actions }: { item: Item; actions: ItemActions }) {
+  return (
+    <li className="flex items-center gap-2 py-2">
+      <div className="min-w-0 flex-1">
+        <ItemLink item={item} className="block truncate text-sm text-gray-800 dark:text-gray-200" />
+        {item.duration != null && (
+          <p className="text-xs text-gray-400 dark:text-gray-600">{formatDuration(item.duration, item.category)}</p>
+        )}
+      </div>
+      <button type="button" onClick={() => actions.onDoNext(item.id)} className={quietButton}>
+        Do next
+      </button>
+      <MoveTo item={item} moveTargets={actions.moveTargets} onMove={actions.onMove} />
+      <button type="button" onClick={() => actions.onMarkDone(item.id)} className={quietButton}>
+        Done
+      </button>
+    </li>
+  );
+}
+
+function LearnedRow({ item, actions }: { item: Item; actions: ItemActions }) {
+  return (
+    <li className="py-2">
+      <div className="flex items-center gap-2">
+        <ItemLink item={item} className="min-w-0 flex-1 truncate text-sm text-gray-600 dark:text-gray-400" />
+        <button type="button" onClick={() => actions.onUnmarkDone(item.id)} className={quietButton}>
+          Not done
+        </button>
+      </div>
+      <textarea
+        key={item.notes ?? ""}
+        defaultValue={item.notes ?? ""}
+        onBlur={(e) => e.target.value !== (item.notes ?? "") && actions.onUpdateNotes(item.id, e.target.value)}
+        rows={1}
+        aria-label={`Notes on "${item.title}"`}
+        placeholder="What did you take from it?"
+        className="mt-1 w-full resize-y rounded bg-transparent px-1 py-0.5 text-xs text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-400 dark:placeholder-gray-600"
+      />
+    </li>
+  );
+}
+
+interface TopicViewProps extends Omit<ItemActions, "moveTargets"> {
+  topic: Topic;
+  topics: Topic[];
+  items: Item[];
+  onRename: (id: string, name: string) => void;
+  onComplete: (id: string) => void;
+  onReopen: (id: string) => void;
+  onDeleteTopic: (id: string) => void;
+}
+
+export const TopicView = memo(function TopicView({
+  topic,
+  topics,
+  items,
+  onRename,
+  onComplete,
+  onReopen,
+  onDeleteTopic,
+  ...handlers
+}: TopicViewProps) {
+  const queue = useMemo(() => topicQueue(items, topic.id), [items, topic.id]);
+  const learned = useMemo(() => topicLearned(items, topic.id), [items, topic.id]);
+  const moveTargets = useMemo(
+    () => topics.filter((t) => t.status === "active" && t.id !== topic.id),
+    [topics, topic.id]
+  );
+
+  const actions: ItemActions = { ...handlers, moveTargets };
+  const [next, ...later] = queue;
+
+  function rename() {
+    const name = window.prompt("Rename topic", topic.name)?.trim();
+    if (name) onRename(topic.id, name);
+  }
+
+  function remove() {
+    if (window.confirm(`Delete "${topic.name}"? Its items stay in All items.`)) {
+      onDeleteTopic(topic.id);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <header className="flex items-center gap-2">
+        <h2 className="min-w-0 flex-1 truncate text-2xl font-bold text-gray-900 dark:text-white">{topic.name}</h2>
+        <button type="button" onClick={rename} className={quietButton}>
+          Rename
+        </button>
+        <button
+          type="button"
+          onClick={() => (topic.status === "active" ? onComplete(topic.id) : onReopen(topic.id))}
+          className={quietButton}
+        >
+          {topic.status === "active" ? "Complete" : "Reopen"}
+        </button>
+        <button type="button" onClick={remove} className={quietButton}>
+          Delete
+        </button>
+      </header>
+
+      {next ? (
+        <NextCard item={next} actions={actions} />
+      ) : (
+        <p className="rounded-xl border border-dashed border-gray-300 p-5 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+          Nothing to learn here yet. Paste a link or type something above.
+        </p>
+      )}
+
+      {later.length > 0 && (
+        <details>
+          <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400">
+            {later.length} more
+          </summary>
+          <ul className="mt-2 divide-y divide-gray-100 dark:divide-gray-800">
+            {later.map((item) => (
+              <LaterRow key={item.id} item={item} actions={actions} />
+            ))}
+          </ul>
+        </details>
+      )}
+
+      {learned.length > 0 && (
+        <details>
+          <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400">
+            Learned ({learned.length})
+          </summary>
+          <ul className="mt-2 divide-y divide-gray-100 dark:divide-gray-800">
+            {learned.map((item) => (
+              <LearnedRow key={item.id} item={item} actions={actions} />
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+});

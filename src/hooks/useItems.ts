@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Item, type Topic } from "@/db";
 import { isArchived } from "@/lib/archive";
+import { replaceTopic } from "@/lib/topicQueue";
 
 export function useItems() {
   const allItems = useLiveQuery(() =>
@@ -19,12 +20,16 @@ export function useItems() {
   );
 
   const addItem = useCallback(
-    async (enriched: Omit<Item, "id" | "sortOrder" | "addedAt" | "status">): Promise<string> => {
+    async (
+      enriched: Omit<Item, "id" | "sortOrder" | "addedAt" | "status">,
+      position: "top" | "bottom" = "top"
+    ): Promise<string> => {
       const id = `itm${crypto.randomUUID()}`;
+      const bottom = position === "bottom" ? await db.items.orderBy("sortOrder").first() : undefined;
       await db.items.add({
         ...enriched,
         id,
-        sortOrder: Date.now(),
+        sortOrder: bottom ? bottom.sortOrder - 1 : Date.now(),
         addedAt: new Date().toISOString(),
         status: "unread",
       });
@@ -36,7 +41,7 @@ export function useItems() {
   const updateItem = useCallback(
     async (
       id: string,
-      patch: Partial<Pick<Item, "tags" | "notes" | "title">>
+      patch: Partial<Pick<Item, "tags" | "notes" | "title" | "thumbnail" | "category" | "duration">>
     ) => {
       await db.items.update(id, patch);
     },
@@ -169,10 +174,24 @@ export function useItems() {
     []
   );
 
+  const doNext = useCallback(async (id: string) => {
+    const top = await db.items.orderBy("sortOrder").last();
+    if (!top || top.id === id) return;
+    await db.items.update(id, { sortOrder: top.sortOrder + 1 });
+  }, []);
+
+  const moveToTopic = useCallback(async (id: string, from: string, to: string) => {
+    const item = await db.items.get(id);
+    if (!item) return;
+    await db.items.update(id, { topicIds: replaceTopic(item.topicIds ?? [], from, to) });
+  }, []);
+
   return {
     items,
     archivedItems,
     isLoading: allItems === undefined,
+    doNext,
+    moveToTopic,
     addItem,
     updateItem,
     markDone,

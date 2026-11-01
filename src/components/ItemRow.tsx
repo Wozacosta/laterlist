@@ -21,7 +21,7 @@ interface ItemRowProps {
   onUnassignTopic: (itemId: string, topicId: string) => void;
 }
 
-function formatDuration(seconds: number | undefined, category: string): string {
+export function formatDuration(seconds: number | undefined, category: string): string {
   if (seconds == null) return "–";
   if (category === "video" || category === "podcast") {
     const h = Math.floor(seconds / 3600);
