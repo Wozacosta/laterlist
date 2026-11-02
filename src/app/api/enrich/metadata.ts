@@ -16,10 +16,11 @@ function metaContent(html: string, attribute: string, name: string): string | un
 export async function fetchYouTubeMetadata(url: string): Promise<{
   title: string;
   thumbnail: string;
+  author: string;
   duration: number | null;
   description: string;
 }> {
-  // oEmbed for title + thumbnail
+  // oEmbed for title, thumbnail + channel
   const oembedRes = await fetch(
     `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
     { headers: { "User-Agent": BROWSER_UA }, cache: "no-store", signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) }
@@ -30,6 +31,7 @@ export async function fetchYouTubeMetadata(url: string): Promise<{
   const oembed = await oembedRes.json();
   const title: string = oembed.title ?? "";
   const thumbnail: string = oembed.thumbnail_url ?? "";
+  const author: string = oembed.author_name ?? "";
 
   // Extract video ID for duration
   const videoIdMatch = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -53,7 +55,7 @@ export async function fetchYouTubeMetadata(url: string): Promise<{
     }
   }
 
-  return { title, thumbnail, duration, description: "" };
+  return { title, thumbnail, author, duration, description: "" };
 }
 
 const TWEET_TITLE_LENGTH = 100;

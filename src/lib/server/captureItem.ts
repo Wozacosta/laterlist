@@ -36,6 +36,7 @@ export async function captureItem({ url, title, notes }: Capture): Promise<Captu
     sortOrder: Date.now(),
     status: "unread",
     ...(found?.thumbnail && { thumbnail: found.thumbnail }),
+    ...(found?.author && { author: found.author }),
     ...(found?.duration != null && { duration: found.duration }),
     ...(found?.summary && { summary: found.summary }),
     ...(notes && { notes }),

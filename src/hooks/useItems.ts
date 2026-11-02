@@ -61,7 +61,7 @@ export function useItems() {
     async (
       id: string,
       patch: Partial<
-        Pick<Item, "tags" | "notes" | "title" | "thumbnail" | "category" | "duration" | "summary" | "progress" | "recalledAt">
+        Pick<Item, "tags" | "notes" | "title" | "thumbnail" | "author" | "category" | "duration" | "summary" | "progress" | "recalledAt">
       >
     ) => {
       await db.items.update(id, patch);

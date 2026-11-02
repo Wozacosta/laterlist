@@ -20,6 +20,7 @@ describe("fetchYouTubeMetadata", () => {
           json: async () => ({
             title: "Rick Astley - Never Gonna Give You Up",
             thumbnail_url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+            author_name: "Rick Astley",
           }),
         })
         .mockResolvedValueOnce({
@@ -35,6 +36,7 @@ describe("fetchYouTubeMetadata", () => {
     expect(result.thumbnail).toBe(
       "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg"
     );
+    expect(result.author).toBe("Rick Astley");
     expect(result.duration).toBe(212);
   });
 

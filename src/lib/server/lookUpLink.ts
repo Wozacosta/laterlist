@@ -23,6 +23,7 @@ export async function lookUpLink(url: string) {
   return {
     title: metadata.title,
     thumbnail: metadata.thumbnail,
+    author: "author" in metadata ? metadata.author : undefined,
     duration: metadata.duration,
     summary: isTweet ? metadata.description : undefined,
     category,

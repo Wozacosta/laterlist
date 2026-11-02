@@ -221,6 +221,7 @@ export function createMcpServer(): McpServer {
       const items = rows.filter((row) => !row.deletedAt);
       const item: Item = {
         ...(found?.thumbnail && { thumbnail: found.thumbnail }),
+        ...(found?.author && { author: found.author }),
         ...(found?.duration != null && { duration: found.duration }),
         ...(found?.summary && { summary: found.summary }),
         ...withoutUndefined(fields),

@@ -7,7 +7,7 @@ import { lookUpLink } from "./lookUpLink";
 vi.mock("./dexieCloud", () => ({ readRows: vi.fn(), writeRows: vi.fn() }));
 vi.mock("./lookUpLink", () => ({ lookUpLink: vi.fn() }));
 
-const page = { title: "A page", thumbnail: "https://example.com/a.png", duration: 60, summary: undefined, category: "article" as const, tags: ["a"] };
+const page = { title: "A page", thumbnail: "https://example.com/a.png", author: "A channel", duration: 60, summary: undefined, category: "article" as const, tags: ["a"] };
 
 beforeEach(() => {
   vi.mocked(readRows).mockReset();
@@ -27,6 +27,7 @@ describe("captureItem", () => {
       title: "A page",
       category: "article",
       thumbnail: "https://example.com/a.png",
+      author: "A channel",
       duration: 60,
       status: "unread",
     });

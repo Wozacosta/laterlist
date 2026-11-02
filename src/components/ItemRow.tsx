@@ -5,7 +5,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Item, Topic } from "@/db";
 import { itemKind, type ItemKind } from "@/lib/itemKind";
-import { itemDomain } from "@/lib/linkDomain";
+import { itemSource } from "@/lib/linkDomain";
 import { TagChips } from "./TagChips";
 import { TopicPicker } from "./TopicPicker";
 
@@ -247,7 +247,7 @@ export function ItemLink({
 
 function ItemMeta({ item }: { item: Item }) {
   const details = [
-    itemDomain(item),
+    itemSource(item),
     item.duration != null && formatDuration(item.duration, itemKind(item)),
     formatDate(item.addedAt),
     ...item.tags,

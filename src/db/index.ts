@@ -32,6 +32,7 @@ export interface Item {
   url: string;
   title: string;
   thumbnail?: string;
+  author?: string; // the YouTube channel
   category: Category;
   tags: string[];
   duration?: number; // seconds

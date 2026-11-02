@@ -13,6 +13,7 @@ const item: Item = {
   status: "unread",
   notes: "Good intro to retries",
   summary: "Why brokers beat direct calls",
+  author: "ByteByteGo",
 };
 
 describe("matchesSearch", () => {
@@ -22,6 +23,7 @@ describe("matchesSearch", () => {
     ["a note", "retries"],
     ["the summary", "brokers"],
     ["the link", "example.com"],
+    ["the channel", "bytebytego"],
     ["any case", "HTTP stop"],
     ["several fields at once", "backend retries"],
   ])("finds %s", (_label, query) => {
