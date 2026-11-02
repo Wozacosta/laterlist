@@ -8,11 +8,12 @@ import {
   dayKey,
   entryTopics,
   monthCells,
+  NO_TOPIC,
   topicCounts,
   type DayEntry,
 } from "@/lib/calendar";
 import { itemSource } from "@/lib/linkDomain";
-import { ItemLink, ItemThumbnail, KindBadge, quietButton, rowTitleClass } from "./ItemRow";
+import { ItemLink, ItemThumbnail, KindBadge, QuietSelect, quietButton, rowTitleClass } from "./ItemRow";
 import { TopicIcon } from "./TopicIcon";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -67,18 +68,64 @@ function DayTopics({
   );
 }
 
-function DayRow({ entry: { item, finished } }: { entry: DayEntry }) {
+function SetTopic({
+  item,
+  from,
+  topics,
+  onSetTopic,
+}: {
+  item: Item;
+  from: string;
+  topics: Topic[];
+  onSetTopic: (id: string, from: string, to: string) => void;
+}) {
+  const targets = topics.filter((topic) => topic.status === "active" && !item.topicIds?.includes(topic.id));
+  if (targets.length === 0) return null;
+  const adding = from === NO_TOPIC;
+
+  return (
+    <QuietSelect
+      aria-label={adding ? `Add a topic to "${item.title}"` : `Move "${item.title}" to another topic`}
+      value=""
+      onChange={(e) => e.target.value && onSetTopic(item.id, from, e.target.value)}
+    >
+      <option value="">{adding ? "Add to topic…" : "Move to…"}</option>
+      {targets.map((topic) => (
+        <option key={topic.id} value={topic.id}>
+          {topic.name}
+        </option>
+      ))}
+    </QuietSelect>
+  );
+}
+
+function DayRow({
+  entry: { item, finished },
+  from,
+  topics,
+  onSetTopic,
+}: {
+  entry: DayEntry;
+  from: string;
+  topics: Topic[];
+  onSetTopic: (id: string, from: string, to: string) => void;
+}) {
   const details = [finished ? null : "Done a bit", finished ? null : item.progress, itemSource(item)].filter(Boolean);
 
   return (
-    <li className="flex items-center gap-3 px-3 py-2">
-      <ItemThumbnail item={item} className="h-9 w-16" />
-      <div className="min-w-0 flex-1">
-        <ItemLink item={item} titleClassName={rowTitleClass} className="text-sm font-medium text-gray-800 dark:text-gray-200" />
-        <p className="mt-1 flex min-w-0 items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-          <KindBadge item={item} />
-          <span className="truncate">{details.join(" · ")}</span>
-        </p>
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 sm:flex-nowrap">
+      <div className="flex min-w-0 basis-full items-center gap-3 sm:flex-1 sm:basis-0">
+        <ItemThumbnail item={item} className="h-9 w-16" />
+        <div className="min-w-0 flex-1">
+          <ItemLink item={item} titleClassName={rowTitleClass} className="text-sm font-medium text-gray-800 dark:text-gray-200" />
+          <p className="mt-1 flex min-w-0 items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+            <KindBadge item={item} />
+            <span className="truncate">{details.join(" · ")}</span>
+          </p>
+        </div>
+      </div>
+      <div className="ml-auto shrink-0">
+        <SetTopic item={item} from={from} topics={topics} onSetTopic={onSetTopic} />
       </div>
     </li>
   );
@@ -88,9 +135,10 @@ interface CalendarViewProps {
   items: Item[];
   topics: Topic[];
   now: number;
+  onSetTopic: (id: string, from: string, to: string) => void;
 }
 
-export const CalendarView = memo(function CalendarView({ items, topics, now }: CalendarViewProps) {
+export const CalendarView = memo(function CalendarView({ items, topics, now, onSetTopic }: CalendarViewProps) {
   const [monthsBack, setMonthsBack] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [topicId, setTopicId] = useState<string | null>(null);
@@ -252,7 +300,7 @@ export const CalendarView = memo(function CalendarView({ items, topics, now }: C
                 {entries
                   .filter((entry) => inTopic(entry, id))
                   .map((entry) => (
-                    <DayRow key={entry.item.id} entry={entry} />
+                    <DayRow key={entry.item.id} entry={entry} from={id} topics={topics} onSetTopic={onSetTopic} />
                   ))}
               </ul>
             </div>

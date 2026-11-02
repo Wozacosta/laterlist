@@ -18,6 +18,7 @@ import { TopicView } from "@/components/TopicView";
 import { SkeletonList } from "@/components/SkeletonList";
 import { TrashView } from "@/components/TrashView";
 import { useToast } from "@/components/Toast";
+import { NO_TOPIC } from "@/lib/calendar";
 import { itemKind, type ItemKind } from "@/lib/itemKind";
 import { linkKey } from "@/lib/linkKey";
 import { matchesSearch } from "@/lib/matchesSearch";
@@ -296,6 +297,21 @@ export default function Page() {
     [moveToTopic, selectedTopic, toast, topics]
   );
 
+  const handleSetTopic = useCallback(
+    async (id: string, from: string, to: string) => {
+      const name = topics.find((t) => t.id === to)?.name ?? "topic";
+
+      if (from === NO_TOPIC) {
+        await assignToTopic(id, to);
+        toast(`Added to ${name}`);
+      } else {
+        await moveToTopic(id, from, to);
+        toast(`Moved to ${name}`);
+      }
+    },
+    [assignToTopic, moveToTopic, toast, topics]
+  );
+
   // Inside a topic a drop moves the item, like Move to. From All items it adds the topic.
   const handleDropOnTopic = useCallback(
     async (itemId: string, topicId: string) => {
@@ -413,7 +429,7 @@ export default function Page() {
         ) : inTrash ? (
           <TrashView items={trashedItems} onRestore={handleRestore} onDeleteForever={handleDeleteForever} />
         ) : inCalendar ? (
-          <CalendarView items={allItems} topics={topics} now={now} />
+          <CalendarView items={allItems} topics={topics} now={now} onSetTopic={handleSetTopic} />
         ) : selectedTopic ? (
           <TopicView
             topic={selectedTopic}
