@@ -55,6 +55,7 @@ export interface Item {
 export interface Topic {
   id: string; // "top" + crypto.randomUUID()
   name: string;
+  icon?: string; // emoji shown next to the name
   createdAt: string; // ISO datetime string
   sortOrder: number; // Date.now() on creation
   status: "active" | "completed";

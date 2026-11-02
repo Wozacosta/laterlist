@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Item, Topic } from "@/db";
-import { nextByTopic, replaceTopic, topicLearned, topicQueue, topicSnoozed } from "./topicQueue";
+import { nextByTopic, replaceTopic, topicLastDone, topicLearned, topicQueue, topicSnoozed } from "./topicQueue";
 
 function item(id: string, patch: Partial<Item> = {}): Item {
   return {
@@ -43,6 +43,21 @@ describe("topicQueue", () => {
 
   it("includes items that belong to several topics", () => {
     expect(topicQueue([item("both", { topicIds: ["t2", "t1"] })], "t1")).toHaveLength(1);
+  });
+});
+
+describe("topicLastDone", () => {
+  it("returns the latest finish in that topic", () => {
+    const items = [
+      item("old", { topicIds: ["t"], status: "done", doneAt: "2026-01-01T00:00:00.000Z" }),
+      item("new", { topicIds: ["t"], status: "done", doneAt: "2026-03-01T00:00:00.000Z" }),
+      item("other", { topicIds: ["x"], status: "done", doneAt: "2026-06-01T00:00:00.000Z" }),
+    ];
+    expect(topicLastDone(items, "t")).toBe("2026-03-01T00:00:00.000Z");
+  });
+
+  it("has no date when nothing is finished", () => {
+    expect(topicLastDone([item("todo", { topicIds: ["t"] })], "t")).toBeUndefined();
   });
 });
 

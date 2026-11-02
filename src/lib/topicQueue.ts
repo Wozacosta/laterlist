@@ -12,6 +12,16 @@ export function topicQueue(items: Item[], topicId: string, now = Date.now()): It
     .sort((a, b) => b.sortOrder - a.sortOrder);
 }
 
+/** When something in a topic was last finished, archived items included. */
+export function topicLastDone(items: Item[], topicId: string): string | undefined {
+  return items
+    .filter((item) => item.status === "done" && item.doneAt && item.topicIds?.includes(topicId))
+    .reduce<string | undefined>(
+      (latest, item) => (!latest || item.doneAt! > latest ? item.doneAt : latest),
+      undefined
+    );
+}
+
 /** A topic's items that are waiting to come back, soonest first. */
 export function topicSnoozed(items: Item[], topicId: string, now = Date.now()): Item[] {
   return items

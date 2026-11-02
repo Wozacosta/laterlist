@@ -20,6 +20,14 @@ import {
   StarButton,
   TrashButton,
 } from "./ItemRow";
+import { TopicIcon } from "./TopicIcon";
+
+const TOPIC_ICONS = [
+  "🤖", "🧠", "🏗️", "💾", "🌐", "⌨️", "💻", "🛠️",
+  "🔒", "📱", "⚡", "🔌", "🔬", "🧪", "📐", "🧮",
+  "📈", "💸", "🏦", "⛓️", "🀄", "🗣️", "✍️", "📚",
+  "🎓", "🎨", "🎵", "🎬", "🌍", "🧘", "🏃", "🍳",
+];
 
 const SNOOZE_OPTIONS = [
   { label: "Back tomorrow", days: 1 },
@@ -280,12 +288,71 @@ function LearnedRow({ item, actions }: { item: Item; actions: ItemActions }) {
   );
 }
 
+function IconPicker({ topic, onChange }: { topic: Topic; onChange: (icon: string | undefined) => void }) {
+  const [open, setOpen] = useState(false);
+
+  function choose(icon: string | undefined) {
+    onChange(icon);
+    setOpen(false);
+  }
+
+  return (
+    <div className="relative shrink-0" onKeyDown={(e) => e.key === "Escape" && setOpen(false)}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-label={`Change the icon for ${topic.name}`}
+        aria-expanded={open}
+        title="Change icon"
+        className="block rounded-lg transition-transform hover:scale-105"
+      >
+        <TopicIcon topic={topic} className="size-10 text-xl" />
+      </button>
+
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-label="Close"
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-10 cursor-default"
+          />
+          <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+            <div className="grid grid-cols-8 gap-0.5">
+              {TOPIC_ICONS.map((icon) => (
+                <button
+                  key={icon}
+                  type="button"
+                  onClick={() => choose(icon)}
+                  aria-label={`Use ${icon}`}
+                  className={`rounded-md py-1 text-lg hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                    icon === topic.icon ? "bg-gray-200 dark:bg-gray-700" : ""
+                  }`}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+            {topic.icon && (
+              <button type="button" onClick={() => choose(undefined)} className={`${quietButton} mt-1`}>
+                Remove icon
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 interface TopicViewProps extends Omit<ItemActions, "moveTargets"> {
   topic: Topic;
   topics: Topic[];
   items: Item[];
   now: number;
   onRename: (id: string, name: string) => void;
+  onSetIcon: (id: string, icon: string | undefined) => void;
   onComplete: (id: string) => void;
   onReopen: (id: string) => void;
   onDeleteTopic: (id: string) => void;
@@ -298,6 +365,7 @@ export const TopicView = memo(function TopicView({
   items,
   now,
   onRename,
+  onSetIcon,
   onComplete,
   onReopen,
   onDeleteTopic,
@@ -329,6 +397,7 @@ export const TopicView = memo(function TopicView({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex items-center gap-2">
+        <IconPicker topic={topic} onChange={(icon) => onSetIcon(topic.id, icon)} />
         <h2 className="min-w-0 flex-1 truncate text-2xl font-bold text-gray-900 dark:text-white">{topic.name}</h2>
         <button type="button" onClick={rename} className={quietButton}>
           Rename

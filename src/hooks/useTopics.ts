@@ -27,6 +27,10 @@ export function useTopics() {
     await db.topics.update(id, { name: trimmed });
   }, []);
 
+  const setTopicIcon = useCallback(async (id: string, icon: string | undefined) => {
+    await db.topics.update(id, { icon });
+  }, []);
+
   const deleteTopic = useCallback(async (id: string) => {
     await db.transaction("rw", [db.topics, db.items], async () => {
       // Remove this topic from all items' topicIds arrays
@@ -132,6 +136,7 @@ export function useTopics() {
     isLoading: topics === undefined,
     addTopic,
     renameTopic,
+    setTopicIcon,
     deleteTopic,
     completeTopic,
     reopenTopic,

@@ -69,7 +69,7 @@ export default function Page() {
     deleteGroup,
   } = useGroups();
 
-  const { topics, addTopic, renameTopic, deleteTopic, completeTopic, reopenTopic, setTopicOrder } =
+  const { topics, addTopic, renameTopic, setTopicIcon, deleteTopic, completeTopic, reopenTopic, setTopicOrder } =
     useTopics();
 
   const { toast } = useToast();
@@ -337,7 +337,8 @@ export default function Page() {
     <div className="md:flex">
       <Sidebar
         topics={topics}
-        items={items}
+        items={allItems}
+        now={now}
         trashCount={trashedItems.length}
         selected={inTrash ? TRASH : inNext ? NEXT : selectedTopic?.id ?? null}
         isLoggedIn={isLoggedIn}
@@ -416,6 +417,7 @@ export default function Page() {
             onSnooze={handleSnooze}
             onDropOnTopic={handleDropOnTopic}
             onRename={renameTopic}
+            onSetIcon={setTopicIcon}
             onComplete={completeTopic}
             onReopen={reopenTopic}
             onDeleteTopic={handleDeleteTopic}
