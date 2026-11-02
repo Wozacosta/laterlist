@@ -63,6 +63,32 @@ describe("useItems", () => {
     expect(result.current.items.find((i) => i.id === id)?.doneAt).toBeDefined();
   });
 
+  it("snooze records a day worked on, and bringing it back doesn't", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let id = "";
+    await act(async () => {
+      id = await result.current.addItem({
+        url: "https://example.com/course",
+        title: "A long course",
+        category: "doc",
+        tags: [],
+      });
+    });
+
+    await act(async () => { await result.current.snooze(id, "2099-01-01T00:00:00.000Z"); });
+    expect((await db.items.get(id))?.workedOn).toHaveLength(1);
+
+    await act(async () => { await result.current.snooze(id, "2099-01-02T00:00:00.000Z"); });
+    expect((await db.items.get(id))?.workedOn).toHaveLength(2);
+
+    await act(async () => { await result.current.snooze(id, null); });
+    const item = await db.items.get(id);
+    expect(item?.snoozedUntil).toBeNull();
+    expect(item?.workedOn).toHaveLength(2);
+  });
+
   it("unmarkDone resets status to unread and clears doneAt", async () => {
     const { result } = renderHook(() => useItems());
     await waitFor(() => expect(result.current.isLoading).toBe(false));

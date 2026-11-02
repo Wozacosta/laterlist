@@ -143,7 +143,13 @@ export function useItems() {
   }, []);
 
   const snooze = useCallback(async (id: string, until: string | null) => {
-    await db.items.update(id, { snoozedUntil: until });
+    const item = await db.items.get(id);
+    if (!item) return;
+    await db.items.update(id, {
+      snoozedUntil: until,
+      // Snoozing is "Done a bit", so it counts as a day worked on. Bringing it back doesn't.
+      ...(until && { workedOn: [...(item.workedOn ?? []), new Date().toISOString()] }),
+    });
   }, []);
 
   const toggleStar = useCallback(async (id: string) => {

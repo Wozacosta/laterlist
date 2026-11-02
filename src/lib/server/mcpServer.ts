@@ -275,6 +275,7 @@ export function createMcpServer(): McpServer {
         }
 
         const row: Item = { ...item, ...withoutUndefined(fields) };
+        if (fields.snoozedUntil) row.workedOn = [...(item.workedOn ?? []), new Date().toISOString()];
         if (status === "done" && item.status !== "done") {
           row.status = "done";
           row.doneAt = new Date().toISOString();

@@ -28,6 +28,7 @@ import { TopicIcon, topicTint } from "./TopicIcon";
 
 export const TRASH = "trash";
 export const NEXT = "next";
+export const CALENDAR = "calendar";
 
 const rowClass = (active: boolean) =>
   `flex shrink-0 items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-sm font-medium transition-colors md:w-full md:py-0.5 ${
@@ -219,6 +220,7 @@ export const Sidebar = memo(function Sidebar({
       >
         <NavRow icon="🎯" label="Next" active={selected === NEXT} onClick={() => onSelect(NEXT)} />
         <NavRow icon="📚" label="All items" count={unread} active={selected === null} onClick={() => onSelect(null)} />
+        <NavRow icon="📅" label="Calendar" active={selected === CALENDAR} onClick={() => onSelect(CALENDAR)} />
 
         <DndContext id="topics" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext

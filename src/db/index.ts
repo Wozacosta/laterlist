@@ -48,6 +48,7 @@ export interface Item {
   topicIds?: string[]; // optional learning topics (multi-select)
   starred?: boolean; // one of the user's favorites
   progress?: string; // where the user got to in a long item, in their words
+  workedOn?: string[]; // ISO datetimes — each "Done a bit", for the calendar
   recalledAt?: string; // ISO datetime — last time it came up in the daily recall
   snoozedUntil?: string | null; // ISO datetime — out of its topic's queue until then
   deletedAt?: string | null; // ISO datetime — in the Trash until restored or emptied

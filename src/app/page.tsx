@@ -7,12 +7,13 @@ import { useItems } from "@/hooks/useItems";
 import { useGroups } from "@/hooks/useGroups";
 import { useTopics } from "@/hooks/useTopics";
 import { AddItemInput } from "@/components/AddItemInput";
+import { CalendarView } from "@/components/CalendarView";
 import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
 import { NextView } from "@/components/NextView";
 import { QuickNote } from "@/components/QuickNote";
-import { NEXT, Sidebar, TRASH } from "@/components/Sidebar";
+import { CALENDAR, NEXT, Sidebar, TRASH } from "@/components/Sidebar";
 import { TopicView } from "@/components/TopicView";
 import { SkeletonList } from "@/components/SkeletonList";
 import { TrashView } from "@/components/TrashView";
@@ -103,6 +104,7 @@ export default function Page() {
 
   const inTrash = selectedTopicId === TRASH;
   const inNext = selectedTopicId === NEXT;
+  const inCalendar = selectedTopicId === CALENDAR;
 
   const selectedTopic = useMemo(
     () => topics.find((t) => t.id === selectedTopicId) ?? null,
@@ -349,7 +351,7 @@ export default function Page() {
         items={allItems}
         now={now}
         trashCount={trashedItems.length}
-        selected={inTrash ? TRASH : inNext ? NEXT : selectedTopic?.id ?? null}
+        selected={inTrash ? TRASH : inNext ? NEXT : inCalendar ? CALENDAR : selectedTopic?.id ?? null}
         isLoggedIn={isLoggedIn}
         onSelect={setSelectedTopicId}
         onAddTopic={handleAddTopic}
@@ -366,7 +368,7 @@ export default function Page() {
           </div>
         )}
 
-        {!inTrash && (
+        {!inTrash && !inCalendar && (
           <AddItemInput
             placeholder={selectedTopic ? `Add to ${selectedTopic.name}: paste a link or type` : "Paste a link or type"}
             onAdd={handleAdd}
@@ -410,6 +412,8 @@ export default function Page() {
           />
         ) : inTrash ? (
           <TrashView items={trashedItems} onRestore={handleRestore} onDeleteForever={handleDeleteForever} />
+        ) : inCalendar ? (
+          <CalendarView items={allItems} now={now} />
         ) : selectedTopic ? (
           <TopicView
             topic={selectedTopic}
