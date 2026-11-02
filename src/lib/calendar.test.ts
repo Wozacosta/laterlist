@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Item } from "@/db";
-import { activityByDay, currentStreak, dayKey, monthCells } from "./calendar";
+import { activityByDay, currentStreak, dayKey, entryTopics, monthCells, NO_TOPIC, topicCounts } from "./calendar";
 
 const at = (day: number, hour = 9) => new Date(2026, 10, day, hour).toISOString();
 
@@ -57,6 +57,49 @@ describe("activityByDay", () => {
     const days = activityByDay([item("a", { workedOn: [at(3)] }), item("b", { status: "done", doneAt: at(3) })]);
 
     expect(days.get("2026-11-03")?.map((entry) => entry.item.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("entryTopics", () => {
+  const known = new Set(["ai", "web"]);
+
+  it("returns the item's topics", () => {
+    expect(entryTopics(item("a", { topicIds: ["ai", "web"] }), known)).toEqual(["ai", "web"]);
+  });
+
+  it("groups an item with no topic under No topic", () => {
+    expect(entryTopics(item("a"), known)).toEqual([NO_TOPIC]);
+    expect(entryTopics(item("a", { topicIds: [] }), known)).toEqual([NO_TOPIC]);
+  });
+
+  it("treats a deleted topic as no topic", () => {
+    expect(entryTopics(item("a", { topicIds: ["gone"] }), known)).toEqual([NO_TOPIC]);
+    expect(entryTopics(item("a", { topicIds: ["gone", "ai"] }), known)).toEqual(["ai"]);
+  });
+});
+
+describe("topicCounts", () => {
+  const known = new Set(["ai", "web"]);
+  const entries = (...items: Item[]) => items.map((entry) => ({ item: entry, finished: true }));
+
+  it("puts the busiest topic first", () => {
+    const counts = topicCounts(
+      entries(item("a", { topicIds: ["web"] }), item("b", { topicIds: ["ai"] }), item("c", { topicIds: ["ai"] })),
+      known
+    );
+
+    expect(counts).toEqual([{ id: "ai", count: 2 }, { id: "web", count: 1 }]);
+  });
+
+  it("counts an item in two topics for both", () => {
+    expect(topicCounts(entries(item("a", { topicIds: ["ai", "web"] })), known)).toEqual([
+      { id: "ai", count: 1 },
+      { id: "web", count: 1 },
+    ]);
+  });
+
+  it("counts items without a topic", () => {
+    expect(topicCounts(entries(item("a")), known)).toEqual([{ id: NO_TOPIC, count: 1 }]);
   });
 });
 

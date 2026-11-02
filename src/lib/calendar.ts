@@ -33,6 +33,23 @@ export function activityByDay(items: Item[]): Map<string, DayEntry[]> {
   return days;
 }
 
+/** Items with no topic, or only deleted ones, are grouped under this id. */
+export const NO_TOPIC = "no-topic";
+
+export function entryTopics(item: Item, known: Set<string>): string[] {
+  const ids = (item.topicIds ?? []).filter((id) => known.has(id));
+  return ids.length ? ids : [NO_TOPIC];
+}
+
+/** Busiest topic first. An item in two topics counts for both. */
+export function topicCounts(entries: DayEntry[], known: Set<string>): { id: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const { item } of entries) {
+    for (const id of entryTopics(item, known)) counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return [...counts].map(([id, count]) => ({ id, count })).sort((a, b) => b.count - a.count);
+}
+
 /** Every day of a month, Monday first, with blanks before the 1st so the columns line up. */
 export function monthCells(year: number, month: number): (string | null)[] {
   const blanks = (new Date(year, month, 1).getDay() + 6) % 7;

@@ -413,7 +413,7 @@ export default function Page() {
         ) : inTrash ? (
           <TrashView items={trashedItems} onRestore={handleRestore} onDeleteForever={handleDeleteForever} />
         ) : inCalendar ? (
-          <CalendarView items={allItems} now={now} />
+          <CalendarView items={allItems} topics={topics} now={now} />
         ) : selectedTopic ? (
           <TopicView
             topic={selectedTopic}
