@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import type { Item } from "@/db";
+import { itemDomain } from "@/lib/linkDomain";
 import { formatDate, ItemLink, ItemThumbnail, KindBadge, quietButton, rowTitleClass } from "./ItemRow";
 
 interface TrashViewProps {
@@ -60,7 +61,9 @@ export const TrashView = memo(function TrashView({ items, onRestore, onDeleteFor
                     />
                     <p className="mt-1 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
                       <KindBadge item={item} />
-                      {item.deletedAt && `Deleted ${formatDate(item.deletedAt)}`}
+                      {[itemDomain(item), item.deletedAt && `Deleted ${formatDate(item.deletedAt)}`]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   </div>
                 </div>

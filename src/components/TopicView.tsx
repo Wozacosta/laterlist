@@ -5,6 +5,7 @@ import { DndContext, DragOverlay, PointerSensor, useDraggable, useSensor, useSen
 import type { Item, Topic } from "@/db";
 import { useTopicDrop } from "@/hooks/useTopicDrop";
 import { itemKind } from "@/lib/itemKind";
+import { itemDomain } from "@/lib/linkDomain";
 import { topicLearned, topicQueue, topicSnoozed } from "@/lib/topicQueue";
 import {
   DragPreview,
@@ -106,9 +107,12 @@ export function Grip() {
 }
 
 export function ItemDetails({ item }: { item: Item }) {
+  const domain = itemDomain(item);
+
   return (
     <p className="mt-1 flex min-w-0 items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
       <KindBadge item={item} />
+      {domain && <span className="max-w-[50%] shrink-0 truncate">{domain}</span>}
       {item.duration != null && <span className="shrink-0">{formatDuration(item.duration, itemKind(item))}</span>}
       {item.progress && <span className="truncate">Stopped at {item.progress}</span>}
     </p>
