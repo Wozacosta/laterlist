@@ -69,8 +69,17 @@ export default function Page() {
     deleteGroup,
   } = useGroups();
 
-  const { topics, addTopic, renameTopic, setTopicIcon, deleteTopic, completeTopic, reopenTopic, setTopicOrder } =
-    useTopics();
+  const {
+    topics,
+    addTopic,
+    renameTopic,
+    setTopicIcon,
+    setTopicFocus,
+    deleteTopic,
+    completeTopic,
+    reopenTopic,
+    setTopicOrder,
+  } = useTopics();
 
   const { toast } = useToast();
   const currentUser = useObservable(db.cloud.currentUser);
@@ -418,6 +427,7 @@ export default function Page() {
             onDropOnTopic={handleDropOnTopic}
             onRename={renameTopic}
             onSetIcon={setTopicIcon}
+            onSetFocus={setTopicFocus}
             onComplete={completeTopic}
             onReopen={reopenTopic}
             onDeleteTopic={handleDeleteTopic}

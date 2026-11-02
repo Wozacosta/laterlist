@@ -42,13 +42,16 @@ export function replaceTopic(topicIds: string[], from: string, to: string): stri
   return [...new Set(topicIds.map((id) => (id === from ? to : id)))];
 }
 
-/** One Next item per active topic: anything already started first, then in sidebar order. */
+/**
+ * One Next item per Focus topic, in sidebar order, or per active topic when Focus has
+ * none. Started items always show, and come first.
+ */
 export function nextByTopic(topics: Topic[], items: Item[], now = Date.now()): { topic: Topic; item: Item }[] {
   const seen = new Set<string>();
 
-  return topics
+  const rows = topics
     .filter((topic) => topic.status === "active")
-    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .sort((a, b) => Number(Boolean(b.focus)) - Number(Boolean(a.focus)) || a.sortOrder - b.sortOrder)
     .flatMap((topic) => {
       const item = topicQueue(items, topic.id, now).find(({ id }) => !seen.has(id));
       if (!item) return [];
@@ -56,4 +59,8 @@ export function nextByTopic(topics: Topic[], items: Item[], now = Date.now()): {
       return [{ topic, item }];
     })
     .sort((a, b) => Number(Boolean(b.item.progress)) - Number(Boolean(a.item.progress)));
+
+  return rows.some((row) => row.topic.focus)
+    ? rows.filter((row) => row.topic.focus || row.item.progress)
+    : rows;
 }

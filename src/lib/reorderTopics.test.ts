@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reorderTopics } from "./reorderTopics";
+import { FOCUS_LINE, reorderTopics } from "./reorderTopics";
 
 const topics = [
   { id: "a", sortOrder: 10 },
@@ -42,5 +42,43 @@ describe("reorderTopics", () => {
     const final = tied.map((topic) => updates.find((u) => u.id === topic.id)?.sortOrder ?? topic.sortOrder);
 
     expect(new Set(final).size).toBe(3);
+  });
+});
+
+describe("the Focus line", () => {
+  const split = [
+    { id: "a", sortOrder: 10, focus: true },
+    { id: "b", sortOrder: 20, focus: true },
+    { id: "c", sortOrder: 30 },
+    { id: "d", sortOrder: 40 },
+  ];
+
+  it("adds a topic to Focus when dragged above it", () => {
+    const updates = reorderTopics(split, "d", FOCUS_LINE);
+    expect(updates.find((u) => u.id === "d")).toMatchObject({ focus: true, sortOrder: 30 });
+    expect(updates.find((u) => u.id === "c")).toEqual({ id: "c", sortOrder: 40 });
+  });
+
+  it("takes a topic out of Focus when dragged below it", () => {
+    expect(reorderTopics(split, "b", FOCUS_LINE)).toEqual([{ id: "b", sortOrder: 20, focus: false }]);
+  });
+
+  it("moves a Later topic to the top of Focus", () => {
+    const updates = reorderTopics(split, "c", "a");
+    expect(updates.find((u) => u.id === "c")).toMatchObject({ focus: true, sortOrder: 10 });
+  });
+
+  it("leaves focus alone for a move inside a group", () => {
+    expect(reorderTopics(split, "a", "b").every((u) => !("focus" in u))).toBe(true);
+    expect(reorderTopics(split, "d", "c").every((u) => !("focus" in u))).toBe(true);
+  });
+
+  it("fills an empty Focus group", () => {
+    const later = [{ id: "a", sortOrder: 1 }, { id: "b", sortOrder: 2 }];
+    expect(reorderTopics(later, "b", FOCUS_LINE)).toContainEqual({ id: "b", sortOrder: 1, focus: true });
+  });
+
+  it("never drags the line itself", () => {
+    expect(reorderTopics(split, FOCUS_LINE, "a")).toEqual([]);
   });
 });

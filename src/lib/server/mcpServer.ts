@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Category, Item, Topic } from "@/db";
 import { itemKind } from "@/lib/itemKind";
 import { linkKey } from "@/lib/linkKey";
-import { topicQueue } from "@/lib/topicQueue";
+import { nextByTopic } from "@/lib/topicQueue";
 import { checkLink } from "./checkLink";
 import { readRows, writeRows } from "./dexieCloud";
 import { lookUpLink } from "./lookUpLink";
@@ -82,7 +82,7 @@ export function createMcpServer(): McpServer {
       return json(
         topics
           .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map(({ id, name, status, notes }) => ({ id, name, status, notes }))
+          .map(({ id, name, status, focus, notes }) => ({ id, name, status, focus: Boolean(focus), notes }))
       );
     }
   );
@@ -117,31 +117,24 @@ export function createMcpServer(): McpServer {
   server.registerTool(
     "whats_next",
     {
-      description: "The Next item in each active topic, in the user's topic order. Skips snoozed items.",
+      description:
+        "The Next item in each Focus topic, in the user's order, plus anything started in a Later topic. Every active topic if Focus has nothing queued. Skips snoozed items.",
     },
     async () => {
       const [topics, items] = await Promise.all([readRows<Topic>("topics"), readItems()]);
       return json(
-        topics
-          .filter((topic) => topic.status === "active")
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .flatMap((topic) => {
-            const next = topicQueue(items, topic.id)[0];
-            return next
-              ? [{
-                  topic: topic.name,
-                  item: {
-                    id: next.id,
-                    title: next.title,
-                    url: next.url,
-                    kind: itemKind(next),
-                    why: next.why,
-                    summary: next.summary,
-                    progress: next.progress,
-                  },
-                }]
-              : [];
-          })
+        nextByTopic(topics, items).map(({ topic, item }) => ({
+          topic: topic.name,
+          item: {
+            id: item.id,
+            title: item.title,
+            url: item.url,
+            kind: itemKind(item),
+            why: item.why,
+            summary: item.summary,
+            progress: item.progress,
+          },
+        }))
       );
     }
   );

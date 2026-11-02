@@ -120,6 +120,42 @@ describe("nextByTopic", () => {
     expect(rows.map((row) => [row.topic.id, row.item.id])).toEqual([["a", "x"], ["b", "y"]]);
   });
 
+  it("shows only Focus topics when they have something queued", () => {
+    const rows = nextByTopic(
+      [{ ...topic("a", 1) }, { ...topic("b", 2), focus: true }],
+      [queued("x", ["a"]), queued("y", ["b"])]
+    );
+
+    expect(rows.map((row) => row.topic.id)).toEqual(["b"]);
+  });
+
+  it("keeps a started item from a Later topic", () => {
+    const rows = nextByTopic(
+      [topic("a", 1), { ...topic("b", 2), focus: true }, topic("c", 3)],
+      [queued("x", ["a"], { progress: "video 7" }), queued("y", ["b"]), queued("z", ["c"])]
+    );
+
+    expect(rows.map((row) => row.item.id)).toEqual(["x", "y"]);
+  });
+
+  it("falls back to every topic when Focus has run out", () => {
+    const rows = nextByTopic(
+      [{ ...topic("a", 1), focus: true }, topic("b", 2), topic("c", 3)],
+      [queued("y", ["b"]), queued("z", ["c"])]
+    );
+
+    expect(rows.map((row) => row.topic.id)).toEqual(["b", "c"]);
+  });
+
+  it("gives a shared item to the Focus topic", () => {
+    const rows = nextByTopic(
+      [topic("a", 1), { ...topic("b", 2), focus: true }],
+      [queued("shared", ["a", "b"])]
+    );
+
+    expect(rows.map((row) => row.topic.id)).toEqual(["b"]);
+  });
+
   it("puts started items first", () => {
     const rows = nextByTopic(
       [topic("a", 1), topic("b", 2)],

@@ -353,6 +353,7 @@ interface TopicViewProps extends Omit<ItemActions, "moveTargets"> {
   now: number;
   onRename: (id: string, name: string) => void;
   onSetIcon: (id: string, icon: string | undefined) => void;
+  onSetFocus: (id: string, focus: boolean) => void;
   onComplete: (id: string) => void;
   onReopen: (id: string) => void;
   onDeleteTopic: (id: string) => void;
@@ -366,6 +367,7 @@ export const TopicView = memo(function TopicView({
   now,
   onRename,
   onSetIcon,
+  onSetFocus,
   onComplete,
   onReopen,
   onDeleteTopic,
@@ -396,9 +398,16 @@ export const TopicView = memo(function TopicView({
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center gap-2">
+      <header className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <IconPicker topic={topic} onChange={(icon) => onSetIcon(topic.id, icon)} />
-        <h2 className="min-w-0 flex-1 truncate text-2xl font-bold text-gray-900 dark:text-white">{topic.name}</h2>
+        <h2 className="min-w-0 flex-1 basis-[calc(100%-3rem)] truncate text-2xl font-bold text-gray-900 sm:basis-0 dark:text-white">
+          {topic.name}
+        </h2>
+        {topic.status === "active" && (
+          <button type="button" onClick={() => onSetFocus(topic.id, !topic.focus)} className={quietButton}>
+            {topic.focus ? "Move to Later" : "Add to Focus"}
+          </button>
+        )}
         <button type="button" onClick={rename} className={quietButton}>
           Rename
         </button>

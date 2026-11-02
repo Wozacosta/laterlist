@@ -18,7 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Item, Topic } from "@/db";
-import { reorderTopics } from "@/lib/reorderTopics";
+import { FOCUS_LINE, reorderTopics } from "@/lib/reorderTopics";
 import { timeAgo } from "@/lib/timeAgo";
 import { topicLastDone, topicQueue } from "@/lib/topicQueue";
 import { CloudSyncButton } from "./CloudSyncButton";
@@ -30,7 +30,7 @@ export const TRASH = "trash";
 export const NEXT = "next";
 
 const rowClass = (active: boolean) =>
-  `flex shrink-0 items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-sm font-medium transition-colors md:w-full md:py-1 ${
+  `flex shrink-0 items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-sm font-medium transition-colors md:w-full md:py-0.5 ${
     active
       ? "bg-gray-200 text-gray-900 dark:bg-gray-800 dark:text-white"
       : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-900"
@@ -72,6 +72,23 @@ function NavRow({
       </span>
       {count ? <Count value={count} /> : null}
     </button>
+  );
+}
+
+const groupLabel =
+  "shrink-0 self-center px-2 text-xs font-semibold uppercase tracking-wide text-gray-400 md:self-auto md:pb-0.5 md:pt-3 dark:text-gray-500";
+
+/** Only a drop target: a topic dropped on it crosses from one group to the other. */
+function LaterLine() {
+  const { setNodeRef, transform, transition } = useSortable({
+    id: FOCUS_LINE,
+    disabled: { draggable: true },
+  });
+
+  return (
+    <span ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), transition }} className={groupLabel}>
+      Later
+    </span>
   );
 }
 
@@ -133,7 +150,7 @@ interface SidebarProps {
   isLoggedIn: boolean;
   onSelect: (topicId: string | null) => void;
   onAddTopic: (name: string) => void;
-  onReorderTopics: (updates: Array<{ id: string; sortOrder: number }>) => void;
+  onReorderTopics: (updates: Array<{ id: string; sortOrder: number; focus?: boolean }>) => void;
 }
 
 export const Sidebar = memo(function Sidebar({
@@ -160,12 +177,28 @@ export const Sidebar = memo(function Sidebar({
 
   const active = useMemo(() => topics.filter((t) => t.status === "active"), [topics]);
   const completed = useMemo(() => topics.filter((t) => t.status === "completed"), [topics]);
+  const inFocus = active.filter((t) => t.focus);
+  const later = active.filter((t) => !t.focus);
   const unread = useMemo(() => items.filter((i) => i.status === "unread").length, [items]);
 
   function handleDragEnd({ active: dragged, over }: DragEndEvent) {
     if (!over) return;
     const updates = reorderTopics(active, String(dragged.id), String(over.id));
     if (updates.length) onReorderTopics(updates);
+  }
+
+  function renderTopic(topic: Topic) {
+    return (
+      <TopicRow
+        key={topic.id}
+        topic={topic}
+        count={topicQueue(items, topic.id, now).length}
+        lastDone={topicLastDone(items, topic.id)}
+        now={now}
+        active={selected === topic.id}
+        onSelect={onSelect}
+      />
+    );
   }
 
   function submit(e: React.FormEvent) {
@@ -188,18 +221,17 @@ export const Sidebar = memo(function Sidebar({
         <NavRow icon="📚" label="All items" count={unread} active={selected === null} onClick={() => onSelect(null)} />
 
         <DndContext id="topics" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={active.map((topic) => topic.id)} strategy={rectSortingStrategy}>
-            {active.map((topic) => (
-              <TopicRow
-                key={topic.id}
-                topic={topic}
-                count={topicQueue(items, topic.id, now).length}
-                lastDone={topicLastDone(items, topic.id)}
-                now={now}
-                active={selected === topic.id}
-                onSelect={onSelect}
-              />
-            ))}
+          <SortableContext
+            items={[...inFocus.map((topic) => topic.id), FOCUS_LINE, ...later.map((topic) => topic.id)]}
+            strategy={rectSortingStrategy}
+          >
+            <span className={`${groupLabel} hidden md:block`}>Focus</span>
+            {inFocus.length === 0 && (
+              <span className="hidden px-2 text-xs text-gray-400 md:block dark:text-gray-500">Drag a topic here</span>
+            )}
+            {inFocus.map(renderTopic)}
+            <LaterLine />
+            {later.map(renderTopic)}
           </SortableContext>
         </DndContext>
 
@@ -252,7 +284,7 @@ export const Sidebar = memo(function Sidebar({
           count={trashCount}
           active={selected === TRASH}
           onClick={() => onSelect(TRASH)}
-          className="md:mt-auto"
+          className="md:sticky md:bottom-0 md:mt-auto md:bg-white md:dark:bg-gray-950"
         />
       </nav>
 

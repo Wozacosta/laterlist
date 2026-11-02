@@ -56,6 +56,7 @@ export interface Topic {
   id: string; // "top" + crypto.randomUUID()
   name: string;
   icon?: string; // emoji shown next to the name
+  focus?: boolean; // one of the few topics Next draws from
   createdAt: string; // ISO datetime string
   sortOrder: number; // Date.now() on creation
   status: "active" | "completed";

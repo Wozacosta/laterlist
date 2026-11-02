@@ -31,6 +31,10 @@ export function useTopics() {
     await db.topics.update(id, { icon });
   }, []);
 
+  const setTopicFocus = useCallback(async (id: string, focus: boolean) => {
+    await db.topics.update(id, { focus });
+  }, []);
+
   const deleteTopic = useCallback(async (id: string) => {
     await db.transaction("rw", [db.topics, db.items], async () => {
       // Remove this topic from all items' topicIds arrays
@@ -70,10 +74,8 @@ export function useTopics() {
   }, []);
 
   const setTopicOrder = useCallback(
-    async (updates: Array<{ id: string; sortOrder: number }>) => {
-      await db.topics.bulkUpdate(
-        updates.map((u) => ({ key: u.id, changes: { sortOrder: u.sortOrder } }))
-      );
+    async (updates: Array<{ id: string; sortOrder: number; focus?: boolean }>) => {
+      await db.topics.bulkUpdate(updates.map(({ id, ...changes }) => ({ key: id, changes })));
     },
     []
   );
@@ -137,6 +139,7 @@ export function useTopics() {
     addTopic,
     renameTopic,
     setTopicIcon,
+    setTopicFocus,
     deleteTopic,
     completeTopic,
     reopenTopic,
