@@ -23,7 +23,7 @@ function getSyncLabel(
 }
 
 const btnClass =
-  "rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800";
+  "shrink-0 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800";
 
 export const CloudSyncButton = memo(function CloudSyncButton() {
   const currentUser = useObservable(db.cloud.currentUser);
@@ -105,21 +105,21 @@ export const CloudSyncButton = memo(function CloudSyncButton() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 max-w-full items-center gap-2">
       {syncText && (
         <span
-          className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-600"
+          className="flex shrink-0 items-center gap-1.5 text-xs text-gray-400 dark:text-gray-600"
           title={syncError ?? undefined}
         >
           <span className={`inline-block h-2 w-2 rounded-full ${dotClass}`} />
           {syncText}
         </span>
       )}
-      <span className="text-sm text-gray-500 dark:text-gray-400">{displayName}</span>
+      <span className="min-w-0 truncate text-sm text-gray-500 dark:text-gray-400" title={displayName}>{displayName}</span>
       <button
         type="button"
         onClick={() => db.cloud.logout().catch(() => {})}
-        className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-400 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-gray-600 dark:hover:bg-gray-800"
+        className="shrink-0 whitespace-nowrap rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-400 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-gray-600 dark:hover:bg-gray-800"
       >
         Sign out
       </button>

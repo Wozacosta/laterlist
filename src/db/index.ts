@@ -8,6 +8,7 @@ export type Category =
   | "repo"
   | "podcast"
   | "doc"
+  | "action"
   | "other";
 
 export type GroupColor =
@@ -31,6 +32,7 @@ export interface Item {
   url: string;
   title: string;
   thumbnail?: string;
+  author?: string; // the YouTube channel
   category: Category;
   tags: string[];
   duration?: number; // seconds
@@ -40,13 +42,23 @@ export interface Item {
   doneAt?: string; // ISO datetime string
   publishedAt?: string; // ISO datetime — item visible on public reading list
   notes?: string;
+  summary?: string; // short AI summary of the content
+  why?: string; // one line on what this gives the user
   groupId?: string; // optional group membership
   topicIds?: string[]; // optional learning topics (multi-select)
+  starred?: boolean; // one of the user's favorites
+  progress?: string; // where the user got to in a long item, in their words
+  workedOn?: string[]; // ISO datetimes — each "Done a bit", for the calendar
+  recalledAt?: string; // ISO datetime — last time it came up in the daily recall
+  snoozedUntil?: string | null; // ISO datetime — out of its topic's queue until then
+  deletedAt?: string | null; // ISO datetime — in the Trash until restored or emptied
 }
 
 export interface Topic {
   id: string; // "top" + crypto.randomUUID()
   name: string;
+  icon?: string; // emoji shown next to the name
+  focus?: boolean; // one of the few topics Next draws from
   createdAt: string; // ISO datetime string
   sortOrder: number; // Date.now() on creation
   status: "active" | "completed";

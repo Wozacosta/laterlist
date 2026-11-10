@@ -1,120 +1,86 @@
 "use client";
 
-import { memo, useState } from "react";
-import type { Category } from "@/db";
+import { memo } from "react";
+import type { ItemKind } from "@/lib/itemKind";
 
-const TAGS_PREVIEW = 8;
+const chipClass = (active: boolean, on = "bg-blue-600 text-white") =>
+  `shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+    active
+      ? on
+      : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+  }`;
+
+const toggleOn = "bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900";
 
 interface FilterBarProps {
-  categories: Category[];
-  allTags: string[];
-  selectedCategory: Category | null;
-  selectedTags: string[];
+  kinds: ItemKind[];
+  selectedKind: ItemKind | null;
+  starred: boolean;
+  starredCount: number;
+  noTopic: boolean;
+  noTopicCount: number;
   hideDone: boolean;
-  onCategoryChange: (c: Category | null) => void;
-  onTagToggle: (tag: string) => void;
+  search: string;
+  onKindChange: (kind: ItemKind | null) => void;
+  onToggleStarred: () => void;
+  onToggleNoTopic: () => void;
   onToggleHideDone: () => void;
+  onSearchChange: (search: string) => void;
 }
 
 export const FilterBar = memo(function FilterBar({
-  categories,
-  allTags,
-  selectedCategory,
-  selectedTags,
+  kinds,
+  selectedKind,
+  starred,
+  starredCount,
+  noTopic,
+  noTopicCount,
   hideDone,
-  onCategoryChange,
-  onTagToggle,
+  search,
+  onKindChange,
+  onToggleStarred,
+  onToggleNoTopic,
   onToggleHideDone,
+  onSearchChange,
 }: FilterBarProps) {
-  const [tagsExpanded, setTagsExpanded] = useState(false);
-
-  // Always show selected tags even if collapsed
-  const visibleTags = tagsExpanded
-    ? allTags
-    : allTags.filter((t, i) => i < TAGS_PREVIEW || selectedTags.includes(t));
-
-  const hiddenCount = allTags.length - visibleTags.length;
-
   return (
-    <div className="mb-3 flex flex-wrap gap-1">
-      {/* Category pills */}
-      <button
-        type="button"
-        onClick={() => onCategoryChange(null)}
-        className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-          selectedCategory === null
-            ? "bg-blue-600 text-white"
-            : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-        }`}
-      >
-        All
-      </button>
-      {categories.map((cat) => (
-        <button
-          key={cat}
-          type="button"
-          onClick={() => onCategoryChange(selectedCategory === cat ? null : cat)}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-            selectedCategory === cat
-              ? "bg-blue-600 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-          }`}
-        >
-          {cat}
+    <div className="mb-3 flex flex-col gap-2">
+      <div className="flex gap-1 overflow-x-auto [scrollbar-width:none]">
+        <button type="button" onClick={() => onKindChange(null)} className={chipClass(selectedKind === null)}>
+          All
         </button>
-      ))}
+        {kinds.map((kind) => (
+          <button
+            key={kind}
+            type="button"
+            onClick={() => onKindChange(selectedKind === kind ? null : kind)}
+            className={chipClass(selectedKind === kind)}
+          >
+            {kind}
+          </button>
+        ))}
+      </div>
 
-      {/* Hide done toggle */}
-      <button
-        type="button"
-        onClick={onToggleHideDone}
-        className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-          hideDone
-            ? "bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900"
-            : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-        }`}
-      >
-        {hideDone ? "✓ Hide done" : "Hide done"}
-      </button>
+      <div className="flex flex-wrap items-center gap-1">
+        <button type="button" onClick={onToggleStarred} aria-pressed={starred} className={chipClass(starred, toggleOn)}>
+          ★ Starred ({starredCount})
+        </button>
+        <button type="button" onClick={onToggleNoTopic} aria-pressed={noTopic} className={chipClass(noTopic, toggleOn)}>
+          {noTopic ? "✓ " : ""}No topic ({noTopicCount})
+        </button>
+        <button type="button" onClick={onToggleHideDone} aria-pressed={hideDone} className={chipClass(hideDone, toggleOn)}>
+          {hideDone ? "✓ " : ""}Hide done
+        </button>
 
-      {/* Tag pills */}
-      {allTags.length > 0 && (
-        <span className="mx-1 self-center text-gray-300 dark:text-gray-700">|</span>
-      )}
-      {visibleTags.map((tag) => (
-        <button
-          key={tag}
-          type="button"
-          onClick={() => onTagToggle(tag)}
-          className={`rounded-full px-3 py-1 text-xs transition-colors ${
-            selectedTags.includes(tag)
-              ? "bg-indigo-600 text-white"
-              : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-          }`}
-        >
-          #{tag}
-        </button>
-      ))}
-
-      {/* Show more / less */}
-      {!tagsExpanded && hiddenCount > 0 && (
-        <button
-          type="button"
-          onClick={() => setTagsExpanded(true)}
-          className="rounded-full px-3 py-1 text-xs text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700 transition-colors"
-        >
-          +{hiddenCount} more
-        </button>
-      )}
-      {tagsExpanded && allTags.length > TAGS_PREVIEW && (
-        <button
-          type="button"
-          onClick={() => setTagsExpanded(false)}
-          className="rounded-full px-3 py-1 text-xs text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700 transition-colors"
-        >
-          Show less
-        </button>
-      )}
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          aria-label="Search your list"
+          placeholder="Search titles, tags, notes"
+          className="ml-auto min-w-40 flex-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 sm:max-w-64"
+        />
+      </div>
     </div>
   );
 });

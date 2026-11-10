@@ -14,13 +14,14 @@ import {
 import type { DragEndEvent, DragOverEvent, UniqueIdentifier } from "@dnd-kit/core";
 import {
   SortableContext,
-  arrayMove,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useState } from "react";
 import type { Item, Group, GroupColor, Topic } from "@/db";
-import { ItemRow } from "./ItemRow";
+import { useTopicDrop } from "@/hooks/useTopicDrop";
+import { reorderItems } from "@/lib/reorderItems";
+import { DragPreview, ItemRow } from "./ItemRow";
 import { GroupSection } from "./GroupSection";
 import { EmptyState } from "./EmptyState";
 
@@ -60,9 +61,11 @@ interface ItemListProps {
   onUnpublish: (id: string) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  onToggleStar: (id: string) => void;
   onDelete: (id: string) => void;
   onReorder: (updates: Array<{ id: string; sortOrder: number }>) => void;
   onAssignToGroup: (itemId: string, groupId: string | undefined) => void;
+  onDropOnTopic: (itemId: string, topicId: string) => void;
   onAssignTopic: (itemId: string, topicId: string) => void;
   onUnassignTopic: (itemId: string, topicId: string) => void;
   onRenameGroup: (id: string, name: string) => void;
@@ -83,9 +86,11 @@ export const ItemList = memo(function ItemList({
   onUnpublish,
   onUpdateTags,
   onUpdateNotes,
+  onToggleStar,
   onDelete,
   onReorder,
   onAssignToGroup,
+  onDropOnTopic,
   onAssignTopic,
   onUnassignTopic,
   onRenameGroup,
@@ -95,6 +100,7 @@ export const ItemList = memo(function ItemList({
   onAddGroup,
 }: ItemListProps) {
   const [draggingId, setDraggingId] = useState<UniqueIdentifier | null>(null);
+  const topicDrop = useTopicDrop(onDropOnTopic);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -109,7 +115,7 @@ export const ItemList = memo(function ItemList({
     (event: DragEndEvent) => {
       setDraggingId(null);
       const { active, over } = event;
-      if (!over) return;
+      if (topicDrop.finish(active.id as string) || !over) return;
 
       const activeId = active.id as string;
       const overId = over.id as string;
@@ -133,19 +139,10 @@ export const ItemList = memo(function ItemList({
       if (!activeItem || !overItem) return;
       if (activeItem.groupId || overItem.groupId) return; // only reorder ungrouped
 
-      const oldIndex = ungroupedItems.findIndex((i) => i.id === activeId);
-      const newIndex = ungroupedItems.findIndex((i) => i.id === overId);
-      if (oldIndex === -1 || newIndex === -1) return;
-
-      const reordered = arrayMove(ungroupedItems, oldIndex, newIndex);
-      onReorder(
-        reordered.map((item, index) => ({
-          id: item.id,
-          sortOrder: (reordered.length - index) * 1000,
-        }))
-      );
+      const updates = reorderItems(ungroupedItems, activeId, overId);
+      if (updates.length) onReorder(updates);
     },
-    [items, ungroupedItems, onAssignToGroup, onReorder]
+    [items, ungroupedItems, onAssignToGroup, onReorder, topicDrop]
   );
 
   if (items.length === 0 && groups.length === 0) {
@@ -161,9 +158,15 @@ export const ItemList = memo(function ItemList({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={(e) => setDraggingId(e.active.id)}
+      onDragStart={(e) => {
+        setDraggingId(e.active.id);
+        topicDrop.start();
+      }}
       onDragEnd={handleDragEnd}
-      onDragCancel={() => setDraggingId(null)}
+      onDragCancel={() => {
+        setDraggingId(null);
+        topicDrop.cancel();
+      }}
     >
       {/* Ungrouped items */}
       <UngroupedZone showZone={isDraggingGrouped}>
@@ -171,7 +174,7 @@ export const ItemList = memo(function ItemList({
           items={ungroupedItems.map((i) => i.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="flex flex-col gap-1 mb-4">
+          <div className={ungroupedItems.length ? "mb-4 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800" : undefined}>
             {ungroupedItems.map((item) => (
               <ItemRow
                 key={item.id}
@@ -183,6 +186,7 @@ export const ItemList = memo(function ItemList({
                 onUnpublish={onUnpublish}
                 onUpdateTags={onUpdateTags}
                 onUpdateNotes={onUpdateNotes}
+                onToggleStar={onToggleStar}
                 onDelete={onDelete}
                 onAssignTopic={onAssignTopic}
                 onUnassignTopic={onUnassignTopic}
@@ -210,6 +214,7 @@ export const ItemList = memo(function ItemList({
             onUnpublish={onUnpublish}
             onUpdateTags={onUpdateTags}
             onUpdateNotes={onUpdateNotes}
+            onToggleStar={onToggleStar}
             onDeleteItem={onDelete}
             onAssignTopic={onAssignTopic}
             onUnassignTopic={onUnassignTopic}
@@ -221,11 +226,7 @@ export const ItemList = memo(function ItemList({
 
       {/* Drag overlay */}
       <DragOverlay>
-        {draggingItem && (
-          <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg opacity-90 text-sm font-medium text-gray-700 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300">
-            {draggingItem.title}
-          </div>
-        )}
+        {draggingItem && <DragPreview title={draggingItem.title} />}
       </DragOverlay>
     </DndContext>
   );
@@ -236,7 +237,7 @@ const AddGroupButton = memo(function AddGroupButton({ onClick }: { onClick: () =
     <button
       type="button"
       onClick={onClick}
-      className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-gray-300 py-2 text-xs text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors dark:border-gray-700 dark:text-gray-600 dark:hover:border-gray-600 dark:hover:text-gray-400"
+      className="ml-auto mt-3 flex items-center gap-1.5 rounded px-2 py-1 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>

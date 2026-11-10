@@ -1,45 +1,30 @@
 "use client";
 
-import { authFetch } from "@/lib/authFetch";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useObservable } from "dexie-react-hooks";
 import { db } from "@/db";
 import { useItems } from "@/hooks/useItems";
 import { useGroups } from "@/hooks/useGroups";
 import { useTopics } from "@/hooks/useTopics";
-import { useSettings } from "@/hooks/useSettings";
-import { useTodayTime } from "@/hooks/useTodayTime";
-import { useStreak } from "@/hooks/useStreak";
-import { useStudyQueue } from "@/hooks/useStudyQueue";
-import { useWeeklyActivity } from "@/hooks/useWeeklyActivity";
-import { useDailyPlan } from "@/hooks/useDailyPlan";
-import { useTimerState, TimerContext } from "@/hooks/useTimer";
 import { AddItemInput } from "@/components/AddItemInput";
+import { CalendarView } from "@/components/CalendarView";
+import { CloudSyncButton } from "@/components/CloudSyncButton";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemList } from "@/components/ItemList";
-import { TopicList } from "@/components/TopicList";
-import { DailyGoal } from "@/components/DailyGoal";
-import { CalendarConnect } from "@/components/CalendarConnect";
-import { ProtonCalendarConnect } from "@/components/ProtonCalendarConnect";
-import { CalendarSuggestions } from "@/components/CalendarSuggestions";
-import { SessionGraph } from "@/components/SessionGraph";
-import { StudyQueue } from "@/components/StudyQueue";
-import { DailyPlan } from "@/components/DailyPlan";
-import { LearningDashboard } from "@/components/LearningDashboard";
-import { TopicDetail } from "@/components/TopicDetail";
-import { LearningReport } from "@/components/LearningReport";
-import { PlaylistReview } from "@/components/PlaylistReview";
-import { CloudSyncButton } from "@/components/CloudSyncButton";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { NextView } from "@/components/NextView";
+import { QuickNote } from "@/components/QuickNote";
+import { CALENDAR, NEXT, Sidebar, TRASH } from "@/components/Sidebar";
+import { TopicView } from "@/components/TopicView";
 import { SkeletonList } from "@/components/SkeletonList";
-import { DataManager } from "@/components/DataManager";
+import { TrashView } from "@/components/TrashView";
 import { useToast } from "@/components/Toast";
-import type { Category, Item, GroupColor } from "@/db";
-import type { PlaylistVideo } from "@/app/api/playlist/route";
+import { NO_TOPIC } from "@/lib/calendar";
+import { itemKind, type ItemKind } from "@/lib/itemKind";
+import { linkKey } from "@/lib/linkKey";
+import { matchesSearch } from "@/lib/matchesSearch";
+import type { Item, GroupColor } from "@/db";
 
-type View = "list" | "learn";
-
-type EnrichedData = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
+type NewItem = Omit<Item, "id" | "sortOrder" | "addedAt" | "status">;
 
 function formatTotalTime(seconds: number): string {
   if (seconds === 0) return "";
@@ -49,14 +34,6 @@ function formatTotalTime(seconds: number): string {
   return `${m}m to go`;
 }
 
-function formatElapsed(totalSeconds: number): string {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
-}
-
 const DEFAULT_COLORS: GroupColor[] = ["blue", "purple", "green", "orange", "pink", "gray"];
 let colorIndex = 0;
 
@@ -64,6 +41,7 @@ export default function Page() {
   const {
     items,
     archivedItems,
+    trashedItems,
     isLoading,
     addItem,
     updateItem,
@@ -71,11 +49,17 @@ export default function Page() {
     unmarkDone,
     publishItem,
     unpublishItem,
+    snooze,
+    toggleStar,
     deleteItem,
+    restoreItem,
+    deleteForever,
     reorderItems,
     assignToGroup,
     assignToTopic,
     unassignFromTopic,
+    doNext,
+    moveToTopic,
   } = useItems();
 
   const {
@@ -91,71 +75,76 @@ export default function Page() {
     topics,
     addTopic,
     renameTopic,
+    setTopicIcon,
+    setTopicFocus,
     deleteTopic,
     completeTopic,
     reopenTopic,
-    logTime,
-    setPriority,
-    setEstimate,
-    markStudied,
-    setNotes,
-    setDependsOn,
+    setTopicOrder,
   } = useTopics();
-
-  const { dailyGoalMinutes, studyStartHour, studyEndHour, setDailyGoal, setStudyHours } = useSettings();
-  const todaySeconds = useTodayTime();
-  const streak = useStreak();
-  const studyQueue = useStudyQueue(topics, items);
-  const { days, topicTotals, weekTotal } = useWeeklyActivity();
-  const dailyPlan = useDailyPlan(studyQueue, topics, items, dailyGoalMinutes, todaySeconds);
-  const timerState = useTimerState();
 
   const { toast } = useToast();
   const currentUser = useObservable(db.cloud.currentUser);
   const isLoggedIn = currentUser?.isLoggedIn ?? false;
 
-  const [view, setView] = useState<View>("list");
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-  const [showReport, setShowReport] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [hideDone, setHideDone] = useState(false);
-  // LT-43: track newly-added item for optional topic assignment
-  const [pendingAssignItemId, setPendingAssignItemId] = useState<string | null>(null);
-  // LT-38: playlist import data for review step
-  const [pendingPlaylist, setPendingPlaylist] = useState<{
-    title: string;
-    videos: PlaylistVideo[];
-  } | null>(null);
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(NEXT);
+  const [followUp, setFollowUp] = useState<{ id: string; title: string; field: "notes" | "progress" } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [selectedKind, setSelectedKind] = useState<ItemKind | null>(null);
+  const [starred, setStarred] = useState(false);
+  const [noTopic, setNoTopic] = useState(false);
+  const [search, setSearch] = useState("");
+  const [hideDone, setHideDone] = useState(true);
+
+  // A pinned tab needs this to notice that a snoozed item is due back.
+  useEffect(() => {
+    const refresh = () => document.visibilityState === "visible" && setNow(Date.now());
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
+  }, []);
+
+  const inTrash = selectedTopicId === TRASH;
+  const inNext = selectedTopicId === NEXT;
+  const inCalendar = selectedTopicId === CALENDAR;
 
   const selectedTopic = useMemo(
-    () => selectedTopicId ? topics.find((t) => t.id === selectedTopicId) ?? null : null,
+    () => topics.find((t) => t.id === selectedTopicId) ?? null,
     [selectedTopicId, topics]
   );
 
-  const allTags = useMemo(() => {
-    const tagSet = new Set<string>();
-    items.forEach((item) => item.tags.forEach((t) => tagSet.add(t)));
-    return Array.from(tagSet).sort();
+  // Finished items leave the main list after a while, but they still count as learned.
+  const allItems = useMemo(() => [...items, ...archivedItems], [items, archivedItems]);
+
+  const kinds = useMemo(() => {
+    const counts = new Map<ItemKind, number>();
+    for (const item of items) {
+      const kind = itemKind(item);
+      counts.set(kind, (counts.get(kind) ?? 0) + 1);
+    }
+    return [...counts.keys()].sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0));
   }, [items]);
 
-  const categories = useMemo(() => {
-    const catSet = new Set<Category>();
-    items.forEach((item) => catSet.add(item.category));
-    return Array.from(catSet) as Category[];
-  }, [items]);
+  const starredCount = useMemo(() => allItems.filter((item) => item.starred).length, [allItems]);
 
-  const isFiltered = selectedCategory !== null || selectedTags.length > 0 || hideDone;
+  const noTopicCount = useMemo(
+    () => items.filter((item) => !item.topicIds?.length && (!hideDone || item.status === "unread")).length,
+    [items, hideDone]
+  );
 
+  const isFiltered = selectedKind !== null || starred || noTopic || hideDone || search.trim() !== "";
+
+  // Search and Starred look through everything, so finished and archived items can still be found.
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      if (hideDone && item.status === "done") return false;
-      if (selectedCategory && item.category !== selectedCategory) return false;
-      if (selectedTags.length > 0 && !selectedTags.every((t) => item.tags.includes(t)))
-        return false;
-      return true;
+    const everything = starred || search.trim() !== "";
+
+    return (everything ? allItems : items).filter((item) => {
+      if (hideDone && !everything && item.status === "done") return false;
+      if (starred && !item.starred) return false;
+      if (selectedKind && itemKind(item) !== selectedKind) return false;
+      if (noTopic && item.topicIds?.length) return false;
+      return matchesSearch(item, search);
     });
-  }, [items, selectedCategory, selectedTags, hideDone]);
+  }, [items, allItems, selectedKind, starred, noTopic, hideDone, search]);
 
   const totalUnreadSeconds = useMemo(() => {
     return filteredItems
@@ -164,100 +153,125 @@ export default function Page() {
   }, [filteredItems]);
 
   const handleAdd = useCallback(
-    async (data: EnrichedData) => {
-      // Only check for duplicates on URL items
+    async (data: NewItem) => {
       if (data.url) {
-        const duplicate = items.find(
-          (i) => i.url && i.url.replace(/\/$/, "") === data.url.replace(/\/$/, "")
-        );
+        const key = linkKey(data.url);
+        const duplicate = allItems.find((i) => i.url && linkKey(i.url) === key);
         if (duplicate) {
           toast(`Already saved: "${duplicate.title}"`, "warning");
           return;
         }
       }
+
+      // Inside a topic a paste joins the back of the queue, so it never replaces Next.
+      if (selectedTopic) {
+        const id = await addItem({ ...data, topicIds: [selectedTopic.id] }, "bottom");
+        toast(`Added to ${selectedTopic.name}`);
+        return id;
+      }
+
       const id = await addItem(data);
       toast("Added to your list");
       return id;
     },
-    [addItem, items, toast]
+    [addItem, allItems, selectedTopic, toast]
   );
 
-  // LT-43: When adding from the dashboard, prompt to optionally assign to a topic
-  const handleAddFromDashboard = useCallback(
-    async (data: EnrichedData) => {
-      const id = await handleAdd(data);
-      if (id && topics.length > 0) {
-        setPendingAssignItemId(id);
-      }
-    },
-    [handleAdd, topics.length]
-  );
-
-  const handleAssignPending = useCallback(
-    async (topicId: string) => {
-      if (!pendingAssignItemId) return;
-      await assignToTopic(pendingAssignItemId, topicId);
-      const topic = topics.find((t) => t.id === topicId);
-      toast(`Assigned to "${topic?.name ?? "topic"}"`);
-      setPendingAssignItemId(null);
-    },
-    [pendingAssignItemId, assignToTopic, topics, toast]
-  );
-
-  // LT-38: playlist import handler
-  const handlePlaylistLoaded = useCallback(
-    (title: string, videos: PlaylistVideo[]) => {
-      setPendingPlaylist({ title, videos });
-      toast(`Loaded ${videos.length} videos from "${title}"`);
-    },
-    [toast]
-  );
-
-  // LT-3A: bulk-import selected videos as items assigned to the current topic
-  const handlePlaylistConfirm = useCallback(
-    async (selectedVideos: PlaylistVideo[]) => {
-      if (!selectedTopicId) return;
-      for (const video of selectedVideos) {
-        await addItem({
-          url: `https://www.youtube.com/watch?v=${video.videoId}`,
-          title: video.title,
-          thumbnail: video.thumbnail || undefined,
-          category: "video",
-          tags: [],
-          duration: video.duration ?? undefined,
-          topicIds: [selectedTopicId],
-        });
-      }
-      toast(`Imported ${selectedVideos.length} video${selectedVideos.length !== 1 ? "s" : ""}`);
-      setPendingPlaylist(null);
-    },
-    [selectedTopicId, addItem, toast]
-  );
-
-  const handleAddToTopic = useCallback(
-    async (data: EnrichedData) => {
-      if (!selectedTopicId) return;
-      // Inject the current topic into topicIds
-      const topicIds = [...(data.topicIds ?? []), selectedTopicId];
-      await handleAdd({ ...data, topicIds });
-    },
-    [handleAdd, selectedTopicId]
+  const handleEnriched = useCallback(
+    (id: string, patch: Parameters<typeof updateItem>[1]) => updateItem(id, patch),
+    [updateItem]
   );
 
   const handleMarkDone = useCallback(
     async (id: string) => {
+      const item = allItems.find((i) => i.id === id);
       await markDone(id);
       toast("Marked as done");
+      if (item && !item.notes) setFollowUp({ id, title: item.title, field: "notes" });
     },
-    [markDone, toast]
+    [allItems, markDone, toast]
+  );
+
+  const handleFollowUp = useCallback(
+    async (text: string) => {
+      if (!followUp) return;
+      await updateItem(followUp.id, { [followUp.field]: text });
+      setFollowUp(null);
+      toast("Saved");
+    },
+    [followUp, toast, updateItem]
+  );
+
+  const handleRecall = useCallback(
+    async (id: string, text: string) => {
+      const item = allItems.find((i) => i.id === id);
+      const recalledAt = new Date().toISOString();
+      const notes = [item?.notes, text.trim()].filter(Boolean).join("\n");
+      await updateItem(id, text.trim() ? { recalledAt, notes } : { recalledAt });
+    },
+    [allItems, updateItem]
   );
 
   const handleDelete = useCallback(
     async (id: string) => {
-      await deleteItem(id);
-      toast("Removed", "error");
+      try {
+        await deleteItem(id);
+        toast("Moved to Trash");
+      } catch {
+        toast("Couldn't take it off your reading list, so it wasn't deleted", "error");
+      }
     },
     [deleteItem, toast]
+  );
+
+  const handlePublish = useCallback(
+    async (id: string) => {
+      try {
+        await publishItem(id);
+        toast("Published");
+      } catch {
+        toast("Couldn't publish it", "error");
+      }
+    },
+    [publishItem, toast]
+  );
+
+  const handleUnpublish = useCallback(
+    async (id: string) => {
+      try {
+        await unpublishItem(id);
+        toast("Removed from your reading list");
+      } catch {
+        toast("Couldn't remove it from your reading list", "error");
+      }
+    },
+    [unpublishItem, toast]
+  );
+
+  const handleSnooze = useCallback(
+    async (id: string, until: string | null, message: string) => {
+      const item = allItems.find((i) => i.id === id);
+      await snooze(id, until);
+      toast(message);
+      if (until && item) setFollowUp({ id, title: item.title, field: "progress" });
+    },
+    [allItems, snooze, toast]
+  );
+
+  const handleRestore = useCallback(
+    async (id: string) => {
+      await restoreItem(id);
+      toast("Restored");
+    },
+    [restoreItem, toast]
+  );
+
+  const handleDeleteForever = useCallback(
+    async (ids: string[]) => {
+      await deleteForever(ids);
+      toast("Deleted forever", "error");
+    },
+    [deleteForever, toast]
   );
 
   const handleUpdateTags = useCallback(
@@ -274,11 +288,46 @@ export default function Page() {
     [updateItem]
   );
 
-  const handleTagToggle = useCallback((tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  }, []);
+  const handleMove = useCallback(
+    async (id: string, topicId: string) => {
+      if (!selectedTopic) return;
+      await moveToTopic(id, selectedTopic.id, topicId);
+      toast(`Moved to ${topics.find((t) => t.id === topicId)?.name ?? "topic"}`);
+    },
+    [moveToTopic, selectedTopic, toast, topics]
+  );
+
+  const handleSetTopic = useCallback(
+    async (id: string, from: string, to: string) => {
+      const name = topics.find((t) => t.id === to)?.name ?? "topic";
+
+      if (from === NO_TOPIC) {
+        await assignToTopic(id, to);
+        toast(`Added to ${name}`);
+      } else {
+        await moveToTopic(id, from, to);
+        toast(`Moved to ${name}`);
+      }
+    },
+    [assignToTopic, moveToTopic, toast, topics]
+  );
+
+  // Inside a topic a drop moves the item, like Move to. From All items it adds the topic.
+  const handleDropOnTopic = useCallback(
+    async (itemId: string, topicId: string) => {
+      if (topicId === selectedTopic?.id) return;
+      const name = topics.find((t) => t.id === topicId)?.name ?? "topic";
+
+      if (selectedTopic) {
+        await moveToTopic(itemId, selectedTopic.id, topicId);
+        toast(`Moved to ${name}`);
+      } else {
+        await assignToTopic(itemId, topicId);
+        toast(`Added to ${name}`);
+      }
+    },
+    [assignToTopic, moveToTopic, selectedTopic, toast, topics]
+  );
 
   const handleAddGroup = useCallback(async () => {
     const color = DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length];
@@ -305,238 +354,144 @@ export default function Page() {
   const handleDeleteTopic = useCallback(
     async (id: string) => {
       await deleteTopic(id);
+      setSelectedTopicId(null);
       toast("Topic deleted", "error");
     },
     [deleteTopic, toast]
   );
 
-  const handleLogTime = useCallback(
-    async (id: string, seconds: number) => {
-      await logTime(id, seconds);
-      const h = Math.floor(seconds / 3600);
-      const m = Math.round((seconds % 3600) / 60);
-      const label = h > 0 ? `${h}h ${m}m` : `${m}m`;
-      toast(`Logged ${label}`);
-    },
-    [logTime, toast]
-  );
-
-  // LT-3H: Stop timer, log elapsed time, reset SR clock
-  // LT-3J: Record session for history/visualization
-  const handleStopTimer = useCallback(async () => {
-    const stopped = timerState.stop();
-    if (!stopped) return;
-    const elapsed = Math.floor((Date.now() - stopped.startTime) / 1000);
-    if (elapsed > 0) {
-      await logTime(stopped.topicId, elapsed);
-      const h = Math.floor(elapsed / 3600);
-      const m = Math.round((elapsed % 3600) / 60);
-      const label = h > 0 ? `${h}h ${m}m` : `${m}m`;
-      toast(`Logged ${label} to "${stopped.topicName}"`);
-
-      // Record session for graph visualization (LT-3J)
-      const now = new Date().toISOString();
-      const startedAt = new Date(stopped.startTime).toISOString();
-      authFetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topicId: stopped.topicId,
-          topicName: stopped.topicName,
-          startedAt,
-          endedAt: now,
-          durationSeconds: elapsed,
-          type: timerState.pomodoro.enabled ? "work" : "freeform",
-          status: "completed",
-          pomodoroConfig: timerState.pomodoro.enabled ? {
-            workMinutes: timerState.pomodoro.workMinutes,
-            breakMinutes: timerState.pomodoro.breakMinutes,
-            cycleNumber: 1,
-          } : undefined,
-        }),
-      }).catch(() => {}); // Non-blocking
-    }
-  }, [timerState, logTime, toast]);
-
-  const handleMarkStudied = useCallback(
-    async (id: string) => {
-      await markStudied(id);
-      toast("Marked as studied");
-    },
-    [markStudied, toast]
-  );
-
   return (
-    <TimerContext.Provider value={timerState}>
-    <main className="mx-auto max-w-3xl px-4 py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">laterlist</h1>
-        <div className="flex items-center gap-2">
-          <DataManager />
-          <ThemeToggle />
-          <CloudSyncButton />
-        </div>
-      </div>
+    <div className="md:flex">
+      <Sidebar
+        topics={topics}
+        items={allItems}
+        now={now}
+        trashCount={trashedItems.length}
+        selected={inTrash ? TRASH : inNext ? NEXT : inCalendar ? CALENDAR : selectedTopic?.id ?? null}
+        isLoggedIn={isLoggedIn}
+        onSelect={setSelectedTopicId}
+        onAddTopic={handleAddTopic}
+        onReorderTopics={setTopicOrder}
+      />
 
-      {/* Pomodoro alert overlay (LT-3I) */}
-      {timerState.pomodoroAlert && (
-        <div className="mb-4 rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-3 dark:border-amber-600 dark:bg-amber-950 animate-pulse">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-              {timerState.pomodoroPhase === "break"
-                ? "Work interval done — time for a break!"
-                : "Break over — back to work!"}
+      <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8">
+        {!isLoading && !isLoggedIn && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Sign in to load your list and back it up.
             </p>
-            <button
-              type="button"
-              onClick={timerState.dismissAlert}
-              className="rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700"
-            >
-              OK
-            </button>
+            <CloudSyncButton />
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Persistent timer display (LT-3G/3H/3I) */}
-      {timerState.active && (
-        <div className="mb-4 rounded-lg border border-green-300 bg-green-50 px-4 py-2 dark:border-green-800 dark:bg-green-950">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-green-600 dark:text-green-400 animate-pulse">●</span>
-              <span className="text-sm font-medium text-green-800 dark:text-green-200 truncate">
-                {timerState.active.topicName}
-              </span>
-              {timerState.pomodoro.enabled && (
-                <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                  timerState.pomodoroPhase === "work"
-                    ? "bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200"
-                    : "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
-                }`}>
-                  {timerState.pomodoroPhase === "work" ? "WORK" : "BREAK"}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              {timerState.pomodoro.enabled && (
-                <span className="font-mono text-xs text-green-600 dark:text-green-400">
-                  {formatElapsed(timerState.pomodoroRemaining)}
-                </span>
-              )}
-              <span className="font-mono text-sm font-semibold text-green-700 dark:text-green-300">
-                {formatElapsed(timerState.elapsed)}
-              </span>
-              <button
-                type="button"
-                onClick={handleStopTimer}
-                className="rounded-md bg-red-500 px-3 py-1 text-xs font-medium text-white hover:bg-red-600 transition-colors"
-                title="Stop timer and log time"
-              >
-                ■ Stop
-              </button>
-            </div>
-          </div>
-          {/* Pomodoro toggle row */}
-          <div className="mt-1.5 flex items-center gap-3">
-            <label className="flex items-center gap-1.5 text-[11px] text-green-700 dark:text-green-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={timerState.pomodoro.enabled}
-                onChange={(e) => timerState.setPomodoroEnabled(e.target.checked)}
-                className="h-3 w-3 rounded border-green-400 text-green-600 focus:ring-green-500"
-              />
-              Pomodoro
-            </label>
-            {timerState.pomodoro.enabled && (
-              <div className="flex items-center gap-1.5 text-[11px] text-green-600 dark:text-green-400">
-                <input
-                  type="number"
-                  min={1}
-                  max={120}
-                  value={timerState.pomodoro.workMinutes}
-                  onChange={(e) => timerState.setPomodoroWork(parseInt(e.target.value, 10) || 25)}
-                  className="w-10 rounded border border-green-300 bg-white px-1 py-0.5 text-center text-[11px] text-green-800 dark:border-green-700 dark:bg-green-900 dark:text-green-200"
-                />
-                <span>work /</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={60}
-                  value={timerState.pomodoro.breakMinutes}
-                  onChange={(e) => timerState.setPomodoroBreak(parseInt(e.target.value, 10) || 5)}
-                  className="w-10 rounded border border-green-300 bg-white px-1 py-0.5 text-center text-[11px] text-green-800 dark:border-green-700 dark:bg-green-900 dark:text-green-200"
-                />
-                <span>break</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* View toggle */}
-      <div className="mb-4 flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-900">
-        <button
-          type="button"
-          onClick={() => setView("list")}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            view === "list"
-              ? "bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white"
-              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          }`}
-        >
-          List
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("learn")}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            view === "learn"
-              ? "bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white"
-              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          }`}
-        >
-          Learn
-        </button>
-      </div>
-
-      {view === "list" ? (
-        <>
-          <AddItemInput onAdd={handleAdd} isLoggedIn={isLoggedIn} />
-
-          <FilterBar
-            categories={categories}
-            allTags={allTags}
-            selectedCategory={selectedCategory}
-            selectedTags={selectedTags}
-            hideDone={hideDone}
-            onCategoryChange={setSelectedCategory}
-            onTagToggle={handleTagToggle}
-            onToggleHideDone={() => setHideDone((v) => !v)}
+        {!inTrash && !inCalendar && (
+          <AddItemInput
+            placeholder={selectedTopic ? `Add to ${selectedTopic.name}: paste a link or type` : "Paste a link or type"}
+            onAdd={handleAdd}
+            onEnriched={handleEnriched}
+            isLoggedIn={isLoggedIn}
           />
+        )}
 
-          {!isLoading && totalUnreadSeconds > 0 && (
-            <p className="mb-3 text-xs text-gray-400 dark:text-gray-600">
-              {formatTotalTime(totalUnreadSeconds)}
-            </p>
-          )}
+        {followUp && (
+          <QuickNote
+            key={`${followUp.id}-${followUp.field}`}
+            label={followUp.title}
+            placeholder={followUp.field === "notes" ? "What did you take from it?" : "Where did you get to? e.g. video 7"}
+            onSave={handleFollowUp}
+            onDismiss={() => setFollowUp(null)}
+          />
+        )}
 
-          {isLoading ? (
-            <SkeletonList />
-          ) : (
+        {isLoading ? (
+          <SkeletonList />
+        ) : inNext ? (
+          <NextView
+            topics={topics}
+            items={allItems}
+            now={now}
+            noTopicCount={noTopicCount}
+            onOpenTopic={setSelectedTopicId}
+            onOpenNoTopic={() => {
+              setNoTopic(true);
+              setSelectedTopicId(null);
+            }}
+            onRecall={handleRecall}
+            onDropOnTopic={handleDropOnTopic}
+            onMarkDone={handleMarkDone}
+            onUnmarkDone={unmarkDone}
+            onDoNext={doNext}
+            onDelete={handleDelete}
+            onUpdateNotes={handleUpdateNotes}
+            onToggleStar={toggleStar}
+            onSnooze={handleSnooze}
+          />
+        ) : inTrash ? (
+          <TrashView items={trashedItems} onRestore={handleRestore} onDeleteForever={handleDeleteForever} />
+        ) : inCalendar ? (
+          <CalendarView items={allItems} topics={topics} now={now} onSetTopic={handleSetTopic} />
+        ) : selectedTopic ? (
+          <TopicView
+            topic={selectedTopic}
+            topics={topics}
+            items={allItems}
+            now={now}
+            onMarkDone={handleMarkDone}
+            onUnmarkDone={unmarkDone}
+            onDoNext={doNext}
+            onMove={handleMove}
+            onDelete={handleDelete}
+            onUpdateNotes={handleUpdateNotes}
+            onToggleStar={toggleStar}
+            onSnooze={handleSnooze}
+            onDropOnTopic={handleDropOnTopic}
+            onRename={renameTopic}
+            onSetIcon={setTopicIcon}
+            onSetFocus={setTopicFocus}
+            onComplete={completeTopic}
+            onReopen={reopenTopic}
+            onDeleteTopic={handleDeleteTopic}
+          />
+        ) : (
+          <>
+            <FilterBar
+              kinds={kinds}
+              selectedKind={selectedKind}
+              starred={starred}
+              starredCount={starredCount}
+              noTopic={noTopic}
+              noTopicCount={noTopicCount}
+              hideDone={hideDone}
+              search={search}
+              onKindChange={setSelectedKind}
+              onToggleStarred={() => setStarred((v) => !v)}
+              onToggleNoTopic={() => setNoTopic((v) => !v)}
+              onToggleHideDone={() => setHideDone((v) => !v)}
+              onSearchChange={setSearch}
+            />
+
+            {totalUnreadSeconds > 0 && (
+              <p className="mb-3 text-xs text-gray-400 dark:text-gray-600">
+                {formatTotalTime(totalUnreadSeconds)}
+              </p>
+            )}
+
             <ItemList
               items={filteredItems}
               groups={groups}
               topics={topics}
-              filtered={isFiltered}
+              filtered={isFiltered && items.length > 0}
               onMarkDone={handleMarkDone}
               onUnmarkDone={unmarkDone}
-              onPublish={publishItem}
-              onUnpublish={unpublishItem}
+              onPublish={handlePublish}
+              onUnpublish={handleUnpublish}
               onUpdateTags={handleUpdateTags}
               onUpdateNotes={handleUpdateNotes}
+              onToggleStar={toggleStar}
               onDelete={handleDelete}
               onReorder={reorderItems}
               onAssignToGroup={assignToGroup}
+              onDropOnTopic={handleDropOnTopic}
               onAssignTopic={assignToTopic}
               onUnassignTopic={unassignFromTopic}
               onRenameGroup={renameGroup}
@@ -545,135 +500,15 @@ export default function Page() {
               onDeleteGroup={handleDeleteGroup}
               onAddGroup={handleAddGroup}
             />
-          )}
 
-          {archivedItems.length > 0 && (
-            <p className="mt-4 text-center text-xs text-gray-400 dark:text-gray-600">
-              {archivedItems.length} archived item{archivedItems.length !== 1 ? "s" : ""}
-            </p>
-          )}
-        </>
-      ) : showReport ? (
-        <LearningReport
-          topics={topics}
-          onBack={() => setShowReport(false)}
-        />
-      ) : selectedTopic ? (
-        <>
-          <TopicDetail
-            topic={selectedTopic}
-            items={items}
-            allTopics={topics}
-            onBack={() => setSelectedTopicId(null)}
-            onMarkDone={handleMarkDone}
-            onUnmarkDone={unmarkDone}
-            onSetNotes={setNotes}
-            onUpdateItemNotes={handleUpdateNotes}
-            onAddItem={handleAddToTopic}
-            onPlaylistLoaded={handlePlaylistLoaded}
-            onSetDependsOn={setDependsOn}
-            onSelectTopic={setSelectedTopicId}
-            onStartTimer={timerState.start}
-            activeTimerTopicId={timerState.active?.topicId ?? null}
-            isLoggedIn={isLoggedIn}
-          />
-          {pendingPlaylist && (
-            <PlaylistReview
-              title={pendingPlaylist.title}
-              videos={pendingPlaylist.videos}
-              onConfirm={handlePlaylistConfirm}
-              onCancel={() => setPendingPlaylist(null)}
-            />
-          )}
-        </>
-      ) : (
-        <>
-          <AddItemInput onAdd={handleAddFromDashboard} isLoggedIn={isLoggedIn} />
-
-          {/* LT-43: Topic assignment prompt after adding from dashboard */}
-          {pendingAssignItemId && topics.length > 0 && (
-            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950">
-              <p className="mb-2 text-xs font-medium text-blue-700 dark:text-blue-300">
-                Assign to a topic?
+            {archivedItems.length > 0 && (
+              <p className="mt-4 text-center text-xs text-gray-400 dark:text-gray-600">
+                {archivedItems.length} archived item{archivedItems.length !== 1 ? "s" : ""}
               </p>
-              <div className="flex flex-wrap gap-1.5">
-                {topics
-                  .filter((t) => t.status !== "completed")
-                  .map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => handleAssignPending(t.id)}
-                      className="rounded-full border border-blue-300 bg-white px-3 py-1 text-xs text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-gray-900 dark:text-blue-300 dark:hover:bg-blue-900"
-                    >
-                      {t.name}
-                    </button>
-                  ))}
-                <button
-                  type="button"
-                  onClick={() => setPendingAssignItemId(null)}
-                  className="rounded-full px-3 py-1 text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                >
-                  Skip
-                </button>
-              </div>
-            </div>
-          )}
-
-          <DailyGoal
-            dailyGoalMinutes={dailyGoalMinutes}
-            todaySeconds={todaySeconds}
-            streak={streak}
-            studyStartHour={studyStartHour}
-            studyEndHour={studyEndHour}
-            onSetGoal={setDailyGoal}
-            onSetStudyHours={setStudyHours}
-          />
-          <CalendarConnect />
-          <ProtonCalendarConnect />
-          <CalendarSuggestions
-            dailyGoalMinutes={dailyGoalMinutes}
-            studyStartHour={studyStartHour}
-            studyEndHour={studyEndHour}
-            studyQueue={studyQueue.map((e) => ({ topicId: e.topicId, topicName: e.topicName }))}
-          />
-          <SessionGraph />
-          <DailyPlan
-            recommendations={dailyPlan}
-            onSelectTopic={setSelectedTopicId}
-          />
-          <LearningDashboard
-            days={days}
-            topicTotals={topicTotals}
-            weekTotal={weekTotal}
-            topics={topics}
-            streak={streak}
-            totalVelocitySecsPerDay={weekTotal / 7}
-            onViewReport={() => setShowReport(true)}
-          />
-          <StudyQueue
-            entries={studyQueue}
-            onStartTimer={timerState.start}
-            activeTimerTopicId={timerState.active?.topicId ?? null}
-            onMarkStudied={handleMarkStudied}
-            onSelectTopic={setSelectedTopicId}
-          />
-          <TopicList
-            topics={topics}
-            items={items}
-            onAdd={handleAddTopic}
-            onRename={renameTopic}
-            onDelete={handleDeleteTopic}
-            onComplete={completeTopic}
-            onReopen={reopenTopic}
-            onLogTime={handleLogTime}
-            onSetPriority={setPriority}
-            onSetEstimate={setEstimate}
-            onSelectTopic={setSelectedTopicId}
-          />
-        </>
-      )}
-    </main>
-    </TimerContext.Provider>
+            )}
+          </>
+        )}
+      </main>
+    </div>
   );
 }

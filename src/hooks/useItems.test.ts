@@ -63,6 +63,32 @@ describe("useItems", () => {
     expect(result.current.items.find((i) => i.id === id)?.doneAt).toBeDefined();
   });
 
+  it("snooze records a day worked on, and bringing it back doesn't", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let id = "";
+    await act(async () => {
+      id = await result.current.addItem({
+        url: "https://example.com/course",
+        title: "A long course",
+        category: "doc",
+        tags: [],
+      });
+    });
+
+    await act(async () => { await result.current.snooze(id, "2099-01-01T00:00:00.000Z"); });
+    expect((await db.items.get(id))?.workedOn).toHaveLength(1);
+
+    await act(async () => { await result.current.snooze(id, "2099-01-02T00:00:00.000Z"); });
+    expect((await db.items.get(id))?.workedOn).toHaveLength(2);
+
+    await act(async () => { await result.current.snooze(id, null); });
+    const item = await db.items.get(id);
+    expect(item?.snoozedUntil).toBeNull();
+    expect(item?.workedOn).toHaveLength(2);
+  });
+
   it("unmarkDone resets status to unread and clears doneAt", async () => {
     const { result } = renderHook(() => useItems());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -90,23 +116,67 @@ describe("useItems", () => {
     expect(result.current.items.find((i) => i.id === id)?.doneAt).toBeUndefined();
   });
 
-  it("deleteItem removes the item", async () => {
-    const { result } = renderHook(() => useItems());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
+  async function addOne(result: { current: ReturnType<typeof useItems> }) {
+    let id = "";
     await act(async () => {
-      await result.current.addItem({
+      id = await result.current.addItem({
         url: "https://example.com",
-        title: "Test",
+        title: "To Delete",
         category: "article",
         tags: [],
       });
     });
     await waitFor(() => expect(result.current.items).toHaveLength(1));
-    const id = result.current.items[0].id;
+    return id;
+  }
+
+  it("deleteItem moves the item to the Trash and keeps its row", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const id = await addOne(result);
 
     await act(async () => { await result.current.deleteItem(id); });
+
     await waitFor(() => expect(result.current.items).toHaveLength(0));
+    expect(result.current.trashedItems.map((item) => item.id)).toEqual([id]);
+    expect(await db.items.get(id)).toBeDefined();
+  });
+
+  it("restoreItem brings it back", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const id = await addOne(result);
+
+    await act(async () => { await result.current.deleteItem(id); });
+    await waitFor(() => expect(result.current.trashedItems).toHaveLength(1));
+    await act(async () => { await result.current.restoreItem(id); });
+
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    expect(result.current.trashedItems).toHaveLength(0);
+  });
+
+  it("deleteForever removes the row", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const id = await addOne(result);
+
+    await act(async () => { await result.current.deleteItem(id); });
+    await act(async () => { await result.current.deleteForever([id]); });
+
+    await waitFor(() => expect(result.current.trashedItems).toHaveLength(0));
+    expect(await db.items.get(id)).toBeUndefined();
+  });
+
+  it("toggleStar stars and unstars an item", async () => {
+    const { result } = renderHook(() => useItems());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const id = await addOne(result);
+
+    await act(async () => { await result.current.toggleStar(id); });
+    await waitFor(() => expect(result.current.items[0].starred).toBe(true));
+
+    await act(async () => { await result.current.toggleStar(id); });
+    await waitFor(() => expect(result.current.items[0].starred).toBe(false));
   });
 
   it("reorderItems updates sortOrder values", async () => {

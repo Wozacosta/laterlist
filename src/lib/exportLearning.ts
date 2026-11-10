@@ -69,7 +69,7 @@ export async function exportLearningJSON(): Promise<number> {
   const [topics, timeLogs, items] = await Promise.all([
     db.topics.toArray(),
     db.timeLogs.toArray(),
-    db.items.toArray(),
+    db.items.filter((item) => !item.deletedAt).toArray(),
   ]);
 
   const topicNameMap = new Map(topics.map((t) => [t.id, t.name]));

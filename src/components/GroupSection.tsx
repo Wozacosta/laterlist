@@ -25,6 +25,7 @@ interface GroupSectionProps {
   onUnpublish: (id: string) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  onToggleStar: (id: string) => void;
   onDeleteItem: (id: string) => void;
   onAssignTopic: (itemId: string, topicId: string) => void;
   onUnassignTopic: (itemId: string, topicId: string) => void;
@@ -44,6 +45,7 @@ export const GroupSection = memo(function GroupSection({
   onUnpublish,
   onUpdateTags,
   onUpdateNotes,
+  onToggleStar,
   onDeleteItem,
   onAssignTopic,
   onUnassignTopic,
@@ -90,6 +92,7 @@ export const GroupSection = memo(function GroupSection({
                     onUnpublish={onUnpublish}
                     onUpdateTags={onUpdateTags}
                     onUpdateNotes={onUpdateNotes}
+                    onToggleStar={onToggleStar}
                     onDelete={onDeleteItem}
                     onAssignTopic={onAssignTopic}
                     onUnassignTopic={onUnassignTopic}

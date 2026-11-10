@@ -3,6 +3,17 @@ import { useCallback, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Item, type Topic } from "@/db";
 import { isArchived } from "@/lib/archive";
+import { replaceTopic } from "@/lib/topicQueue";
+
+/** The public reading list is a separate server copy, so it has to be told about every change. */
+async function syncReadingList(item: object): Promise<void> {
+  const res = await authFetch("/api/items/sync", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  if (!res.ok) throw new Error(`Reading list update failed: ${res.status}`);
+}
 
 export function useItems() {
   const allItems = useLiveQuery(() =>
@@ -10,22 +21,34 @@ export function useItems() {
   );
 
   const items = useMemo(
-    () => (allItems ?? []).filter((i) => !isArchived(i)),
+    () => (allItems ?? []).filter((i) => !i.deletedAt && !isArchived(i)),
     [allItems]
   );
 
   const archivedItems = useMemo(
-    () => (allItems ?? []).filter(isArchived),
+    () => (allItems ?? []).filter((i) => !i.deletedAt && isArchived(i)),
+    [allItems]
+  );
+
+  const trashedItems = useMemo(
+    () =>
+      (allItems ?? [])
+        .filter((i) => i.deletedAt)
+        .sort((a, b) => (b.deletedAt ?? "").localeCompare(a.deletedAt ?? "")),
     [allItems]
   );
 
   const addItem = useCallback(
-    async (enriched: Omit<Item, "id" | "sortOrder" | "addedAt" | "status">): Promise<string> => {
+    async (
+      enriched: Omit<Item, "id" | "sortOrder" | "addedAt" | "status">,
+      position: "top" | "bottom" = "top"
+    ): Promise<string> => {
       const id = `itm${crypto.randomUUID()}`;
+      const bottom = position === "bottom" ? await db.items.orderBy("sortOrder").first() : undefined;
       await db.items.add({
         ...enriched,
         id,
-        sortOrder: Date.now(),
+        sortOrder: bottom ? bottom.sortOrder - 1 : Date.now(),
         addedAt: new Date().toISOString(),
         status: "unread",
       });
@@ -37,7 +60,9 @@ export function useItems() {
   const updateItem = useCallback(
     async (
       id: string,
-      patch: Partial<Pick<Item, "tags" | "notes" | "title">>
+      patch: Partial<
+        Pick<Item, "tags" | "notes" | "title" | "thumbnail" | "author" | "category" | "duration" | "summary" | "progress" | "recalledAt">
+      >
     ) => {
       await db.items.update(id, patch);
     },
@@ -108,29 +133,44 @@ export function useItems() {
     const item = await db.items.get(id);
     if (!item) return;
     const now = new Date().toISOString();
+    await syncReadingList({ ...item, publishedAt: now });
     await db.items.update(id, { publishedAt: now });
-
-    // Sync to server store for public reading-list API — non-blocking
-    authFetch("/api/items/sync", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...item, publishedAt: now }),
-    }).catch(() => {});
   }, []);
 
   const unpublishItem = useCallback(async (id: string) => {
+    await syncReadingList({ id, publishedAt: null, status: "unread" });
     await db.items.update(id, { publishedAt: undefined });
+  }, []);
 
-    // Remove from server store
-    authFetch("/api/items/sync", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, publishedAt: null, status: "unread" }),
-    }).catch(() => {});
+  const snooze = useCallback(async (id: string, until: string | null) => {
+    const item = await db.items.get(id);
+    if (!item) return;
+    await db.items.update(id, {
+      snoozedUntil: until,
+      // Snoozing is "Done a bit", so it counts as a day worked on. Bringing it back doesn't.
+      ...(until && { workedOn: [...(item.workedOn ?? []), new Date().toISOString()] }),
+    });
+  }, []);
+
+  const toggleStar = useCallback(async (id: string) => {
+    const item = await db.items.get(id);
+    if (!item) return;
+    await db.items.update(id, { starred: !item.starred });
   }, []);
 
   const deleteItem = useCallback(async (id: string) => {
-    await db.items.delete(id);
+    const item = await db.items.get(id);
+    if (!item) return;
+    if (item.publishedAt) await syncReadingList({ id, publishedAt: null, status: "unread" });
+    await db.items.update(id, { deletedAt: new Date().toISOString(), publishedAt: undefined });
+  }, []);
+
+  const restoreItem = useCallback(async (id: string) => {
+    await db.items.update(id, { deletedAt: null });
+  }, []);
+
+  const deleteForever = useCallback(async (ids: string[]) => {
+    await db.items.bulkDelete(ids);
   }, []);
 
   const reorderItems = useCallback(
@@ -170,17 +210,36 @@ export function useItems() {
     []
   );
 
+  const doNext = useCallback(async (id: string) => {
+    const top = await db.items.orderBy("sortOrder").last();
+    if (!top || top.id === id) return;
+    await db.items.update(id, { sortOrder: top.sortOrder + 1 });
+  }, []);
+
+  const moveToTopic = useCallback(async (id: string, from: string, to: string) => {
+    const item = await db.items.get(id);
+    if (!item) return;
+    await db.items.update(id, { topicIds: replaceTopic(item.topicIds ?? [], from, to) });
+  }, []);
+
   return {
     items,
     archivedItems,
+    trashedItems,
     isLoading: allItems === undefined,
+    doNext,
+    moveToTopic,
     addItem,
     updateItem,
     markDone,
     unmarkDone,
     publishItem,
     unpublishItem,
+    snooze,
+    toggleStar,
     deleteItem,
+    restoreItem,
+    deleteForever,
     reorderItems,
     assignToGroup,
     assignToTopic,
