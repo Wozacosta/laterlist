@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/Toast";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "laterlist",
@@ -42,6 +43,7 @@ export default function RootLayout({
             {children}
           </ToastProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

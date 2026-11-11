@@ -20,6 +20,7 @@
     "@radix-ui/react-dialog": "^1.1.15",
     "@tailwindcss/typography": "^0.5.19",
     "@upstash/redis": "^1.37.0",
+    "@vercel/analytics": "^2.0.1",
     "ai": "^6.0.0",
     "dexie": "^4.3.0",
     "dexie-cloud-addon": "^4.3.9",
