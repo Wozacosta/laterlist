@@ -21,6 +21,7 @@ import {
   StarButton,
   TrashButton,
 } from "./ItemRow";
+import { NoteImages, noteImageHandlers } from "./NoteImages";
 import { TopicIcon } from "./TopicIcon";
 
 const TOPIC_ICONS = [
@@ -283,11 +284,13 @@ function LearnedRow({ item, actions }: { item: Item; actions: ItemActions }) {
         key={item.notes ?? ""}
         defaultValue={item.notes ?? ""}
         onBlur={(e) => e.target.value !== (item.notes ?? "") && actions.onUpdateNotes(item.id, e.target.value)}
+        {...noteImageHandlers(item.id)}
         rows={1}
         aria-label={`Notes on "${item.title}"`}
         placeholder="What did you take from it?"
         className="mt-1 w-full resize-none rounded bg-transparent px-1 py-0.5 text-xs text-gray-600 placeholder-gray-400 field-sizing-content focus:outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-400 dark:placeholder-gray-600"
       />
+      <NoteImages item={item} editable />
     </li>
   );
 }

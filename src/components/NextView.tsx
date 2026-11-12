@@ -6,6 +6,7 @@ import type { Item, Topic } from "@/db";
 import { pickRecall } from "@/lib/recall";
 import { nextByTopic } from "@/lib/topicQueue";
 import { ItemLink, ItemThumbnail, quietButton, rowTitleClass, StarButton, TrashButton } from "./ItemRow";
+import { NoteImages } from "./NoteImages";
 import { DoneABit, Grip, ItemDetails, ItemDragArea, NextCard, type ItemActions } from "./TopicView";
 
 function TopicName({ topic, onOpen }: { topic: Topic; onOpen: (id: string) => void }) {
@@ -87,11 +88,16 @@ function RecallCard({ item, onRecall }: { item: Item; onRecall: (id: string, tex
       {revealed && item.notes && (
         <p className="mt-1 whitespace-pre-line text-sm text-gray-600 dark:text-gray-400">{item.notes}</p>
       )}
+      {revealed && (
+        <div className="mt-2">
+          <NoteImages item={item} />
+        </div>
+      )}
       <div className="mt-2 flex items-center gap-1">
         <button type="button" onClick={() => onRecall(item.id, text)} className={quietButton}>
           {text.trim() ? "Save" : "Skip"}
         </button>
-        {item.notes && !revealed && (
+        {Boolean(item.notes || item.noteImages?.length) && !revealed && (
           <button type="button" onClick={() => setRevealed(true)} className={quietButton}>
             Show my note
           </button>

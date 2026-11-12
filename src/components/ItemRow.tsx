@@ -6,6 +6,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Item, Topic } from "@/db";
 import { itemKind, type ItemKind } from "@/lib/itemKind";
 import { itemSource } from "@/lib/linkDomain";
+import { NoteImages, noteImageHandlers } from "./NoteImages";
 import { TagChips } from "./TagChips";
 import { TopicPicker } from "./TopicPicker";
 
@@ -450,11 +451,13 @@ export const ItemRow = memo(function ItemRow({
             key={item.notes ?? ""}
             defaultValue={item.notes ?? ""}
             onBlur={handleNotesBlur}
+            {...noteImageHandlers(item.id)}
             aria-label={`Notes on "${item.title}"`}
             rows={3}
             placeholder="Add a note..."
             className="w-full rounded border border-gray-200 bg-transparent px-2 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none dark:border-gray-700 dark:text-gray-300 dark:placeholder-gray-600"
           />
+          <NoteImages item={item} editable />
           <div className="flex justify-end gap-1">
             {item.status === "done" && (
               <button

@@ -42,6 +42,7 @@ export interface Item {
   doneAt?: string; // ISO datetime string
   publishedAt?: string; // ISO datetime — item visible on public reading list
   notes?: string;
+  noteImages?: string[]; // image data URLs, shrunk before saving
   summary?: string; // short AI summary of the content
   why?: string; // one line on what this gives the user
   groupId?: string; // optional group membership
